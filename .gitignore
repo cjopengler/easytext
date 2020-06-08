@@ -285,3 +285,6 @@ tags
 # Persistent undo
 [._]*.un~
 
+easytext.egg-info
+.idea/
+
