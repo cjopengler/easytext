@@ -167,13 +167,13 @@ if __name__ == '__main__':
     log_util.config()
 
     config = {
-        "serialize_dir": "/Users/panxu/Serialize/event_detection_without_tirgger/train",
-        "vocabulary_dir": "/Users/panxu/Serialize/event_detection_without_tirgger/vocabulary",
-        "train_dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
-        "validation_dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
+        "serialize_dir": "data/event/event_detection_without_tirgger/train",
+        "vocabulary_dir": "data/event/event_detection_without_tirgger/vocabulary",
+        "train_dataset_file_path": "data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
+        "validation_dataset_file_path": "data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
         "epoch": 20,
         "batch_size": 10,
 
     }
 
-    Train()(config=config, train_type=Train.RECOVERY_TRAIN)
+    Train()(config=config, train_type=Train.NEW_TRAIN)

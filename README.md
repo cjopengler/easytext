@@ -12,6 +12,8 @@ ACL 2019 论文，忽略触发词的事件类型检测。[相关论文](https://
 
 更加详细说明，请参考: `docs:event:event_detection_without_trigger`
 
+训练命令: `python -m event.event_detection_without_tirgger.train`
+
 
 # ner
 
