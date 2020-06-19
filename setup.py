@@ -16,7 +16,7 @@ from setuptools import find_packages
 
 setup(
     name="easytext",
-    version="0.0.0.1",
+    version="0.0.0.2",
     author="Pan Xu",
     author_email="cjopengler@163.com",
     description="Make it easy to train and metric NLP model.",
