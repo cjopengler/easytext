@@ -288,4 +288,6 @@ tags
 easytext.egg-info
 .idea/
 data/easytext
+data/event/event_detection_without_tirgger/train/
+data/event/event_detection_without_tirgger/vocabulary/
 
