@@ -114,7 +114,8 @@ def test_label_vocabulary():
     ASSERT.assertEqual(vocabulary.size, 5)
 
     vocabulary = LabelVocabulary([["A", "B", "C"], ["D", "E"]], padding=LabelVocabulary.PADDING)
-    ASSERT.assertEqual(vocabulary.size, 5)
+    ASSERT.assertEqual(vocabulary.size, 6)
+    ASSERT.assertEqual(vocabulary.label_size, 5)
 
     ASSERT.assertEqual(vocabulary.index(vocabulary.padding), 5)
 

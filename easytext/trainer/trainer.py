@@ -25,7 +25,7 @@ from easytext.model import Model
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.optimizer import LRSchedulerFactory
-from easytext.data.collate import ModelInputs
+from easytext.data.model_collate import ModelInputs
 from easytext.metrics import ModelMetricAdapter
 from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
@@ -318,8 +318,8 @@ class Trainer:
         """
 
         self.load_checkpoint(self.serialize_dir)
-        self.train(train_data_loader=train_data_loader,
-                   validation_data_loader=validation_data_loader)
+        self._train(train_data_loader=train_data_loader,
+                    validation_data_loader=validation_data_loader)
 
     def evaluate(self,
                  validation_data_loader: DataLoader) -> float:
@@ -346,18 +346,23 @@ class Trainer:
                 break
         return is_empty
 
-    def train(self,
-              train_data_loader: DataLoader,
+    def train(self, train_data_loader: DataLoader,
               validation_data_loader: DataLoader) -> None:
+        if not self._is_serialize_empty():
+            raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
+
+        return self._train(train_data_loader=train_data_loader,
+                           validation_data_loader=validation_data_loader)
+
+    def _train(self,
+               train_data_loader: DataLoader,
+               validation_data_loader: DataLoader) -> None:
         """
         模型训练
         :param train_data_loader: 训练集 data loader
         :param validation_data_loader: 验证集 data loader
         :return:
         """
-
-        if not self._is_serialize_empty():
-            raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
 
         if self._current_epoch is None:
             start_epoch = 1
@@ -397,10 +402,11 @@ class Trainer:
             # 这种情况，暂时不处理, 如果处理需要重新重构，或者简单实用 isinstance ReduceLROnPlateau 来处理
             # 这里简单实用 isinstance 处理。必须指出，ReduceLROnPlateau 的基类是 object, 这也是多少有些问题。
 
-            if isinstance(self._lr_scheduler, ReduceLROnPlateau):
-                self._lr_scheduler.step(metrics=evaluate_loss, epoch=epoch)
-            else:
-                self._lr_scheduler.step(epoch=epoch)
+            if self._lr_scheduler is not None:
+                if isinstance(self._lr_scheduler, ReduceLROnPlateau):
+                    self._lr_scheduler.step(metrics=evaluate_loss, epoch=epoch)
+                else:
+                    self._lr_scheduler.step(epoch=epoch)
 
             self.save_checkpoint(epoch=epoch)
 

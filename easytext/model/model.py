@@ -15,7 +15,7 @@ from typing import Any, Dict
 import torch
 from torch.nn import Module
 
-from easytext.model.outputs import Outputs
+from .model_outputs import ModelOutputs
 
 
 class Model(Module):
@@ -26,7 +26,10 @@ class Model(Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, *input: Any, **kwargs: Any) -> Outputs:
+    def reset_parameters(self):
+        raise NotImplementedError()
+
+    def forward(self, *input: Any, **kwargs: Any) -> ModelOutputs:
         pass
 
 

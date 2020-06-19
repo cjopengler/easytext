@@ -11,7 +11,7 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/05/13 15:04:00
 """
 
-from typing import Dict, OrderedDict
+from collections import OrderedDict
 
 
 class Instance(OrderedDict):

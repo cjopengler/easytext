@@ -11,4 +11,5 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/01/28 08:01:00
 """
 
-from .event_detection_without_trigger_model import EventDetectionWithoutTriggerModel
+from .event_model import EventModel
+from .event_model import EventModelOutputs

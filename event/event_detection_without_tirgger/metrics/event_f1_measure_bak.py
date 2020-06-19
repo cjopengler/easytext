@@ -14,12 +14,16 @@ import logging
 from typing import Union, Tuple, Dict, List, Optional
 
 import torch
-from allennlp.training.metrics import Metric
+
+from easytext.metrics import Metric
 
 
-class EventDetectionWithoutKeywordF1Measure(Metric):
+class EventF1Measure(Metric):
     """
-    Event Detection Without Keyword F1 Measure
+    Event F1 Measure
+
+    根据 某个 event_type 来计算 F1 Metric. 如果 event_type="all"， 那么，计算的是平均的 f1.
+    该模型下的 F1, 要去掉 unk 这个事件类型的之后的其他类型的 F1.
     """
 
     def __init__(self, event_type: str):

@@ -14,3 +14,4 @@ Date:    2020/05/13 15:30:00
 from .token import Token
 from .tokenizer import Tokenizer
 from .zh_tokenizer import ZhTokenizer
+from .en_tokenizer import EnTokenizer

@@ -17,20 +17,13 @@ from collections import defaultdict
 from easytext.data import LabelVocabulary
 from easytext.utils import bio as BIO
 from .metric import Metric
+from .f1_metric import F1Metric
 
 
-class SpanF1Metric(Metric):
+class SpanF1Metric(F1Metric):
     """
     计算基于 BIO, BIOUL 形式的 f1
     """
-
-    PRECISION = "precision"
-    RECALL = "recall"
-    F1 = "f1"
-
-    PRECISION_OVERALL = f"{PRECISION}-overall"
-    RECALL_OVERALL = f"{RECALL}-overall"
-    F1_OVERALL = f"{F1}-overall"
 
     def __init__(self,
                  label_vocabulary: LabelVocabulary) -> None:
@@ -152,70 +145,3 @@ class SpanF1Metric(Metric):
                             false_positives=false_positives,
                             false_negatives=false_negatives)
 
-    def _metric(self,
-                true_positives: Dict[str, int],
-                false_positives: Dict[str, int],
-                false_negatives: Dict[str, int]) -> Dict:
-        """
-        计算 metric, 注意是 输入是的字典
-        :param true_positives:
-        :param false_positives:
-        :param false_negatives:
-        :return:
-        """
-
-        all_tags: Set[str] = set()
-        all_tags.update(true_positives.keys())
-        all_tags.update(false_positives.keys())
-        all_tags.update(false_negatives.keys())
-        all_metrics = {}
-        for tag in all_tags:
-            precision, recall, f1_measure = self._compute_metrics(self._true_positives[tag],
-                                                                  self._false_positives[tag],
-                                                                  self._false_negatives[tag])
-            precision_key = SpanF1Metric.PRECISION + "-" + tag
-            recall_key = SpanF1Metric.RECALL + "-" + tag
-            f1_key = SpanF1Metric.F1 + "-" + tag
-            all_metrics[precision_key] = precision
-            all_metrics[recall_key] = recall
-            all_metrics[f1_key] = f1_measure
-
-        # Compute the precision, recall and f1 for all spans jointly.
-        precision, recall, f1_measure = self._compute_metrics(sum(self._true_positives.values()),
-                                                              sum(self._false_positives.values()),
-                                                              sum(self._false_negatives.values()))
-        all_metrics[SpanF1Metric.PRECISION_OVERALL] = precision
-        all_metrics[SpanF1Metric.RECALL_OVERALL] = recall
-        all_metrics[SpanF1Metric.F1_OVERALL] = f1_measure
-
-        return all_metrics
-
-    @property
-    def metric(self) -> Dict:
-        """
-        Returns
-        -------
-        A Dict per label containing following the span based metrics:
-        precision : float
-        recall : float
-        f1-measure : float
-
-        Additionally, an ``overall`` key is included, which provides the precision,
-        recall and f1-measure for all spans.
-        """
-        return self._metric(true_positives=self._true_positives,
-                            false_positives=self._false_positives,
-                            false_negatives=self._false_negatives)
-
-    @staticmethod
-    def _compute_metrics(true_positives: int, false_positives: int, false_negatives: int):
-        precision = float(true_positives) / float(true_positives + false_positives + 1e-13)
-        recall = float(true_positives) / float(true_positives + false_negatives + 1e-13)
-        f1_measure = 2. * ((precision * recall) / (precision + recall + 1e-13))
-        return precision, recall, f1_measure
-
-    def reset(self):
-        self._true_positives = defaultdict(int)
-        self._false_positives = defaultdict(int)
-        self._false_negatives = defaultdict(int)
-        return self

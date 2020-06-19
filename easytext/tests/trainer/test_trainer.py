@@ -13,18 +13,18 @@ Date:    2020/05/29 11:11:00
 import json
 import os
 import shutil
+import logging
 from typing import Iterable, List, Dict, Tuple
 
-import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
 from easytext.data import Instance
-from easytext.data.collate import ModelInputs
-from easytext.data.collate import Collate
+from easytext.data.model_collate import ModelInputs
+from easytext.data.model_collate import ModelCollate
 from easytext.model import Model
-from easytext.model import Outputs
+from easytext.model import ModelOutputs
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
@@ -65,7 +65,7 @@ class _DemoDataset(Dataset):
         return self._instances[index]
 
 
-class _DemoCollate(Collate):
+class _DemoCollate(ModelCollate):
     """
     测试用的 collate
     """
@@ -101,7 +101,7 @@ class _DemoCollate(Collate):
         return model_inputs
 
 
-class _DemoOutputs(Outputs):
+class _DemoOutputs(ModelOutputs):
 
     def __init__(self, logits: torch.Tensor):
         super().__init__(logits=logits)
@@ -164,7 +164,7 @@ class _DemoLoss(Loss):
         super().__init__()
         self._loss = torch.nn.CrossEntropyLoss()
 
-    def __call__(self, model_outputs: Outputs, golden_label: torch.Tensor) -> torch.Tensor:
+    def __call__(self, model_outputs: ModelOutputs, golden_label: torch.Tensor) -> torch.Tensor:
         model_outputs: _DemoOutputs = model_outputs
 
         return self._loss(model_outputs.logits, golden_label)
@@ -247,7 +247,10 @@ def test_trainer_save_and_load_cpu():
 
 def test_trainer_save_load_gpu():
 
-    cuda_devices = ["cuda:0"]
-    _run_train(cuda_devices=cuda_devices)
+    if torch.cuda.is_available():
+        cuda_devices = ["cuda:0"]
+        _run_train(cuda_devices=cuda_devices)
+    else:
+        logging.warning("由于没有GPU，忽略这个case测试")
 
 

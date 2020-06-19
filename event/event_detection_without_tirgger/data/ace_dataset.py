@@ -15,7 +15,7 @@ from typing import List
 from torch.utils.data import Dataset
 
 from easytext.data import Instance
-from easytext.data.tokenizer import Token
+from easytext.data.tokenizer import Token, EnTokenizer
 from easytext.utils import bio
 
 
@@ -55,30 +55,30 @@ class ACEDataset(Dataset):
                         event_types = {event["event_type"] for event in item["golden-event-mentions"]}
                         event_types = list(event_types)
 
-                        instance = self._text_to_instance(sentence=sentence,
-                                                          tokens=tokens,
-                                                          entity_tags=entity_labels,
-                                                          event_types=event_types)
+                        instance = self.text_to_instance(sentence=sentence,
+                                                         tokens=tokens,
+                                                         entity_tags=entity_labels,
+                                                         event_types=event_types)
                     else:
                         # 这种情况是预测的时候使用的，因为预测的时候是没有 golden-event-mentions 这个 key 的
-                        instance = self._text_to_instance(sentence=sentence,
-                                                          tokens=tokens,
-                                                          entity_tags=entity_labels,
-                                                          event_types=None)
+                        instance = ACEDataset.text_to_instance(sentence=sentence,
+                                                               tokens=tokens,
+                                                               entity_tags=entity_labels,
+                                                               event_types=None)
 
                     self._instances.append(instance)
 
-    def _text_to_instance(self,
-                          sentence: str,
-                          tokens: List[str],
-                          entity_tags: List[str],
-                          event_types: List[str]) -> Instance:
+    @staticmethod
+    def text_to_instance(sentence: str,
+                         tokens: List[str],
+                         entity_tags: List[str],
+                         event_types: List[str]) -> Instance:
 
         instance = Instance()
 
-        instance["sentence"] = [Token(t) for t in tokens]
+        instance["sentence"] = [Token(t.lower()) for t in tokens]
 
-        instance["entity_tag"] = [Token(t) for t in entity_tags]
+        instance["entity_tag"] = entity_tags
 
         instance["event_types"] = event_types
         instance["metadata"] = {"sentence": sentence,

@@ -2,20 +2,17 @@
 # -*- coding: utf-8 -*-
 
 #
-# Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
+# Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-数据预处理 collate_fn
+模型输入
 
 Authors: panxu(panxu@baidu.com)
-Date:    2020/05/25 16:13:00
+Date:    2020/06/10 09:55:00
 """
-
-from typing import Iterable, Dict
+from typing import Dict
 
 import torch
-
-from .instance import Instance
 
 
 class ModelInputs:
@@ -37,17 +34,3 @@ class ModelInputs:
         self.batch_size = batch_size
         self.model_inputs = model_inputs
         self.labels = labels
-
-
-class Collate:
-    """
-    用在对数据处理产出模型的输入数据以及label, 是 torch.utils.data.DataLoader 中的 collate_fn 函数
-    """
-
-    def __call__(self, instances: Iterable[Instance]) -> ModelInputs:
-        """
-        collate_fn 执行
-        :param instances: torch.utils.data.Dataset 中 __getitem__ 返回的是 Instance
-        :return: 模型需要调用的数据
-        """
-        raise NotImplementedError()

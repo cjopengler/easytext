@@ -11,6 +11,3 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/01/30 09:15:00
 """
 
-from .dataset_readers import EventDetectionWithoutTriggerDatasetReader
-from .models import EventDetectionWithoutTriggerModel
-from .metrics import EventDetectionWithoutKeywordF1Measure

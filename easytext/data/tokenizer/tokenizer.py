@@ -22,6 +22,19 @@ class Tokenizer:
     Tokenizer
     """
 
+    INVALIDATE_CHAR = "$$invalidate_char$$"
+
+    def __init__(self, is_remove_invalidate_char: bool = False):
+        """
+        初始化
+        :param is_remove_invalidate_char: 是否移除无效的字符。True: 移除; False: 不移除。
+        无效字符包括: unicode: 0x0, 0xFFFD 以及 控制字符。一般来说，在分类任务中，应该设置为 True,
+        但是在 序列标注任务中要小心，因为移除了会导致标注数据中的 token index 发生变化。
+        这几个字符是非常特殊的字符，如果数据很干净，没有这些字符，那么，这个参数设置 True 还是 False
+        都不会受到影响。
+        """
+        self._is_removed_invalidate_char = is_remove_invalidate_char
+
     def _is_whitespace(self, char):
         """
         Checks whether `chars` is a whitespace character.
@@ -64,7 +77,10 @@ class Tokenizer:
         for char in text:
             cp = ord(char)
             if cp == 0 or cp == 0xFFFD or self._is_control(char):
-                continue
+                if self._is_removed_invalidate_char:
+                    continue
+                else:
+                    output.append(Tokenizer.INVALIDATE_CHAR)
             if self._is_whitespace(char):
                 output.append(" ")
             else:
@@ -87,10 +103,10 @@ class Tokenizer:
         """
         raise NotImplementedError
 
-    def batch_tokenize(self, text: List[str]) -> List[List[Token]]:
+    def batch_tokenize(self, batch_text: List[str]) -> List[List[Token]]:
         """
         批量 tokenize
-        :param text:
+        :param batch_text:
         :return:
         """
         raise NotImplementedError()

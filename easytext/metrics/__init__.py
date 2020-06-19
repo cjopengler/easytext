@@ -15,6 +15,9 @@ from .metric import Metric
 from .metric import ModelMetricAdapter
 from .metric import ModelTargetMetric
 
+from .f1_metric import F1Metric
 from .span_f1_metric import SpanF1Metric
 from .acc_metric import AccMetric
+from .label_f1_metric import LabelF1Metric
+
 

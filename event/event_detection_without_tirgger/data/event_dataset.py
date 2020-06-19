@@ -15,15 +15,14 @@ Date:    2020/06/07 18:01:00
 """
 from typing import List
 from torch.utils.data import Dataset
-from torch.utils.data.dataset import T_co
 
 from easytext.data import Instance
 from easytext.data import Vocabulary
 
-from event_detection_without_tirgger.ace_data.ace_dataset import ACEDataset
+from event.event_detection_without_tirgger.data.ace_dataset import ACEDataset
 
 
-class ACEEventDataset(Dataset):
+class EventDataset(Dataset):
     """
     ACE event dataset
     """
@@ -75,7 +74,7 @@ class ACEEventDataset(Dataset):
 
                 self._instances.append(instance)
 
-    def __getitem__(self, index: int) -> T_co:
+    def __getitem__(self, index: int) -> Instance:
         return self._instances[index]
 
     def __len__(self) -> int:

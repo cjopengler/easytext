@@ -14,7 +14,7 @@ Date:    2020/05/18 10:41:00
 import torch
 
 
-class Outputs:
+class ModelOutputs:
     """
     模型的前向运算输出结果
     """

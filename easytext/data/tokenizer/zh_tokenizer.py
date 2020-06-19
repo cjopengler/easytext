@@ -29,11 +29,11 @@ class ZhTokenizer(Tokenizer):
         """
         return [Token(t) for t in text]
 
-    def batch_tokenize(self, text: List[str]) -> List[List[Token]]:
+    def batch_tokenize(self, batch_text: List[str]) -> List[List[Token]]:
         """
         批量 tokenize
-        :param text: 文本
+        :param batch_text: 文本
         :return:
         """
-        return [self.tokenize(t) for t in text]
+        return [self.tokenize(t) for t in batch_text]
 

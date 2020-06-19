@@ -11,5 +11,6 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/05/13 14:52:00
 """
 
-from .outputs import Outputs
+from .model_outputs import ModelOutputs
 from .model import Model
+from .model_inputs import ModelInputs

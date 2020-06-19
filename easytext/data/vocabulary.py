@@ -13,7 +13,7 @@ Date:    2020/04/25 08:33:00
 import os
 import logging
 import json
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Union
 from collections import Counter
 
 from torchtext.vocab import Vocab
@@ -110,12 +110,25 @@ class Vocabulary:
     def __len__(self):
         return len(self._token2index)
 
+    @property
+    def padding_index(self) -> Union[None, int]:
+        """
+        :return: 获取 padding 的 index, 如果 padding 没有设置，那么返回 None; 否则，返回实际的index.
+        """
+
+        if self.padding is None or self.padding == "":
+            return None
+        return self.index(self.padding)
+
     def index(self, token: str) -> int:
         """
         获取token的index
         :param token: 输入的token
         :return: token 的 index
         """
+        if token is None or token == "":
+            raise RuntimeError(f"token:[{token}] 非法!")
+
         if self.unk is None or self.unk == "":
             # 当 unk invalidate 的时候, 说明这里没有 unk, 那么直接返回；
             # 如果 token  有异常，那么，返回错误即可
@@ -249,9 +262,9 @@ class LabelVocabulary(Vocabulary):
                          max_size=None)
 
     @property
-    def size(self):
+    def label_size(self):
         """
-        实际的 label 数量，不包含 padding. 如果需要获得包含 padding 的长度，请使用 len(LabelVocabulary)
+        实际的 label 数量，不包含 padding. 如果需要获得包含 padding 的长度，请使用 size 或者 len(LabelVocabulary)
         :return: label 数量
         """
 

@@ -11,4 +11,4 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/02/06 14:51:00
 """
 
-from .event_detection_without_keyword_f1_measure import EventDetectionWithoutKeywordF1Measure
+from .event_f1_metric import EventF1MetricAdapter
