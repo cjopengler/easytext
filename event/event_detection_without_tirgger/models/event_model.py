@@ -157,7 +157,7 @@ class EventModel(Model):
                                           seq_len,
                                           self._sentence_embedding_dim + self._entity_tag_embedding_dim)
         # 使用 mask 计算 sentence 实际长度, shape: (B,)
-        sentence_length = mask.sum(dim=-1)
+        sentence_length = mask.long().sum(dim=-1)
 
         assert sentence_length.shape == (batch_size,)
 
@@ -192,7 +192,7 @@ class EventModel(Model):
         assert attention_logits.shape == (batch_size, seq_len)
 
         # Shape: B * SeqLen
-        tmp_attention_logits = torch.exp(attention_logits) * mask
+        tmp_attention_logits = torch.exp(attention_logits) * mask.float()
 
         # Shape: B * Seqlen
         tmp_attenttion_logits_sum = torch.sum(tmp_attention_logits, dim=-1, keepdim=True)

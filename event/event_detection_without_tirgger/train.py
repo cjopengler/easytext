@@ -15,6 +15,7 @@ from typing import Dict, List
 import os
 import shutil
 
+import torch
 from torch.utils.data import DataLoader
 
 from easytext.utils import log_util
@@ -190,6 +191,11 @@ if __name__ == '__main__':
         validation_dataset_file_path = os.path.join(ROOT_PATH,
                                                     validation_dataset_file_path)
 
+    if torch.cuda.is_available():
+        cuda = [2]
+    else:
+        cuda = None
+
     config = {
         "serialize_dir": serialize_dir,
         "vocabulary_dir": vocabulary_dir,
@@ -197,6 +203,7 @@ if __name__ == '__main__':
         "validation_dataset_file_path": validation_dataset_file_path,
         "epoch": 20,
         "batch_size": 64,
+        "cuda": cuda
 
     }
 
