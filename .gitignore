@@ -290,4 +290,6 @@ easytext.egg-info
 data/easytext
 data/event/event_detection_without_tirgger/train/
 data/event/event_detection_without_tirgger/vocabulary/
+ace_english_event/
+log/
 

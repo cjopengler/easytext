@@ -15,13 +15,13 @@ from typing import Dict, List
 import os
 import shutil
 
-import torch
 from torch.utils.data import DataLoader
 
 from easytext.utils import log_util
 from easytext.data import Vocabulary, LabelVocabulary
 from easytext.trainer import Trainer
 
+from event import ROOT_PATH
 from event.event_detection_without_tirgger.data import ACEDataset
 from event.event_detection_without_tirgger.data import EventDataset
 from event.event_detection_without_tirgger.data import EventCollate
@@ -166,13 +166,37 @@ if __name__ == '__main__':
 
     log_util.config()
 
+    serialize_dir = os.path.join(ROOT_PATH,
+                                 "data/event/event_detection_without_tirgger/train")
+    vocabulary_dir = os.path.join(ROOT_PATH,
+                                  "data/event/event_detection_without_tirgger/vocabulary")
+
+    # 实际使用的是 ace 数据集, 由于 ace 数据是非公开的。所以当没有 ace 数据集，可以使用 sample 数据
+    # sample 文件表示了实际训练的结构等信息，是从全量的 ace 数据中抽出的几条
+    train_dataset_file_path = "data/ace_english_event/train.txt"
+    train_dataset_file_path = os.path.join(ROOT_PATH,
+                                           train_dataset_file_path)
+
+    if not os.path.isfile(train_dataset_file_path):
+        train_dataset_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+        train_dataset_file_path = os.path.join(ROOT_PATH,
+                                               train_dataset_file_path)
+
+    validation_dataset_file_path = "data/ace_english_event/dev.txt"
+    validation_dataset_file_path = os.path.join(ROOT_PATH, validation_dataset_file_path)
+
+    if not os.path.isfile(validation_dataset_file_path):
+        validation_dataset_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+        validation_dataset_file_path = os.path.join(ROOT_PATH,
+                                                    validation_dataset_file_path)
+
     config = {
-        "serialize_dir": "data/event/event_detection_without_tirgger/train",
-        "vocabulary_dir": "data/event/event_detection_without_tirgger/vocabulary",
-        "train_dataset_file_path": "data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
-        "validation_dataset_file_path": "data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
+        "serialize_dir": serialize_dir,
+        "vocabulary_dir": vocabulary_dir,
+        "train_dataset_file_path": train_dataset_file_path,
+        "validation_dataset_file_path": validation_dataset_file_path,
         "epoch": 20,
-        "batch_size": 10,
+        "batch_size": 64,
 
     }
 
