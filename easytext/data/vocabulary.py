@@ -16,10 +16,6 @@ import json
 from typing import List, Dict, Iterable, Union
 from collections import Counter
 
-from torchtext.vocab import Vocab
-
-from easytext.utils.json_util import json2str
-
 
 class Vocabulary:
 
