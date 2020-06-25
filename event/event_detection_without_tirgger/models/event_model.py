@@ -21,7 +21,7 @@ from torch.nn import Embedding
 from torch.nn import LSTM
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-from easytext.data import Vocabulary, LabelVocabulary
+from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.model import Model
 from easytext.model import ModelOutputs
 from easytext.utils.nn import nn_util
@@ -47,7 +47,7 @@ class EventModel(Model):
     def __init__(self,
                  alpha: float,
                  activate_score: bool,
-                 sentence_vocab: Vocabulary,
+                 sentence_vocab: PretrainedVocabulary,
                  sentence_embedding_dim: int,
                  entity_tag_vocab: Vocabulary,
                  entity_tag_embedding_dim: int,
@@ -84,9 +84,18 @@ class EventModel(Model):
         self._activate_score = activate_score
         self._sentence_vocab = sentence_vocab
         self._sentence_embedding_dim = sentence_embedding_dim
-        self._sentence_embedder = Embedding(self._sentence_vocab.size,
-                                            embedding_dim=sentence_embedding_dim,
-                                            padding_idx=self._sentence_vocab.padding_index)
+
+        if isinstance(self._sentence_vocab, Vocabulary):
+            self._sentence_embedder = Embedding(self._sentence_vocab.size,
+                                                embedding_dim=sentence_embedding_dim,
+                                                padding_idx=self._sentence_vocab.padding_index)
+
+        elif isinstance(self._sentence_vocab, PretrainedVocabulary):
+            self._sentence_embedder = Embedding.from_pretrained(
+                embeddings=sentence_vocab.embedding_matrix
+            )
+        else:
+            raise RuntimeError(f"sentence_vocab 类型: {type(self._sentence_vocab)} 不是 Vocabulary 或者 PretrainedVocabulary")
 
         self._entity_tag_embedding_dim = entity_tag_embedding_dim
         self._entity_tag_vocab = entity_tag_vocab

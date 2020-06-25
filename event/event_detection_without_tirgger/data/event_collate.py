@@ -14,7 +14,7 @@ import torch
 from typing import Iterable, List
 
 from easytext.data import Instance
-from easytext.data import Vocabulary
+from easytext.data import PretrainedVocabulary, Vocabulary
 from easytext.data import LabelVocabulary
 from easytext.data.model_collate import ModelCollate, ModelInputs
 
@@ -25,7 +25,7 @@ class EventCollate(ModelCollate):
     """
 
     def __init__(self,
-                 word_vocabulary: Vocabulary,
+                 word_vocabulary: PretrainedVocabulary,
                  event_type_vocabulary: Vocabulary,
                  entity_tag_vocabulary: LabelVocabulary,
                  sentence_max_len=512):
