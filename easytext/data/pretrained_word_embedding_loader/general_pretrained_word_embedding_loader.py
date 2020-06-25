@@ -49,9 +49,10 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
     def load(self) -> Dict[str, List[float]]:
         """
         预训练的载入方法
+        return: embedding dict, key 是 token, value: List[float] 向量，例如:
+        {"the": [1.0, 2.0, ...]}
         """
-        embedding_dict: Dict[str, List[float]] = dict()
-
+        embedding_dict = dict()
         with open(self._pretrained_file_path, encoding=self._encoding) as f:
             for line_no, line in tqdm(enumerate(f)):
 
@@ -67,5 +68,11 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
                 embedding_dict[token] = vec
         return embedding_dict
 
-    def dim(self):
+    @property
+    def embedding_dim(self) -> int:
+        """
+        词向量维度
+        return: 词向量维度
+        """
         return self._embedding_dim
+

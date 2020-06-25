@@ -21,13 +21,24 @@ class PretrainedWordEmbeddingLoader:
 
     def load(self) -> Dict[str, List[float]]:
         """
-        载入预训练的词向量
+        载入预训练的词向量, 该函数是在初始化时候调用
         return: 返回词向量字典. 字典的 key 是 token, value 是 float List, 也就是向量内容;
         """
         raise NotImplementedError()
 
-    def dim(self):
+    @property
+    def embedding_dim(self) -> int:
         """
+        获取词向量维度
         return: 词向量的维度
         """
         raise NotImplementedError
+
+    @property
+    def embedding_dict(self) -> Dict[str, List[float]]:
+        """
+        embedding 字典,
+        return: embedding dict, key 是 token, value: List[float] 向量，例如:
+        {"the": [1.0, 2.0, ...]}
+        """
+        raise NotImplementedError()

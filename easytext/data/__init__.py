@@ -14,3 +14,6 @@ Date:    2020/05/13 15:04:00
 from .instance import Instance
 from .vocabulary import Vocabulary, LabelVocabulary
 from .pretrained_vocabulary import PretrainedVocabulary
+from .pretrained_word_embedding_loader import GloveLoader
+from .pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
+from .pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader

@@ -10,62 +10,50 @@
 Authors: panxu(panxu@baidu.com)
 Date:    2020/06/23 11:49:00
 """
-from typing import Iterable, List
+import os
+from typing import Iterable, List, Dict, Union
 import torch
 from .vocabulary import Vocabulary
 
 from easytext.data.pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
 
 
-class PretrainedVocabulary(Vocabulary):
+class PretrainedVocabulary:
+    """
+    带有预训练词向量的词汇表。
+    """
+
+    EMBEDDING_MATRIX_FILE_NAME = "embedding_matrix.pt"
 
     def __init__(self,
+                 vocabulary: Vocabulary,
                  pretrained_word_embedding_loader: PretrainedWordEmbeddingLoader,
-                 tokens: Iterable[List[str]],
-                 padding: str,
-                 unk: str,
-                 special_first: bool,
-                 other_special_tokens: List = None,
-                 min_frequency: int = 1,
-                 max_size: int = None
                  ):
         """
         初始化
-        :param pretrained_word_embedding_loader: 预训练载入器
-        :param tokens: (B, seq_len)
-        :param padding: padding的字符串, 可以用 Vocabulary.PADDING, 如果为 None 或者 "", 表示不进行padding
-        :param unk: unknown 的单词，可以用 Vocabulary.UNK, 如果为 None 或者 "", 表示不进行padding
-        :param special_first: special 是指: padding, unk.
-        True: 表示放在最前面, padding index=0, unk index=1; False: 表示放在最后面。
-        这涉及到mask, 对于 token 来说，一般 padding_index = 0;
-        而对于 label 来说, 如果需要对label,
-        比如 sequence label 进行 padding 的时候, padding_index 和 unk_index 必须大于 label的数量，因为 小于 label 数量的是对应的
-        label 分类。
-        :param min_frequency: 小于 min_frequency 的会被过滤
-        :param max_size: 词表的最大长度, 如果为None, 不限制词表大小
+        :param vocabulary: 词汇表
+        :param pretrained_word_embedding_loader: word embedding 载入器
         """
 
-        super().__init__(tokens=tokens,
-                         padding=padding,
-                         unk=unk,
-                         special_first=special_first,
-                         other_special_tokens=other_special_tokens,
-                         min_frequency=min_frequency,
-                         max_size=max_size)
-        embedding_dict = pretrained_word_embedding_loader.load()
+        self._vocabulary = vocabulary
 
-        embeddings = list()
+        if pretrained_word_embedding_loader is not None:
+            embedding_dict = pretrained_word_embedding_loader.load()
 
-        for index in range(len(self._index2token)):
-            token = self._index2token[index]
+            embeddings = list()
 
-            if token in embedding_dict:
-                embeddings.append(embedding_dict[token])
-            else:
-                empty_vec = [0.] * pretrained_word_embedding_loader.dim()
-                embeddings.append(empty_vec)
+            for index in range(self._vocabulary.size):
+                token = self._vocabulary.token(index)
 
-        self._embedding_matrix = torch.tensor(embeddings, dtype=torch.float)
+                if token in embedding_dict:
+                    embeddings.append(embedding_dict[token])
+                else:
+                    empty_vec = [0.] * pretrained_word_embedding_loader.embedding_dim
+                    embeddings.append(empty_vec)
+
+            self._embedding_matrix = torch.tensor(embeddings, dtype=torch.float)
+        else:
+            self._embedding_matrix = None
 
     @property
     def embedding_matrix(self) -> torch.Tensor:
@@ -73,3 +61,67 @@ class PretrainedVocabulary(Vocabulary):
         词向量 matrix
         """
         return self._embedding_matrix
+
+    def save_to_file(self, directory: str) -> "PretrainedVocabulary":
+        self._vocabulary.save_to_file(directory)
+
+        # 将 embedding matrix 存起来
+        embedding_matrix_file_path = os.path.join(directory, PretrainedVocabulary.EMBEDDING_MATRIX_FILE_NAME)
+        torch.save(self._embedding_matrix, embedding_matrix_file_path)
+
+        return self
+
+    @classmethod
+    def from_file(cls, directory: str) -> "PretrainedVocabulary":
+        vocabulary = Vocabulary.from_file(directory)
+
+        pretrianed_vocabulary = cls(pretrained_word_embedding_loader=None,
+                                    vocabulary=vocabulary)
+        embedding_matrix_file_path = os.path.join(directory, PretrainedVocabulary.EMBEDDING_MATRIX_FILE_NAME)
+        pretrianed_vocabulary._embedding_matrix = torch.load(embedding_matrix_file_path)
+
+        return pretrianed_vocabulary
+
+    def __len__(self):
+        return len(self._vocabulary)
+
+    @property
+    def unk(self):
+        return self._vocabulary.unk
+
+    @property
+    def padding(self):
+        return self._vocabulary.padding
+
+    @property
+    def other_special_tokens(self):
+        return self._vocabulary.other_special_tokens
+
+    @property
+    def padding_index(self) -> Union[None, int]:
+        """
+        :return: 获取 padding 的 index, 如果 padding 没有设置，那么返回 None; 否则，返回实际的index.
+        """
+        return self._vocabulary.padding_index
+
+    def index(self, token: str) -> int:
+        """
+        获取token的index
+        :param token: 输入的token
+        :return: token 的 index
+        """
+
+        return self._vocabulary.index(token)
+
+    def token(self, index: int) -> str:
+        """
+        获取 index 的 token
+        :param index: 指定 index
+        :return: 当前 index 的 token
+        """
+        return self._vocabulary.token(index)
+
+    @property
+    def size(self):
+        return self._vocabulary.size
+
