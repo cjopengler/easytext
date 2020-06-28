@@ -125,6 +125,9 @@ class Vocabulary:
         if token is None or token == "":
             raise RuntimeError(f"token:[{token}] 非法!")
 
+        if not isinstance(token, str):
+            raise RuntimeError(f"token 类型: {type(token)} 不是 str")
+
         if self.unk is None or self.unk == "":
             # 当 unk invalidate 的时候, 说明这里没有 unk, 那么直接返回；
             # 如果 token  有异常，那么，返回错误即可

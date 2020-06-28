@@ -291,8 +291,6 @@ class Trainer:
                 outputs = self._model(**batch_inputs)
                 batch_loss: torch.Tensor = self._loss(outputs, labels)
 
-                logging.info(f"batch loss: {batch_loss}")
-
                 if phrase == Trainer._TRAIN:
                     self._optimizer.zero_grad()
                     batch_loss.backward()
@@ -302,7 +300,9 @@ class Trainer:
                 total_num += batch_size
 
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
-                logging.info(f"batch metrics: {json2str(batch_metrics)}, target metric: {json2str(target_metric)}")
+                logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
+                             f"batch metrics: {json2str(batch_metrics)}, "
+                             f"target metric: {json2str(target_metric)}")
 
         # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有一般要再除以一次了
         return total_loss

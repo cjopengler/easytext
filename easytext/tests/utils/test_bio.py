@@ -248,3 +248,23 @@ def test_span_intersection():
 
     expect = []
     ASSERT.assertListEqual(expect, intersetction)
+
+
+def test_ibo1_to_bio():
+    """
+    测试 ibo1 转换到 bio
+    :return:
+    """
+    ibo1 = ["I-L1", "I-L1", "O",
+            "I-L1", "I-L2", "O",
+            "I-L1", "I-L1", "I-L1", "B-L1", "I-L1", "O",
+            "B-L1", "I-L1", "O"]
+
+    expect_bio = ["B-L1", "I-L1", "O",
+                  "B-L1", "B-L2", "O",
+                  "B-L1", "I-L1", "I-L1", "B-L1", "I-L1", "O",
+                  "B-L1", "I-L1", "O"]
+
+    bio_sequnce = BIO.ibo1_to_bio(ibo1)
+
+    ASSERT.assertListEqual(expect_bio, bio_sequnce)
