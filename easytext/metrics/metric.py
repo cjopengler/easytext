@@ -24,13 +24,13 @@ class Metric:
     Metrics
     """
 
-    def __call__(self, predictions: torch.Tensor,
+    def __call__(self, prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,
                  mask: torch.LongTensor) -> Dict:
         """
         返回metric的结果, 依然来说，因为 model_outputs 是一个bath产生的结果，
         所以这里返回的是一个 batch 的 metric 结果。
-        :param predictions: 预测的结果, 一般是 logits
+        :param prediction_labels: 预测的label 结果，一般是 label index，这与 gold_labels 是一致的
         :param gold_labels: 正确的结果
         :param mask: prediction 的 mask. 这里的 mask 类型是 Long, 不是 bool.
         :return:

@@ -78,10 +78,13 @@ def test_decode_one_sequence_logits_to_label():
     ASSERT.assertEqual(2, o_index)
 
     for sequence_logits, expect in zip(sequence_logits_list, expect_list):
-        sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
-                                                                 vocabulary=vocabulary)
+        sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(
+            sequence_logits=sequence_logits,
+            vocabulary=vocabulary)
 
         ASSERT.assertListEqual(sequence_label, expect)
+        expect_indices = [vocabulary.index(label) for label in expect]
+        ASSERT.assertListEqual(sequence_label_indices, expect_indices)
 
 
 def test_decode_one_sequence_logits_to_label_abnormal():
@@ -105,22 +108,24 @@ def test_decode_one_sequence_logits_to_label_abnormal():
     o_index = vocabulary.index("O")
     ASSERT.assertEqual(2, o_index)
 
-    sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
+    sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
                                                              vocabulary=vocabulary)
 
     expect = ["O", "B-T", "I-T"]
-
-    ASSERT.assertListEqual(sequence_label, expect)
+    expect_indices = [vocabulary.index(label) for label in expect]
+    ASSERT.assertListEqual(expect, sequence_label)
+    ASSERT.assertListEqual(expect_indices, sequence_label_indices)
 
     # argmax 解码是 I I I 经过修订后是: O O B
     sequence_logits = torch.tensor([[0.2, 0.5, 0.4], [0.2, 0.9, 0.3], [0.2, 0.3, 0.1]],
                                    dtype=torch.float)
 
-    sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
+    sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
                                                              vocabulary=vocabulary)
     expect = ["O", "O", "B-T"]
-
-    ASSERT.assertListEqual(sequence_label, expect)
+    expect_indices = [vocabulary.index(label) for label in expect]
+    ASSERT.assertListEqual(expect, sequence_label)
+    ASSERT.assertListEqual(expect_indices, sequence_label_indices)
 
 
 def test_decode_one_sequence_label_to_span():
@@ -268,3 +273,54 @@ def test_ibo1_to_bio():
     bio_sequnce = BIO.ibo1_to_bio(ibo1)
 
     ASSERT.assertListEqual(expect_bio, bio_sequnce)
+
+
+def test_allowed_transitions():
+    """
+    测试允许转移mask pair
+    :return:
+    """
+
+    label_vocabulary = LabelVocabulary(labels=[["B-L1", "I-L1", "B-L2", "I-L2", "O"]],
+                                       padding=LabelVocabulary.PADDING)
+
+    allowed_pairs = BIO.allowed_transitions(label_vocabulary=label_vocabulary)
+
+    for from_idx, to_idx in allowed_pairs:
+
+        if from_idx == label_vocabulary.label_size:
+            from_label = "START"
+        else:
+            from_label = label_vocabulary.token(from_idx)
+
+        if to_idx == label_vocabulary.label_size + 1:
+            to_label = "STOP"
+        else:
+            to_label = label_vocabulary.token(to_idx)
+        print(f"(\"{from_label}\", \"{to_label}\"),")
+
+    expect_trainsition_labels = [
+        ("B-L1", "B-L1"), ("B-L1", "I-L1"), ("B-L1", "B-L2"), ("B-L1", "O"), ("B-L1", "STOP"),
+        ("I-L1", "B-L1"), ("I-L1", "I-L1"), ("I-L1", "B-L2"), ("I-L1", "O"), ("I-L1", "STOP"),
+        ("B-L2", "B-L1"), ("B-L2", "B-L2"), ("B-L2", "I-L2"), ("B-L2", "O"), ("B-L2", "STOP"),
+        ("I-L2", "B-L1"), ("I-L2", "B-L2"), ("I-L2", "I-L2"), ("I-L2", "O"), ("I-L2", "STOP"),
+        ("O", "B-L1"), ("O", "B-L2"), ("O", "O"), ("O", "STOP"),
+        ("START", "B-L1"), ("START", "B-L2"), ("START", "O")]
+
+
+    expect = list()
+
+    for from_label, to_label in expect_trainsition_labels:
+        if from_label == "START":
+            from_idx = label_vocabulary.label_size
+        else:
+            from_idx = label_vocabulary.index(from_label)
+
+        if to_label == "STOP":
+            to_idx = label_vocabulary.label_size + 1
+        else:
+            to_idx = label_vocabulary.index(to_label)
+
+        expect.append((from_idx, to_idx))
+
+    ASSERT.assertSetEqual(set(expect), set(allowed_pairs))

@@ -12,7 +12,7 @@ Date:    2020/06/27 21:48:00
 """
 import os
 import logging
-from typing import Dict
+from typing import Dict, Union
 import shutil
 
 import torch
@@ -23,16 +23,20 @@ from torch.utils.data import Dataset
 from easytext.trainer import ConfigFactory
 from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
+from easytext.data import GloveLoader
 from easytext.utils import log_util
 
 from ner import ROOT_PATH
-from ner.models import NerV1
+from ner.models import NerV1, NerV2, NerV3
 from ner.data.dataset import Conll2003Dataset
 from ner.data import VocabularyCollate
 from ner.data import NerModelCollate
 from ner.loss import NerLoss
+from ner.loss import NerCRFLoss
 from ner.metrics import NerModelMetricAdapter
 from ner.optimizer import NerOptimizerFactory
+from ner.label_decoder import NerMaxModelLabelDecoder
+from ner.label_decoder import NerCRFModelLabelDecoder
 
 
 class NerConfigFactory(ConfigFactory):
@@ -40,12 +44,14 @@ class NerConfigFactory(ConfigFactory):
     Ner Config Factory 子类
     """
 
-    def __init__(self, debug: bool = True):
+    def __init__(self, model_name: str, debug: bool = True):
         """
         初始化
+        :param model_name: 模型名字, 不同的模型名字配置不同
         :param debug: True: debug 模型; False: 非debug模型
         """
         self.debug = debug
+        self.model_name = model_name
 
     def create(self) -> Dict:
         """
@@ -71,20 +77,43 @@ class NerConfigFactory(ConfigFactory):
 
         config["validation_dataset_file_path"] = validation_dataset_file_path
 
-        serialize_dir = "data/ner/conll2003_nerv1/train"
+        serialize_dir = f"data/ner/conll2003_{self.model_name}/train"
         serialize_dir = os.path.join(ROOT_PATH, serialize_dir)
         config["serialize_dir"] = serialize_dir
         config["patient"] = 20
         config["num_check_point_keep"] = 10
 
         config["num_epoch"] = 100
+        config["model_name"] = self.model_name
 
-        model_config = {
-            "word_embedding_dim": 100,  # glove 100d
-            "hidden_size": 200,
-            "num_layer": 2,
-            "dropout": 0.4
-        }
+        pretrained_word_embedding_file_path = "data/pretrained/glove/glove.6B.100d.txt"
+
+        config["pretrained_word_embedding_file_path"] = os.path.join(ROOT_PATH,
+                                                                     pretrained_word_embedding_file_path)
+
+        if self.model_name == ModelName.NER_V1:
+            model_config = {
+                "word_embedding_dim": 100,
+                "hidden_size": 200,
+                "num_layer": 2,
+                "dropout": 0.4
+            }
+        elif self.model_name == ModelName.NER_V2:
+            model_config = {
+                "word_embedding_dim": 100,  # glove 6B 100d
+                "hidden_size": 200,
+                "num_layer": 2,
+                "dropout": 0.4
+            }
+        elif self.model_name == ModelName.NER_V3:
+            model_config = {
+                "word_embedding_dim": 100,  # glove 6B 100d
+                "hidden_size": 200,
+                "num_layer": 2,
+                "dropout": 0.4
+            }
+        else:
+            raise RuntimeError(f"无效的 model name: {self.model_name}")
 
         config["model"] = model_config
 
@@ -100,12 +129,14 @@ class Train:
     NEW_TRAIN = 0  # 全新训练
     RECOVERY_TRAIN = 1  # 恢复训练
 
-    def __init__(self, train_type: int):
+    def __init__(self, train_type: int, config: Dict):
         """
         初始化
         :param train_model: 训练类型 NEW_TRAIN: 全新训练, RECOVERY_TRAIN: 恢复训练
+        :param config: 配置参数
         """
         self._train_type = train_type
+        self.config = config
 
     def build_vocabulary(self, dataset: Dataset):
 
@@ -125,13 +156,85 @@ class Train:
                                       padding=Vocabulary.PADDING,
                                       unk=Vocabulary.UNK,
                                       special_first=True)
+        model_name = self.config["model_name"]
+
+        if model_name in {ModelName.NER_V2, ModelName.NER_V3}:
+            pretrained_word_embedding_file_path = self.config["pretrained_word_embedding_file_path"]
+            glove_loader = GloveLoader(embedding_dim=100,
+                                       pretrained_file_path=pretrained_word_embedding_file_path)
+
+            token_vocabulary = PretrainedVocabulary(vocabulary=token_vocabulary,
+                                                    pretrained_word_embedding_loader=glove_loader)
 
         label_vocabulary = LabelVocabulary(labels=batch_sequence_labels,
                                            padding=LabelVocabulary.PADDING)
+
         return {"token_vocabulary": token_vocabulary,
                 "label_vocabulary": label_vocabulary}
 
-    def __call__(self, config: Dict):
+    def build_model(self,
+                    token_vocabulary: Union[Vocabulary, PretrainedVocabulary],
+                    label_vocabulary: LabelVocabulary):
+        model_name = config["model_name"]
+
+        model_config = config["model"]
+
+        if model_name == ModelName.NER_V1:
+            model = NerV1(token_vocabulary=token_vocabulary,
+                          label_vocabulary=label_vocabulary,
+                          word_embedding_dim=model_config["word_embedding_dim"],
+                          hidden_size=model_config["hidden_size"],
+                          num_layer=model_config["num_layer"],
+                          dropout=model_config["dropout"])
+        elif model_name == ModelName.NER_V2:
+            model = NerV2(token_vocabulary=token_vocabulary,
+                          label_vocabulary=label_vocabulary,
+                          word_embedding_dim=model_config["word_embedding_dim"],
+                          hidden_size=model_config["hidden_size"],
+                          num_layer=model_config["num_layer"],
+                          dropout=model_config["dropout"])
+        elif model_name == ModelName.NER_V3:
+            model = NerV3(token_vocabulary=token_vocabulary,
+                          label_vocabulary=label_vocabulary,
+                          word_embedding_dim=model_config["word_embedding_dim"],
+                          hidden_size=model_config["hidden_size"],
+                          num_layer=model_config["num_layer"],
+                          dropout=model_config["dropout"])
+
+        return model
+
+    def build_loss(self):
+        model_name = config["model_name"]
+
+        if model_name == ModelName.NER_V1:
+            loss = NerLoss()
+        elif model_name == ModelName.NER_V2:
+            loss = NerLoss()
+        elif model_name == ModelName.NER_V3:
+            loss = NerCRFLoss()
+
+        return loss
+
+    def build_model_metric(self, label_vocabulary: LabelVocabulary):
+        model_name = config["model_name"]
+
+        if model_name == ModelName.NER_V1:
+            metric = NerModelMetricAdapter(label_vocabulary=label_vocabulary,
+                                           model_label_decoder=NerMaxModelLabelDecoder(
+                                               label_vocabulary=label_vocabulary))
+        elif model_name == ModelName.NER_V2:
+            metric = NerModelMetricAdapter(label_vocabulary=label_vocabulary,
+                                           model_label_decoder=NerMaxModelLabelDecoder(
+                                               label_vocabulary=label_vocabulary))
+        elif model_name == ModelName.NER_V3:
+            metric = NerModelMetricAdapter(label_vocabulary=label_vocabulary,
+                                           model_label_decoder=NerCRFModelLabelDecoder(
+                                               label_vocabulary=label_vocabulary))
+
+        return metric
+
+    def __call__(self):
+        config = self.config
         serialize_dir = config["serialize_dir"]
 
         if self._train_type == Train.NEW_TRAIN:
@@ -152,17 +255,12 @@ class Train:
         token_vocabulary = vocab_dict["token_vocabulary"]
         label_vocabulary = vocab_dict["label_vocabulary"]
 
-        model_config = config["model"]
+        model = self.build_model(token_vocabulary=token_vocabulary,
+                                 label_vocabulary=label_vocabulary)
 
-        model = NerV1(token_vocabulary=token_vocabulary,
-                      label_vocabulary=label_vocabulary,
-                      word_embedding_dim=model_config["word_embedding_dim"],
-                      hidden_size=model_config["hidden_size"],
-                      num_layer=model_config["num_layer"],
-                      dropout=model_config["dropout"])
+        loss = self.build_loss()
 
-        loss = NerLoss()
-        metric = NerModelMetricAdapter(label_vocabulary=label_vocabulary)
+        metric = self.build_model_metric(label_vocabulary=label_vocabulary)
 
         cuda = config["cuda"]
 
@@ -203,8 +301,18 @@ class Train:
                       validation_data_loader=validation_data_loader)
 
 
+class ModelName:
+    """
+    模型名字定义
+    """
+
+    NER_V1 = "ner_v1"  # bilstm
+    NER_V2 = "ner_v2"  # bilstm + glove.6b.100d
+    NER_V3 = "ner_v3"  # bilstm + glove.6b.100d + crf
+
+
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config = NerConfigFactory(debug=False).create()
-    Train(train_type=Train.NEW_TRAIN)(config=config)
+    config = NerConfigFactory(debug=True, model_name=ModelName.NER_V2).create()
+    Train(train_type=Train.NEW_TRAIN, config=config)()

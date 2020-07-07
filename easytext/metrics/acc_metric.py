@@ -29,16 +29,23 @@ class AccMetric(Metric):
         self._num_true = 0
         self._num_total = 0
 
-    def __call__(self, predictions: torch.Tensor, gold_labels: torch.Tensor, mask: torch.LongTensor) -> Dict:
+    def __call__(self,
+                 prediction_labels: torch.Tensor,
+                 gold_labels: torch.Tensor, mask: torch.LongTensor) -> Dict:
+        """
+        Acc metric 计算
+        :param prediction_labels: 预测的标签
+        :param gold_labels: gold 标签
+        :param mask:
+        :return:
+        """
 
         if mask is not None:
             raise RuntimeError("对于 Acc 来说, mask 应该为 None")
 
-        predictions, gold_labels = predictions.detach().cpu(), gold_labels.detach().cpu()
+        prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
-        predict_labels = torch.argmax(predictions, dim=-1)
-
-        num_true = (predict_labels == gold_labels).sum().item()
+        num_true = (prediction_labels == gold_labels).sum().item()
         num_total = gold_labels.size(0)
 
         self._num_true += num_true

@@ -37,6 +37,18 @@ def test_span_f1_measure():
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.1]],
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.5]]],
                                          dtype=torch.float)
+
+    batch_sequence_labels = [["O", "B-T", "I-T"],
+                             ["B-T", "B-T", "I-T"],
+                             ["B-T", "I-T", "I-T"],
+                             ["B-T", "I-T", "O"]]
+    sequence_label_indices = list()
+
+    for sequence_label in batch_sequence_labels:
+        sequence_label_indices.append([VOCAB.index(label) for label in sequence_label])
+
+    sequence_label_indices = torch.tensor(sequence_label_indices, dtype=torch.long)
+
     gold = torch.tensor([
         [2, 0, 1],
         [0, 0, 1],
@@ -46,7 +58,7 @@ def test_span_f1_measure():
 
     f1 = SpanF1Metric(label_vocabulary=VOCAB)
 
-    f1(predictions=batch_sequence_logits, gold_labels=gold, mask=None)
+    f1(prediction_labels=sequence_label_indices, gold_labels=gold, mask=None)
 
     metrics = f1.metric
 
@@ -67,6 +79,18 @@ def test_span_f1_measure_with_mask():
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.1]],
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.5]]],
                                          dtype=torch.float)
+
+    batch_sequence_labels = [["O", "B-T", "I-T"],
+                             ["B-T", "B-T", "I-T"],
+                             ["B-T", "I-T", "I-T"],
+                             ["B-T", "I-T", "O"]]
+    sequence_label_indices = list()
+
+    for sequence_label in batch_sequence_labels:
+        sequence_label_indices.append([VOCAB.index(label) for label in sequence_label])
+
+    sequence_label_indices = torch.tensor(sequence_label_indices, dtype=torch.long)
+
     gold = torch.tensor([
         [2, 0, 1],
         [0, 0, 1],
@@ -83,7 +107,7 @@ def test_span_f1_measure_with_mask():
         [1, 1, 1]
     ], dtype=torch.long)
 
-    f1(predictions=batch_sequence_logits, gold_labels=gold, mask=mask)
+    f1(prediction_labels=sequence_label_indices, gold_labels=gold, mask=mask)
 
     metrics = f1.metric
 
@@ -104,6 +128,18 @@ def test_span_f1_measure_part_match():
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.1]],
                                           [[0.8, 0.3, 0.4], [0.1, 0.7, 0.3], [0.2, 0.3, 0.5]]],
                                          dtype=torch.float)
+
+    batch_sequence_labels = [["O", "B-T", "I-T"],
+                             ["B-T", "B-T", "I-T"],
+                             ["B-T", "I-T", "I-T"],
+                             ["B-T", "I-T", "O"]]
+    sequence_label_indices = list()
+
+    for sequence_label in batch_sequence_labels:
+        sequence_label_indices.append([VOCAB.index(label) for label in sequence_label])
+
+    sequence_label_indices = torch.tensor(sequence_label_indices, dtype=torch.long)
+
     gold = torch.tensor([
         [2, 0, 0],
         [0, 0, 1],
@@ -113,7 +149,7 @@ def test_span_f1_measure_part_match():
 
     f1 = SpanF1Metric(label_vocabulary=VOCAB)
 
-    f1(predictions=batch_sequence_logits, gold_labels=gold, mask=None)
+    f1(prediction_labels=sequence_label_indices, gold_labels=gold, mask=None)
 
     metrics = f1.metric
 

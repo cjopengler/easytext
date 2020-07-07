@@ -26,12 +26,12 @@ from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
 from .ner_model_outputs import NerModelOutputs
 
 
-class NerV1(Model):
+class NerV2(Model):
     """
     Ner v1 版本，仅仅使用 bilstm
     """
 
-    DESTCRIPTION = "bilstm"
+    DESTCRIPTION = "glove.6B.100d + bilstm"
 
     def __init__(self,
                  token_vocabulary: Union[Vocabulary, PretrainedVocabulary],

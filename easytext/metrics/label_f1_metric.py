@@ -50,13 +50,13 @@ class LabelF1Metric(F1Metric):
             self._label_indices = labels
 
     def __call__(self,
-                 predictions: torch.Tensor,
+                 prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,
                  mask: torch.LongTensor) -> Dict[str, float]:
         """
         计算 metric.
 
-        :param predictions: 预测结果 shape: (B,), 这是模型解码成label的结果，注意是 label，不是 logits
+        :param prediction_labels: 预测结果 shape: (B,), 这是模型解码成label的结果，注意是 label，不是 logits
         :param gold_labels: 实际结果 shape: (B,)
         :param mask: mask, shape: (B,)
         :return 每一个label的f1值。这包括 precision, recall, f1。具体结果类似:
@@ -72,19 +72,19 @@ class LabelF1Metric(F1Metric):
          这是有必要的，作为一个综合的值作为统一衡量。
         """
 
-        assert predictions.dim() == 1, "predictions shape 是 (B,)"
+        assert prediction_labels.dim() == 1, "predictions shape 是 (B,)"
         assert gold_labels.dim() == 1, "gold_labels shape 是 (B,)"
 
         if mask is not None:
             assert mask.dim() == 1, "mask shape 是 (B,)"
 
         # 转换到 cpu 进行计算
-        predictions, gold_labels = predictions.detach().cpu(), gold_labels.detach().cpu()
+        prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
         if mask is not None:
             bool_mask = mask.detach().cpu().bool()
 
-            predictions = predictions.masked_select(bool_mask)
+            prediction_labels = prediction_labels.masked_select(bool_mask)
             gold_labels = gold_labels.masked_select(bool_mask)
 
         # 当前 batch 下的 true_positives
@@ -93,12 +93,12 @@ class LabelF1Metric(F1Metric):
         false_negatives = defaultdict(int)
 
         for label, label_index in zip(self._labels, self._label_indices):
-            num_prediction = (predictions == label_index).sum().item()
+            num_prediction = (prediction_labels == label_index).sum().item()
             num_golden = (gold_labels == label_index).sum().item()
 
             # 计算 true positives
-            label_mask = (predictions == label_index)
-            label_predictions = predictions.masked_select(label_mask)
+            label_mask = (prediction_labels == label_index)
+            label_predictions = prediction_labels.masked_select(label_mask)
             label_gold = gold_labels.masked_select(label_mask)
 
             true_positives[label] = (label_predictions == label_gold).sum().item()

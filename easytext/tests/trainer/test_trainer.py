@@ -20,7 +20,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
-from easytext.data import Instance
+from easytext.data import Instance, LabelVocabulary
 from easytext.data.model_collate import ModelInputs
 from easytext.data.model_collate import ModelCollate
 from easytext.model import Model
@@ -31,6 +31,8 @@ from easytext.trainer import Trainer
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
 from easytext.utils.json_util import json2str
+from easytext.label_decoder import ModelLabelDecoder
+from easytext.label_decoder import MaxLabelIndexDecoder
 
 from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
@@ -107,15 +109,31 @@ class _DemoOutputs(ModelOutputs):
         super().__init__(logits=logits)
 
 
+class _DemoLabelDecoder(ModelLabelDecoder):
+
+    def __init__(self):
+        super().__init__()
+        self._label_index_decoder = MaxLabelIndexDecoder()
+
+    def decode_label_index(self, model_outputs: ModelOutputs) -> torch.LongTensor:
+        model_outputs: _DemoOutputs = model_outputs
+        return self._label_index_decoder(model_outputs.logits)
+
+    def decode_label(self, model_outputs: ModelOutputs, label_indices: torch.LongTensor) -> List:
+        return [label_index.item() for label_index in label_indices]
+
+
 class _DemoMetric(ModelMetricAdapter):
 
     def __init__(self):
         super().__init__()
         self._acc = AccMetric()
+        self._label_decoder = _DemoLabelDecoder()
 
     def __call__(self, model_outputs: _DemoOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
         model_outputs: _DemoOutputs = model_outputs
-        acc = self._acc(model_outputs.logits, gold_labels=golden_labels, mask=None)
+        label_indices = self._label_decoder.decode_label_index(model_outputs=model_outputs)
+        acc = self._acc(prediction_labels=label_indices, gold_labels=golden_labels, mask=None)
 
         target = ModelTargetMetric(AccMetric.ACC, acc[AccMetric.ACC])
         return acc, target

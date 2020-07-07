@@ -47,7 +47,7 @@ class F1Metric(Metric):
         self._false_negatives: Dict[str, int] = defaultdict(int)
 
     def __call__(self,
-                 predictions: torch.Tensor,
+                 prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,
                  mask: torch.LongTensor) -> Dict:
         """
@@ -62,7 +62,7 @@ class F1Metric(Metric):
 
          其中的 [tag] 是 实际返回的tag
 
-        :param predictions: 预测的结果, shape: (B, SeqLen, num_label)
+        :param prediction_labels: 预测的结果, shape: (B, SeqLen)
         :param gold_labels: 实际的结果, shape: (B, SeqLen)
         :param mask: 对 predictions 和 gold label 的 mask, shape: (B, SeqLen)
         :return: 当前的 metric 计算字典结果.

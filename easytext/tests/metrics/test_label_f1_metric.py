@@ -35,7 +35,7 @@ def test_label_f1_metric():
     labels = [0, 1, 2, 3, 4]
     f1_metric = LabelF1Metric(labels=labels, label_vocabulary=None)
 
-    metrics = f1_metric(predictions=predictions, gold_labels=gold_labels, mask=None)
+    metrics = f1_metric(prediction_labels=predictions, gold_labels=gold_labels, mask=None)
 
     logging.debug(json2str(metrics))
 
@@ -64,7 +64,7 @@ def test_label_f1_metric():
     predictions = torch.tensor([0, 2])
     gold_labels = torch.tensor([0, 1])
 
-    f1_metric(predictions=predictions, gold_labels=gold_labels, mask=None)
+    f1_metric(prediction_labels=predictions, gold_labels=gold_labels, mask=None)
 
     precision_0 = f1_metric.metric[f"{LabelF1Metric.PRECISION}-0"]
     recall_0 = f1_metric.metric[f"{LabelF1Metric.RECALL}-0"]
@@ -90,7 +90,7 @@ def test_label_f1_metric_with_mask():
     labels = [0, 1, 2, 3]
     f1_metric = LabelF1Metric(labels=labels, label_vocabulary=None)
 
-    metrics = f1_metric(predictions=predictions, gold_labels=gold_labels, mask=mask)
+    metrics = f1_metric(prediction_labels=predictions, gold_labels=gold_labels, mask=mask)
 
     logging.debug(json2str(metrics))
 

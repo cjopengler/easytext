@@ -45,7 +45,7 @@ class SpanF1Metric(F1Metric):
         return "BIO"
 
     def __call__(self,
-                 predictions: torch.Tensor,
+                 prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,
                  mask: torch.Tensor) -> Dict:
         """
@@ -60,14 +60,14 @@ class SpanF1Metric(F1Metric):
 
          其中的 [tag] 是 span 的 tag, 也就是 "B-[tag]" 中的 "[tag]"
 
-        :param predictions: 预测的结果, shape: (B, SeqLen, num_label)
+        :param prediction_labels: 预测的结果, shape: (B, SeqLen)
         :param gold_labels: 实际的结果, shape: (B, SeqLen)
         :param mask: 对 predictions 和 gold label 的 mask, shape: (B, SeqLen)
         :return: 当前的 metric 计算字典结果.
         """
 
-        if predictions.dim() != 3:
-            raise RuntimeError(f"predictions shape 应该是: (B, SeqLen, num_label), 现在是:{predictions.size()}")
+        if prediction_labels.dim() != 2:
+            raise RuntimeError(f"prediction_labels shape 应该是: (B, SeqLen), 现在是:{prediction_labels.size()}")
         if gold_labels.dim() != 2:
             raise RuntimeError(f"gold_labels shape 应该是: (B, SeqLen), 现在是:{gold_labels.size()}")
 
@@ -75,26 +75,34 @@ class SpanF1Metric(F1Metric):
             if mask.dim() != 2:
                 raise RuntimeError(f"mask shape 应该是: (B, SeqLen), 现在是:{mask.size()}")
 
+
+
         # 转换到 cpu 进行计算
-        predictions, gold_labels = predictions.detach().cpu(), gold_labels.detach().cpu()
+        prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
         if mask is not None:
             mask = mask.detach().cpu()
         else:
-            mask = torch.ones(size=(predictions.size(0), predictions.size(1)),
+            mask = torch.ones(size=(prediction_labels.size(0), prediction_labels.size(1)),
                               dtype=torch.long).cpu()
+
+        assert prediction_labels.size() == gold_labels.size(), \
+            f"prediction_labels.size: {prediction_labels.size()} 与 gold_labels.size: {gold_labels.size()} 不匹配!"
+
+        assert prediction_labels.size() == mask.size(), \
+            f"prediction_labels.size: {prediction_labels.size()} 与 mask.size: {mask.size()} 不匹配!"
 
         bool_mask = (mask != 0)
 
-        num_classes = predictions.size(-1)
+        num_classes = self.label_vocabulary.label_size
 
         if (torch.masked_select(gold_labels, bool_mask) >= num_classes).any():
             raise RuntimeError(f"gold_labels 中存在比 num_classes 大的数值")
 
         # 将预测的结果 decode 成 span list
-        prediction_spans_list = BIO.decode(batch_sequence_logits=predictions,
-                                           mask=mask,
-                                           vocabulary=self.label_vocabulary)
+        prediction_spans_list = BIO.decode_label_index_to_span(batch_sequence_label_index=prediction_labels,
+                                                               mask=mask,
+                                                               vocabulary=self.label_vocabulary)
 
         # 将gold label index decode 成 span  list
         gold_spans_list = BIO.decode_label_index_to_span(batch_sequence_label_index=gold_labels,

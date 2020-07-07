@@ -12,8 +12,7 @@ Date:    2020/05/13 17:07:00
 """
 
 import logging
-from typing import List, Dict
-
+from typing import List, Dict, Tuple
 
 import torch
 from easytext.data import LabelVocabulary
@@ -35,13 +34,14 @@ def fill(sequence_label: List[str], begin_index: int, end_index: int, tag: str) 
     sequence_label[begin_index] = f"B-{tag}"
 
 
-def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabulary: LabelVocabulary) -> List[str]:
+def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor,
+                                        vocabulary: LabelVocabulary) -> Tuple[List[str], List[int]]:
     """
     对 输出 sequence logits 进行解码, 是仅仅一个 sequence 进行解码，而不是 batch sequence 进行解码。
     batch sequence 解码需要进行循环
     :param sequence_logits: shape: (seq_len, label_num),
     是 mask 之后的有效 sequence，而不是包含 mask 的 sequecne logits.
-    :return: sequence label, B, I, O 的list
+    :return: sequence label, B, I, O 的list 以及 label 对应的 index list
     """
 
     if len(sequence_logits.shape) != 2:
@@ -57,6 +57,7 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
     sorted_sequence_indices = torch.argsort(sequence_logits, dim=-1, descending=True)
 
     sequence_label = list()
+    sequence_label_indices = list()
 
     for i in range(sequence_length):
 
@@ -72,10 +73,12 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
                 if label[0] == "O":
 
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = idel_state
                     break
                 elif label[0] == "B":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 else:
@@ -89,14 +92,17 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
 
                 if label[0] == "B":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 elif label[0] == "O":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = idel_state
                     break
                 elif label[0] == "I":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 else:
@@ -104,7 +110,7 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
         else:
             raise RuntimeError(f"state is error: {state}")
 
-    return sequence_label
+    return sequence_label, sequence_label_indices
 
 
 def decode_one_sequence_label_to_span(sequence_label: List[str]) -> List[Dict]:
@@ -199,7 +205,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
     if (mask is not None) and (mask.dim() != 2):
         raise RuntimeError(f"mask shape 错误, 应该是 (B, seq_len), "
-                           f"而现在是 {batch_sequence_logits.shape}")
+                           f"而现在是 {mask.shape}")
 
     batch = batch_sequence_logits.size(0)
 
@@ -212,7 +218,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
     spans = list()
     for i in range(batch):
-        sequence_label = decode_one_sequence_logits_to_label(
+        sequence_label, _ = decode_one_sequence_logits_to_label(
             sequence_logits=batch_sequence_logits[i, :sequence_length[i]],
             vocabulary=vocabulary)
         sequence_span = decode_one_sequence_label_to_span(sequence_label)
@@ -222,7 +228,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
 
 def decode_label_index_to_span(batch_sequence_label_index: torch.Tensor,
-                               mask: torch.LongTensor,
+                               mask: torch.ByteTensor,
                                vocabulary: LabelVocabulary) -> List[List[Dict]]:
     """
     将 label index 解码 成span
@@ -342,3 +348,80 @@ def ibo1_to_bio(sequence_label: List[str]) -> List[str]:
 
     return bio
 
+
+def allowed_transitions(label_vocabulary: LabelVocabulary) -> List[Tuple[int, int]]:
+    """
+    给定 label 字典，计算 IBO schema 下的 转移矩阵 mask. 因为在 BIO 下面，比如 ["O", "I-Per"]
+    或者 ["B-Per", "I-Loc"], 这些转移是不被允许的。该函数，计算mask. 对于允许的转移返回
+    pair, (from_label_id, to_label_id)
+
+    这里要特别注意的是: 返回的 allowed pair, 是带有 START 和 STOP的。他们的 index 分别是:
+    label_vocabulary.label_size, label_vocabulary.label_size+1
+
+    注意 label_vocabulary.padding_index 也是 label_vocabulary.label_size。虽然是一样的，
+    但是因为 START 是用在转移矩阵这个特定场景下，所以不会产生冲突。
+
+    :param label_vocabulary: label 词汇表
+    :return: 所有被允许转移的 (from_label_id, to_label_id) pair 对列表。
+    """
+
+    num_labels = label_vocabulary.label_size
+    start_index = num_labels
+    end_index = num_labels + 1
+
+    labels = [(i, label_vocabulary.token(i)) for i in range(label_vocabulary.label_size)]
+    labels_with_boundaries = labels + [(start_index, "START"), (end_index, "END")]
+
+    allowed = []
+    for from_label_index, from_label in labels_with_boundaries:
+        if from_label in ("START", "END"):
+            from_tag = from_label
+            from_entity = ""
+        else:
+            from_tag = from_label[0]
+            from_entity = from_label[1:]
+        for to_label_index, to_label in labels_with_boundaries:
+            if to_label in ("START", "END"):
+                to_tag = to_label
+                to_entity = ""
+            else:
+                to_tag = to_label[0]
+                to_entity = to_label[1:]
+            if _is_transition_allowed(from_tag, from_entity, to_tag, to_entity):
+                allowed.append((from_label_index, to_label_index))
+    return allowed
+
+
+def _is_transition_allowed(from_tag: str,
+                           from_entity: str,
+                           to_tag: str,
+                           to_entity: str):
+    """
+    BIO 是否被允许转移。比如: "B-Per" "I-Per" 这是被允许的; 而 "B-Per" "I-Loc" 或者 "O", "I-Per" 这是不被允许的
+    :param from_tag: The tag that the transition originates from. For example, if the
+        label is ``I-PER``, the ``from_tag`` is ``I``.
+    :param from_entity: The entity corresponding to the ``from_tag``. For example, if the
+        label is ``I-PER``, the ``from_entity`` is ``PER``.
+    :param to_tag: The tag that the transition leads to. For example, if the
+        label is ``I-PER``, the ``to_tag`` is ``I``.
+    :param to_entity: The entity corresponding to the ``to_tag``. For example, if the
+        label is ``I-PER``, the ``to_entity`` is ``PER``.
+    :return: True: 该转移是被允许的; False: 该转移是不被允许的。
+    """
+
+    if to_tag == "START" or from_tag == "END":
+        # Cannot transition into START or from END
+        return False
+
+    if from_tag == "START":
+        return to_tag in ('O', 'B')
+
+    if to_tag == "END":
+        return from_tag in ('O', 'B', 'I')
+
+    return any([
+        # Can always transition to O or B-x
+        to_tag in ('O', 'B'),
+        # Can only transition to I-x from B-x or I-x
+        to_tag == 'I' and from_tag in ('B', 'I') and from_entity == to_entity
+    ])

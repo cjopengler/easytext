@@ -5,13 +5,15 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-实体识别 v1 版本
-
-仅仅使用 bilstm
+使用 bilstm + crf
 
 Authors: PanXu
-Date:    2020/06/27 17:08:00
+Date:    2020/07/04 19:51:00
 """
+
+from easytext.modules import ConditionalRandomField
+
+
 import logging
 from typing import Union, Dict
 
@@ -22,16 +24,18 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from easytext.model import Model, ModelOutputs
 from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
+from easytext.modules import ConditionalRandomField
+from easytext.utils import bio as BIO
 
 from .ner_model_outputs import NerModelOutputs
 
 
-class NerV1(Model):
+class NerV3(Model):
     """
-    Ner v1 版本，仅仅使用 bilstm
+    Ner v3 版本，glove6B.100d + bilstm + crf
     """
 
-    DESTCRIPTION = "bilstm"
+    DESTCRIPTION = "glove6B.100d + bilstm + crf"
 
     def __init__(self,
                  token_vocabulary: Union[Vocabulary, PretrainedVocabulary],
@@ -67,6 +71,11 @@ class NerV1(Model):
 
         self.liner = Linear(in_features=hidden_size * 2,
                             out_features=label_vocabulary.label_size)
+
+        constraints = BIO.allowed_transitions(label_vocabulary=label_vocabulary)
+        self.crf = ConditionalRandomField(num_tags=label_vocabulary.label_size,
+                                          constraints=constraints)
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -116,6 +125,7 @@ class NerV1(Model):
         assert (batch_size, seq_len, self.label_vocabulary.label_size) == logits.size()
 
         model_outputs = NerModelOutputs(logits=logits,
-                                        mask=mask_long)
+                                        mask=mask_long,
+                                        crf=self.crf)
 
         return model_outputs

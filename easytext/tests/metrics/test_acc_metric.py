@@ -20,6 +20,7 @@ def test_acc_metric():
 
     # 对应的label是 [1, 1, 0, 1]
     logits = torch.tensor([[1., 2.], [3., 4.], [5, 4.], [3., 7.]], dtype=torch.float)
+    prediction_labels = torch.argmax(logits, dim=-1)
 
     golden_labels = torch.tensor([0, 1, 1, 0], dtype=torch.long)
 
@@ -27,17 +28,20 @@ def test_acc_metric():
 
     expect = 1/4
 
-    acc = acc_metric(predictions=logits, gold_labels=golden_labels, mask=None)
+    acc = acc_metric(prediction_labels=prediction_labels,
+                     gold_labels=golden_labels,
+                     mask=None)
 
     ASSERT.assertAlmostEqual(expect, acc[acc_metric.ACC])
     ASSERT.assertAlmostEqual(expect, acc_metric.metric[acc_metric.ACC])
 
     # 对应的label是 [0, 1, 0, 1]
     logits = torch.tensor([[3., 2.], [4., 6.], [5, 4.], [3., 7.]], dtype=torch.float)
+    prediction_labels = torch.argmax(logits, dim=-1)
 
     golden_labels = torch.tensor([0, 1, 1, 0], dtype=torch.long)
 
-    acc = acc_metric(predictions=logits, gold_labels=golden_labels, mask=None)
+    acc = acc_metric(prediction_labels=prediction_labels, gold_labels=golden_labels, mask=None)
 
     expect = 2 / 4
     ASSERT.assertAlmostEqual(expect, acc[acc_metric.ACC])

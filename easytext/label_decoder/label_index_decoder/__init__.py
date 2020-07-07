@@ -5,11 +5,8 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-loss
+brief
 
 Authors: PanXu
-Date:    2020/06/27 19:49:00
+Date:    2020/07/05 14:26:00
 """
-
-from .ner_loss import NerLoss
-from .ner_crf_loss import NerCRFLoss
