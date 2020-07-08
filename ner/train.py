@@ -314,5 +314,5 @@ class ModelName:
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config = NerConfigFactory(debug=True, model_name=ModelName.NER_V2).create()
+    config = NerConfigFactory(debug=True, model_name=ModelName.NER_V3).create()
     Train(train_type=Train.NEW_TRAIN, config=config)()
