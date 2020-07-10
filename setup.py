@@ -16,7 +16,7 @@ from setuptools import find_packages
 
 
 setup(
-    name="easytext",
+    name="easytext-nlp",
     version="0.0.1",
     author="Pan Xu",
     author_email="cjopengler@163.com",
@@ -37,7 +37,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         # Pick your license as you wish (should match "license" above)
-        'License :: MIT License',
+        'License :: OSI Approved :: MIT License',
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3.6',

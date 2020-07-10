@@ -1,6 +1,13 @@
 # easytext
 让自然语言模型训练更容易
 
+## 安装
+
+`pip install easytext-nlp`
+
+注意: pip repository 中存在一个 easytext，不是本项目，不要安装错了。
+也就是 `pip install easytext` 并非安装的是本项目。
+
 # event
 
 事件识别以及事件要素识别模型。
