@@ -14,16 +14,18 @@ Date:    2020/06/08 15:44:00
 from setuptools import setup
 from setuptools import find_packages
 
+
 setup(
     name="easytext",
-    version="0.0.0.2",
+    version="0.0.1",
     author="Pan Xu",
     author_email="cjopengler@163.com",
     description="Make it easy to train and metric NLP model.",
     url="https://github.com/cjopengler/easytext",
     license="MIT",
-    packages=find_packages(),   # 指定需要安装的模块
-    install_requires=["torch>=1.5.0"],
+    packages=find_packages(include=("easytext",)),   # 指定需要安装的模块
+    install_requires=["torch>=1.4.0"],
+    python_requires='>=3.6',
 
     classifiers=[
         # How mature is this project? Common values are
@@ -45,3 +47,4 @@ setup(
     ],
     zip_safe=False
 )
+
