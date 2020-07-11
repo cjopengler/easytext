@@ -49,5 +49,5 @@ class ModelLabelDecoder:
         :param model_outputs: 模型输出
         :return: 转化后的最终结果
         """
-        label_indices, max_values = self.decode_label_index(model_outputs=model_outputs)
+        label_indices = self.decode_label_index(model_outputs=model_outputs)
         return self.decode_label(model_outputs=model_outputs, label_indices=label_indices)
