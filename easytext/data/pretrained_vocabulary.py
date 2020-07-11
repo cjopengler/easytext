@@ -13,12 +13,12 @@ Date:    2020/06/23 11:49:00
 import os
 from typing import Iterable, List, Dict, Union
 import torch
-from .vocabulary import Vocabulary
+from .vocabulary import IVocabulary, Vocabulary
 
 from easytext.data.pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
 
 
-class PretrainedVocabulary:
+class PretrainedVocabulary(IVocabulary):
     """
     带有预训练词向量的词汇表。
     """

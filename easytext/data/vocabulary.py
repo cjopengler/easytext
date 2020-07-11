@@ -17,8 +17,12 @@ from typing import List, Dict, Iterable, Union
 from collections import Counter
 
 
-class Vocabulary:
+class IVocabulary:
+    """
+    词汇表的接口类
+    """
 
+    # 常量定义
     PADDING = "@@PADDING@@"
     UNK = "@@UNK@@"
 
@@ -26,6 +30,79 @@ class Vocabulary:
 
     _VOCABULARY_FILE_NAME = "vocabulary.txt"
     _CONFIG_JSON_FILE_NAME = "config.json"
+
+    def __len__(self):
+        raise NotImplementedError()
+
+    @property
+    def padding(self) -> str:
+        """
+        padding属性
+        :return: padding属性
+        """
+        raise NotImplementedError
+
+    @property
+    def unk(self):
+        """
+        unk 属性
+        :return: unk 属性
+        """
+        raise NotImplementedError
+
+    @property
+    def padding_index(self) -> Union[None, int]:
+        """
+        :return: 获取 padding 的 index, 如果 padding 没有设置，那么返回 None; 否则，返回实际的index.
+        """
+        raise NotImplementedError()
+
+    def index(self, token: str) -> int:
+        """
+        获取token的index
+        :param token: 输入的token
+        :return: token 的 index
+        """
+        raise NotImplementedError()
+
+    def token(self, index: int) -> str:
+        """
+        获取 index 的 token
+        :param index: 指定 index
+        :return: 当前 index 的 token
+        """
+        raise NotImplementedError()
+
+    @property
+    def size(self):
+        raise NotImplementedError()
+
+    def save_to_file(self, directory: str) -> "Vocabulary":
+        """
+        保存到指定路径中，会在下面生成两个文件，分别是:
+        * vocabulary.txt - 保留全部的字典信息
+        * config.json - 保留一些配置信息，比如 padding, unk 等
+        :param directory: 存放的路径。
+        :return: self
+        """
+
+        raise NotImplementedError()
+
+    @classmethod
+    def from_file(cls, directory: str) -> "Vocabulary":
+        """
+        从文件中载入词典，
+        保存到指定路径中，包含两个文件，分别是:
+        * vocabulary.txt - 保留全部的字典信息
+        * config.json - 保留一些配置信息，比如 padding, unk 等
+        :param directory: 文件路径
+        :return:
+        """
+
+        raise NotImplementedError
+
+
+class Vocabulary(IVocabulary):
 
     def __init__(self,
                  tokens: Iterable[List[str]],
@@ -49,8 +126,8 @@ class Vocabulary:
         :param min_frequency: 小于 min_frequency 的会被过滤
         :param max_size: 词表的最大长度, 如果为None, 不限制词表大小
         """
-        self.padding = padding
-        self.unk = unk
+        self._padding = padding
+        self._unk = unk
         self.min_frequency = min_frequency
         self.max_size = max_size
         self._token2index: Dict = dict()
@@ -105,6 +182,14 @@ class Vocabulary:
 
     def __len__(self):
         return len(self._token2index)
+
+    @property
+    def padding(self) -> str:
+        return self._padding
+
+    @property
+    def unk(self) -> str:
+        return self._unk
 
     @property
     def padding_index(self) -> Union[None, int]:
@@ -241,7 +326,7 @@ class Vocabulary:
         return vocabulary
 
 
-class LabelVocabulary(Vocabulary):
+class LabelVocabulary(IVocabulary):
     """
     label 的 vocabulary
     """
@@ -253,12 +338,48 @@ class LabelVocabulary(Vocabulary):
         :param padding: label 需要填充的padding, 填充的 padding index 是不在 [0, label_num) 范围内的，
         也就是说不会影响 label的index. 如果不需要填充，请设置为 `""` 或者 `None`
         """
-        super().__init__(tokens=labels,
-                         padding=padding,
-                         unk="",
-                         special_first=False,
-                         min_frequency=1,
-                         max_size=None)
+        self._vocabulary = Vocabulary(tokens=labels,
+                                      padding=padding,
+                                      unk="",
+                                      special_first=False,
+                                      min_frequency=1,
+                                      max_size=None)
+
+    def __len__(self):
+        return len(self._vocabulary)
+
+    @property
+    def padding(self) -> str:
+        return self._vocabulary.padding
+
+    @property
+    def unk(self):
+        return self._vocabulary.unk
+
+    @property
+    def padding_index(self) -> Union[None, int]:
+        return self._vocabulary.padding_index
+
+    def index(self, token: str) -> int:
+        return self._vocabulary.index(token)
+
+    def token(self, index: int) -> str:
+        return self._vocabulary.token(index)
+
+    @property
+    def size(self):
+        return self._vocabulary.size
+
+    def save_to_file(self, directory: str) -> "LabelVocabulary":
+        self._vocabulary.save_to_file(directory=directory)
+        return self
+
+    @classmethod
+    def from_file(cls, directory: str) -> "LabelVocabulary":
+
+        label_vocabulary = cls(labels=[[]], padding="")
+        label_vocabulary._vocabulary = Vocabulary.from_file(directory=directory)
+        return label_vocabulary
 
     @property
     def label_size(self):
