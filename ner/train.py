@@ -62,23 +62,29 @@ class NerConfigFactory(ConfigFactory):
         config = dict()
 
         if self.debug:
-            train_dataset_file_path = "data/conll2003/sample.txt"
+            train_dataset_file_path = "data/dataset/conll2003/sample.txt"
         else:
-            train_dataset_file_path = "data/conll2003/eng.train"
+            train_dataset_file_path = "data/dataset/conll2003/eng.train"
         train_dataset_file_path = os.path.join(ROOT_PATH, train_dataset_file_path)
 
         config["train_dataset_file_path"] = train_dataset_file_path
 
         if self.debug:
-            validation_dataset_file_path = "data/conll2003/sample.txt"
+            validation_dataset_file_path = "data/dataset/conll2003/sample.txt"
         else:
-            validation_dataset_file_path = "data/conll2003/eng.testa"
+            validation_dataset_file_path = "data/dataset/conll2003/eng.testa"
         validation_dataset_file_path = os.path.join(ROOT_PATH, validation_dataset_file_path)
 
         config["validation_dataset_file_path"] = validation_dataset_file_path
 
         serialize_dir = f"data/ner/conll2003_{self.model_name}/train"
         serialize_dir = os.path.join(ROOT_PATH, serialize_dir)
+
+        if os.path.isdir(serialize_dir):
+            shutil.rmtree(serialize_dir)
+
+        os.makedirs(serialize_dir)
+
         config["serialize_dir"] = serialize_dir
         config["patient"] = 20
         config["num_check_point_keep"] = 10

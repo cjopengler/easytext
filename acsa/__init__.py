@@ -5,8 +5,12 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-brief
+属性级情感分析
 
 Authors: panxu
 Date:    2020/06/09 00:43:00
 """
+import os
+
+# 设置 root, 用作数据路径访问，包括测试数据，训练数据等
+ROOT_PATH = os.path.join(os.path.dirname(__file__), "../")

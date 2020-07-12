@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sentences>
+    <sentence id="3121">
+        <text>But the staff was so horrible to us.</text>
+        <aspectTerms>
+            <aspectTerm term="staff" polarity="negative" from="8" to="13"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="service" polarity="negative"/>
+        </aspectCategories>
+    </sentence>
+    <sentence id="2777">
+        <text>To be completely fair, the only redeeming factor was the food, which was above average, but couldn't make up for all the other deficiencies of Teodora.</text>
+        <aspectTerms>
+            <aspectTerm term="food" polarity="positive" from="57" to="61"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="food" polarity="positive"/>
+            <aspectCategory category="anecdotes/miscellaneous" polarity="negative"/>
+        </aspectCategories>
+    </sentence>
+</sentences>

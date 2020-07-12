@@ -35,7 +35,7 @@ def conll2003_dataset() -> Conll2003Dataset:
     数据集生成
     :return: conll2003 数据集
     """
-    dataset_file_path = "data/conll2003/sample.txt"
+    dataset_file_path = "data/dataset/conll2003/sample.txt"
     dataset_file_path = os.path.join(ROOT_PATH, dataset_file_path)
 
     return Conll2003Dataset(dataset_file_path=dataset_file_path)

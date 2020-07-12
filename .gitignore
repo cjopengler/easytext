@@ -292,8 +292,4 @@ data/event/event_detection_without_tirgger/train/
 data/event/event_detection_without_tirgger/vocabulary/
 ace_english_event/
 log/
-data/pretrained
-
-data/conll2003/eng.testa
-data/conll2003/eng.testb
-data/conll2003/eng.train
+data/
