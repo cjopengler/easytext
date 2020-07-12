@@ -23,7 +23,8 @@ setup(
     description="Make it easy to train and metric NLP model.",
     url="https://github.com/cjopengler/easytext",
     license="MIT",
-    packages=find_packages(include=("easytext",)),   # 指定需要安装的模块
+    packages=find_packages(include=("easytext","easytext.*")),   # 指定需要安装的模块
+
     install_requires=["torch>=1.4.0"],
     python_requires='>=3.6',
 
