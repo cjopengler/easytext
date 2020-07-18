@@ -28,7 +28,7 @@ def test_cnn_seq2vec():
         parameter.data.fill_(1.)
 
     tokens = torch.FloatTensor([[[0.7, 0.8], [0.1, 1.5]]])
-    vector = encoder(tokens=tokens, mask=None)
+    vector = encoder(sequence=tokens, mask=None)
     vector = vector.view(-1).tolist()
 
     expect = torch.tensor([[0.1 + 1.5 + 1., 0.7 + 0.8 + 0.1 + 1.5 + 1.]]).view(-1).tolist()
@@ -51,7 +51,7 @@ def test_cnn_seq2vec_with_mask():
 
     tokens = torch.FloatTensor([[[0.7, 0.8], [0.1, 1.5]]])
     mask = torch.ByteTensor([[1, 0]])
-    vector = encoder(tokens=tokens, mask=mask)
+    vector = encoder(sequence=tokens, mask=mask)
     vector = vector.view(-1).tolist()
 
     expect = torch.tensor([[0.7 + 0.8 + 1., 0.7 + 0.8 + 0. + 0. + 1.]]).view(-1).tolist()
@@ -72,7 +72,7 @@ def test_cnn_seq2vec_output_dim():
                          kernel_sizes=kernel_size)
 
     tokens = torch.rand(4, 8, 7)
-    vector = encoder(tokens=tokens, mask=None)
+    vector = encoder(sequence=tokens, mask=None)
     expect = (4, 13 * len(kernel_size))
 
     ASSERT.assertEqual(expect, vector.size())

@@ -187,3 +187,19 @@ def viterbi_decode(tag_sequence: torch.Tensor,
     return viterbi_path, viterbi_score
 
 
+def masked_softmax(vector: torch.FloatTensor,
+                   mask: torch.ByteTensor):
+    """
+    计算带有 masked 的 softmax
+    :param vector: shape: (B, seq_len)
+    :param mask: shape: (B, seq_len),
+    :return: (B, seq_len)
+    """
+    exp_vector = vector.exp()
+
+    masked_vector = exp_vector * mask.float()
+
+    return masked_vector / torch.sum(masked_vector, dim=-1, keepdim=True)
+
+
+

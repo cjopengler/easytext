@@ -45,29 +45,29 @@ class CnnSeq2Vec(Module):
 
         self.activtion = ReLU()
 
-    def forward(self, tokens: torch.LongTensor, mask: Union[None, torch.ByteTensor]) -> torch.Tensor:
+    def forward(self, sequence: torch.FloatTensor, mask: Union[None, torch.ByteTensor]) -> torch.FloatTensor:
         """
         执行模型。对多个 kernel size 最终会将每一个 kernel 输出的向量, concat 在一起。
         pooling 使用的 max pooling.
-        :param tokens: 输入的token 序列, shape: (batch_size, seq_len, embedding_dim)
+        :param sequence: 输入的token 序列, shape: (batch_size, seq_len, embedding_dim)
         :param mask: mask
         :return: cnn 编码向量, shape: (batch_size, num_filter * len(kernel_sizes))
         """
 
-        assert tokens.dim() == 3, f"tokens.dim: {tokens.dim()} 与 shape: (batch_size, seq_len, embedding_dim) 不匹配"
+        assert sequence.dim() == 3, f"tokens.dim: {sequence.dim()} 与 shape: (batch_size, seq_len, embedding_dim) 不匹配"
 
         if mask is not None:
             assert mask.dim() == 2, f"mask.dim: {mask.dim()} 与 shape: (batch_size, seq_len) 不匹配"
 
             # 将 mask 的 token 清零，避免影响 cnn
-            tokens = tokens * mask.unsqueeze(dim=-1).float()
+            sequence = sequence * mask.unsqueeze(dim=-1).float()
 
         # 将 1 和 2 转置, 转置后 shape: (batch_size, embedding_dim, seq_len)
-        tokens = torch.transpose(tokens, 1, 2)
+        sequence = torch.transpose(sequence, 1, 2)
 
         # 每一个 cnn_vector_i: (batch_size, embedding_dim, new_seq_len_i)
         # 注意不同 kernel_size 的 cnn, 产生的 new_seq_len 长度是不同的 所以这里用下标 i 来表示.
-        cnn_vectors = [self.activtion(cnn(tokens)) for cnn in self.cnn_layers]
+        cnn_vectors = [self.activtion(cnn(sequence)) for cnn in self.cnn_layers]
 
         assert cnn_vectors[0].dim() == 3, \
             f"cnn_vectors.dim: {cnn_vectors[0].dim()} 与 shape: (batch_size, num_filter, new_seq_len) 不匹配"

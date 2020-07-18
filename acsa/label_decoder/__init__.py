@@ -5,11 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-data
+label decoder
 
 Authors: PanXu
-Date:    2020/07/12 12:31:00
+Date:    2020/07/18 18:14:00
 """
 
-from .vocabulary_collate import VocabularyCollate
-from .model_collate import ACSAModelCollate
+from .acsa_label_decoder import ACSALabelDecoder

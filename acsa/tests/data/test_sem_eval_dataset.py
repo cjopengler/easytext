@@ -10,9 +10,6 @@
 Authors: PanXu
 Date:    2020/07/12 15:55:00
 """
-
-from easytext.utils.json_util import json2str
-
 from acsa.tests import ASSERT
 
 
@@ -20,8 +17,6 @@ def test_sem_eval_dataset(sem_eval_dataset):
     ASSERT.assertEqual(2, len(sem_eval_dataset))
 
     instance1 = sem_eval_dataset[1]
-
-    print(json2str(instance1))
 
     expect = {
         "sentence": "To be completely fair, the only redeeming factor was the food, which was above average, "

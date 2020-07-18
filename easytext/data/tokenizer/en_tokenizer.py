@@ -22,7 +22,7 @@ class EnTokenizer(Tokenizer):
     默认的分隔符是 " "
     """
 
-    def __init__(self, is_remove_invalidate_char:bool = False, separator: str = " "):
+    def __init__(self, is_remove_invalidate_char: bool = False, separator: str = " "):
         """
         初始化
         :param is_remove_invalidate_char: 是否移除无效的字符，注意在实体识别的时候要小心，因为移除可能导致label无法对其。

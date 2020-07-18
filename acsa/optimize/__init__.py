@@ -5,11 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-data
+optimize factory
 
 Authors: PanXu
-Date:    2020/07/12 12:31:00
+Date:    2020/07/18 23:35:00
 """
 
-from .vocabulary_collate import VocabularyCollate
-from .model_collate import ACSAModelCollate
+from .optimize_factory import ACSAOptimizerFactory

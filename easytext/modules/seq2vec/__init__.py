@@ -12,3 +12,4 @@ Date:    2020/07/08 20:09:00
 """
 
 from .cnn_seq2vec import CnnSeq2Vec
+from .attention_seq2vec import AttentionSeq2Vec
