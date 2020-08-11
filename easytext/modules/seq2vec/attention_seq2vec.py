@@ -106,8 +106,3 @@ class AttentionSeq2Vec(Module):
         vector = torch.sum(attentioned_value, dim=1)
         return vector
 
-
-
-
-
-
