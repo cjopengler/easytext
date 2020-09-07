@@ -30,6 +30,7 @@ from easytext.metrics import ModelMetricAdapter
 from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
 from easytext.trainer.metric_tracker import MetricTracker
+from easytext.trainer.grad_rescaled import GradRescaled
 
 
 class Trainer:
@@ -47,6 +48,7 @@ class Trainer:
                  metrics: ModelMetricAdapter,
                  optimizer_factory: OptimizerFactory,
                  lr_scheduler_factory: LRSchedulerFactory = None,
+                 grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
                  cuda_devices: List[str] = None):
@@ -86,6 +88,8 @@ class Trainer:
                                                              model=self.model)
         else:
             self._lr_scheduler = None
+
+        self._grad_scaled = grad_scaled
 
         self._serialize_dir = serialize_dir
         self._metric_tracker = MetricTracker(patient=patient)
@@ -294,6 +298,11 @@ class Trainer:
                 if phrase == Trainer._TRAIN:
                     self._optimizer.zero_grad()
                     batch_loss.backward()
+
+                    # 反向传播之后修订梯度
+                    if self._grad_scaled is not None:
+                        self._grad_scaled(self._model)
+
                     self._optimizer.step()
 
                 total_loss += batch_loss.detach().cpu().item() * batch_size
