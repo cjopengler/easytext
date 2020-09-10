@@ -18,6 +18,7 @@ import pytest
 
 import torch
 from torch.utils.data import DataLoader
+from transformers import BertTokenizer
 
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 
@@ -26,7 +27,7 @@ from ner.data import VocabularyCollate
 from easytext.data import Vocabulary
 
 from ner import ROOT_PATH
-from ner.data.dataset import Conll2003Dataset
+from ner.data.dataset import Conll2003Dataset, MsraDataset
 
 
 @pytest.fixture(scope="session")
@@ -65,3 +66,54 @@ def vocabulary(conll2003_dataset) -> Dict[str, Union[Vocabulary, PretrainedVocab
                                        padding=LabelVocabulary.PADDING)
     return {"token_vocabulary": token_vocabulary,
             "label_vocabulary": label_vocabulary}
+
+
+@pytest.fixture(scope="session")
+def msra_dataset() -> MsraDataset:
+    """
+    数据集生成
+    :return: conll2003 数据集
+    """
+    dataset_file_path = "data/dataset/MSRA/sample.txt"
+    dataset_file_path = os.path.join(ROOT_PATH, dataset_file_path)
+
+    return MsraDataset(dataset_file_path=dataset_file_path)
+
+
+@pytest.fixture(scope="session")
+def msra_vocabulary(msra_dataset) -> Dict[str, Union[Vocabulary, PretrainedVocabulary]]:
+    data_loader = DataLoader(dataset=msra_dataset,
+                             batch_size=2,
+                             shuffle=False,
+                             num_workers=0,
+                             collate_fn=VocabularyCollate())
+
+    batch_tokens = list()
+    batch_sequence_labels = list()
+
+    for collate_dict in data_loader:
+        batch_tokens.extend(collate_dict["tokens"])
+        batch_sequence_labels.extend(collate_dict["sequence_labels"])
+
+    token_vocabulary = Vocabulary(tokens=batch_tokens,
+                                  padding=Vocabulary.PADDING,
+                                  unk=Vocabulary.UNK,
+                                  special_first=True)
+
+    label_vocabulary = LabelVocabulary(labels=batch_sequence_labels,
+                                       padding=LabelVocabulary.PADDING)
+    return {"token_vocabulary": token_vocabulary,
+            "label_vocabulary": label_vocabulary}
+
+
+@pytest.fixture(scope="session")
+def bert_tokenizer():
+    """
+    bert tokenizer
+    :return: bert tokenizer
+    """
+    bert_dir = os.path.join(ROOT_PATH,
+                            "data/pretrained/bert/bert-base-chinese-pytorch")
+    return BertTokenizer.from_pretrained(bert_dir)
+
+

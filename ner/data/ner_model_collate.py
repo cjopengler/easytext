@@ -78,7 +78,3 @@ class NerModelCollate(ModelCollate):
                                    labels=batch_sequence_label_indices)
         return model_inputs
 
-
-
-
-

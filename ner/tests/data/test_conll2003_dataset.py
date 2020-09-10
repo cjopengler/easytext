@@ -34,4 +34,3 @@ def test_conll2003_dataset(conll2003_dataset):
     expect_labels = ["B-LOC", "O"]
 
     ASSERT.assertListEqual(expect_labels, instance1["sequence_label"])
-
