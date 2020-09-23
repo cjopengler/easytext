@@ -253,16 +253,13 @@ def decode_label_index_to_span(batch_sequence_label_index: torch.Tensor,
     """
 
     spans = list()
-    batch_size = batch_sequence_label_index.size(0)
 
     if mask is None:
         mask = torch.ones(size=(batch_sequence_label_index.shape[0], batch_sequence_label_index.shape[1]),
                           dtype=torch.long)
-
-    sequence_lengths = mask.sum(dim=-1)
-
-    for i in range(batch_size):
-        label_indices = batch_sequence_label_index[i, :sequence_lengths[i]].tolist()
+    mask = mask.bool()
+    for sequence_label_index, mask1d in zip(batch_sequence_label_index, mask):
+        label_indices = torch.masked_select(sequence_label_index, mask=mask1d).tolist()
 
         sequence_label = [vocabulary.token(index) for index in label_indices]
 

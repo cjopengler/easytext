@@ -34,7 +34,7 @@ class NerV3(Model):
     """
     Ner v3 版本，glove6B.100d + bilstm + crf
     """
-
+    NAME = "ner_v3"
     DESTCRIPTION = "glove6B.100d + bilstm + crf"
 
     def __init__(self,

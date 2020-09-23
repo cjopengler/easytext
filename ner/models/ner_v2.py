@@ -31,6 +31,7 @@ class NerV2(Model):
     Ner v1 版本，仅仅使用 bilstm
     """
 
+    NAME = "ner_v2"
     DESTCRIPTION = "glove.6B.100d + bilstm"
 
     def __init__(self,

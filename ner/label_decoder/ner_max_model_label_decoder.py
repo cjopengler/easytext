@@ -30,7 +30,11 @@ class NerMaxModelLabelDecoder(ModelLabelDecoder):
         self._label_decoder = SequenceLabelDecoder(label_vocabulary=label_vocabulary)
 
     def decode_label_index(self, model_outputs: NerModelOutputs) -> torch.LongTensor:
-        return self._decode_label_index(logits=model_outputs.logits, mask=model_outputs.mask)
+        logits = model_outputs.logits.detach().cpu()
+        mask = model_outputs.mask.detach().cpu()
+
+        return self._decode_label_index(logits=logits, mask=mask)
 
     def decode_label(self, model_outputs: NerModelOutputs, label_indices: torch.LongTensor) -> List:
-        return self._label_decoder(label_indices=label_indices, mask=model_outputs.mask)
+        mask = model_outputs.mask.detach().cpu()
+        return self._label_decoder(label_indices=label_indices, mask=mask)

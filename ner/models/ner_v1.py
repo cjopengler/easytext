@@ -30,7 +30,7 @@ class NerV1(Model):
     """
     Ner v1 版本，仅仅使用 bilstm
     """
-
+    NAME = "ner_v1"
     DESTCRIPTION = "bilstm"
 
     def __init__(self,

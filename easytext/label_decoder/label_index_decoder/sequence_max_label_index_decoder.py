@@ -49,26 +49,34 @@ class SequenceMaxLabelIndexDecoder(LabelIndexDecoder):
             raise RuntimeError(f"mask shape 错误, 应该是 (B, seq_len), "
                                f"而现在是 {mask.shape}")
 
-        batch = logits.size(0)
-        max_sequence_length = logits.size(1)
-
-        # mask shape: (B, seq_len)
         if mask is None:
-            mask = torch.ones(size=(logits.shape[0], logits.shape[1]),
-                              dtype=torch.long)
+            mask = torch.ones(size=(logits.size(0), logits.size(1)), dtype=torch.long)
 
-        sequence_length = mask.sum(dim=-1).tolist()
+        mask_bool = mask.bool()
 
         batch_indices = list()
-        for i in range(batch):
+        for sequence_logits, sequence_mask1d in zip(logits, mask_bool):
+            # 扩充维度到 2 维
+            sequence_mask2d = torch.unsqueeze(sequence_mask1d, dim=-1)
+
+            assert sequence_logits.dim() == sequence_mask2d.dim(), \
+                f"sequence_logits dim: {sequence_logits.dim()} 与 sequence_mask.dim: {sequence_mask2d.dim()} 不匹配"
+
+            sequence_logits = torch.masked_select(sequence_logits, mask=sequence_mask2d)
+            sequence_logits = sequence_logits.contiguous().view(-1, logits.size(-1))
             sequence_labels, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(
-                sequence_logits=logits[i, :sequence_length[i]],
+                sequence_logits=sequence_logits,
                 vocabulary=self._label_vocabulary)
 
-            padding_indices = [self._label_vocabulary.padding_index] * (max_sequence_length - sequence_length[i])
-            sequence_label_indices.extend(padding_indices)
+            sequence_label_indices = torch.tensor(sequence_label_indices, dtype=torch.long, device=logits.device)
 
+            padding = torch.full_like(sequence_mask1d,
+                                      fill_value=self._label_vocabulary.padding_index,
+                                      dtype=torch.long)
+
+            sequence_label_indices = padding.masked_scatter(sequence_mask1d, sequence_label_indices)
             batch_indices.append(sequence_label_indices)
 
-        batch_indices = torch.tensor(batch_indices, dtype=torch.long)
+        batch_indices = torch.stack(batch_indices, dim=0)
+
         return batch_indices

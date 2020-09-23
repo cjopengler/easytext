@@ -15,3 +15,6 @@ from .ner_model_outputs import NerModelOutputs
 from .ner_v1 import NerV1
 from .ner_v2 import NerV2
 from .ner_v3 import NerV3
+from .ner_v4 import NerV4
+
+

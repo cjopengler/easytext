@@ -27,6 +27,8 @@ class Conll2003Dataset(Dataset):
     conll2003 数据集
     """
 
+    NAME = "conll2003"
+
     def __init__(self, dataset_file_path: str):
         """
         初始化

@@ -22,8 +22,6 @@ class Tokenizer:
     Tokenizer
     """
 
-    INVALIDATE_CHAR = "$$invalidate_char$$"
-
     def __init__(self, is_remove_invalidate_char: bool = False):
         """
         初始化
@@ -72,19 +70,16 @@ class Tokenizer:
         :param text: 输入的文本
         :return:
         """
-
         output = []
+
         for char in text:
             cp = ord(char)
             if cp == 0 or cp == 0xFFFD or self._is_control(char):
                 if self._is_removed_invalidate_char:
                     continue
-                else:
-                    output.append(Tokenizer.INVALIDATE_CHAR)
-            if self._is_whitespace(char):
-                output.append(" ")
-            else:
-                output.append(char)
+
+            output.append(char)
+
         return "".join(output)
 
     def tokenize(self, text: str) -> List[Token]:

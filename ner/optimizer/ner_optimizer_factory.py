@@ -16,8 +16,6 @@ from torch.optim import Adam
 from easytext.optimizer import OptimizerFactory
 from easytext.model import Model
 
-from ner.models import NerV1
-
 
 class NerOptimizerFactory(OptimizerFactory):
     """

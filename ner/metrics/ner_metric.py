@@ -35,14 +35,14 @@ class NerModelMetricAdapter(ModelMetricAdapter):
         self.span_f1_metric = SpanF1Metric(label_vocabulary)
         self.model_label_decoder = model_label_decoder
 
-    def __call__(self, model_outputs: ModelOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
+    def __call__(self, model_outputs: NerModelOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
         model_outputs: NerModelOutputs = model_outputs
 
         prediction_labels = self.model_label_decoder.decode_label_index(model_outputs=model_outputs)
 
         metric_dict = self.span_f1_metric(prediction_labels=prediction_labels,
-                            gold_labels=golden_labels,
-                            mask=model_outputs.mask)
+                                          gold_labels=golden_labels,
+                                          mask=model_outputs.mask)
 
         target_metric = ModelTargetMetric(metric_name=SpanF1Metric.F1_OVERALL,
                                           metric_value=metric_dict[SpanF1Metric.F1_OVERALL])
@@ -51,7 +51,6 @@ class NerModelMetricAdapter(ModelMetricAdapter):
 
     @property
     def metric(self) -> Tuple[Dict, ModelTargetMetric]:
-
         target_metric = ModelTargetMetric(metric_name=SpanF1Metric.F1_OVERALL,
                                           metric_value=self.span_f1_metric.metric[SpanF1Metric.F1_OVERALL])
         return self.span_f1_metric.metric, target_metric
@@ -60,4 +59,3 @@ class NerModelMetricAdapter(ModelMetricAdapter):
         self.span_f1_metric.reset()
 
         return self
-
