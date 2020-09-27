@@ -65,7 +65,7 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
                 if line_no < self._skip_num_line:
                     continue
 
-                line = line.strip()
+                line = line.rstrip()
                 if len(line) == 0:  # 去掉空行
                     continue
 
