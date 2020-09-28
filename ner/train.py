@@ -258,7 +258,7 @@ class Train:
                           lr_scheduler_factory=None,
                           patient=patient,
                           num_check_point_keep=num_check_point_keep,
-                          cuda_devices=cuda)
+                          devices=cuda)
 
         model_collate = self.build_model_collate(token_vocabulary=token_vocabulary,
                                                  label_vocabulary=label_vocabulary)

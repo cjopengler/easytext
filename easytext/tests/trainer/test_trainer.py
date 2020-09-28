@@ -188,7 +188,7 @@ class _DemoLoss(Loss):
         return self._loss(model_outputs.logits, golden_label)
 
 
-def _run_train(cuda_devices: List[str] = None):
+def _run_train(devices: List[str] = None):
     serialize_dir = os.path.join(ROOT_PATH, "data/easytext/tests/trainer/save_and_load")
 
     if os.path.isdir(serialize_dir):
@@ -211,7 +211,7 @@ def _run_train(cuda_devices: List[str] = None):
                       serialize_dir=serialize_dir,
                       patient=20,
                       num_check_point_keep=25,
-                      cuda_devices=cuda_devices
+                      devices=devices
                       )
 
     train_dataset = _DemoDataset()
@@ -260,6 +260,14 @@ def test_trainer_save_and_load_cpu():
     测试  trainer 保存和载入
     :return:
     """
+    _run_train(devices="cpu")
+
+
+def test_trainer_save_and_load_cpu_with_none_parameter():
+    """
+    测试  trainer cpu 保存和载入, 不设置任何参数，默认使用cpu
+    :return:
+    """
     _run_train()
 
 
@@ -267,7 +275,7 @@ def test_trainer_save_load_gpu():
 
     if torch.cuda.is_available():
         cuda_devices = ["cuda:0"]
-        _run_train(cuda_devices=cuda_devices)
+        _run_train(devices=cuda_devices)
     else:
         logging.warning("由于没有GPU，忽略这个case测试")
 

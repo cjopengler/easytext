@@ -51,7 +51,7 @@ class Trainer:
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
-                 cuda_devices: List[str] = None):
+                 devices: Union[str, List[str]] = None):
         """
         训练器初始化
         :param num_epoch: 训练的 epoch 数量
@@ -66,18 +66,26 @@ class Trainer:
         否则, 当前训练的指标超出了 patient 个 epoch 将会 early stopping.
         :param num_check_point_keep: checkpoint 保留的数量。如果是 `None` 则全部保留;
         否则，保留 num_check_point_keep 个checkpoint.
-        :param cuda_devices: cuda device列表. 字符串类型，那么就是 "cuda:0" 这种格式。
+        :param devices: device 字符串, "cuda:0" 或者 "cpu"; 列表类型，多个gpu,  例如 ["cuda:0", "cuda:1"]; 如果是 cpu, 只能是 ["cpu"].
         """
-
-        if cuda_devices is not None and len(cuda_devices) != 1:
-            raise RuntimeError(f"目前仅仅支持单卡训练, 设置的 cuda devices 是 {cuda_devices}")
-
-        if cuda_devices is not None:
-            self._cuda_devices = [torch.device(device) for device in cuda_devices]
-            self._model = model.cuda(self._cuda_devices[0])
+        if devices is None or len(devices) == 0:
+            self._devices = [torch.device("cpu")]
         else:
-            self._cuda_devices = None
-            self._model = model
+
+            if isinstance(devices, str):
+                self._devices = [torch.device(devices)]
+            elif isinstance(devices, list):
+                self._devices = [torch.device(device) for device in devices]
+            else:
+                raise RuntimeError(f"devices type: {type(devices)} 不是 str 或者 list!")
+
+            if len(self._devices) != 1:
+                raise RuntimeError(f"目前仅仅支持单 GPU 或 CPU 训练, 设置的 cuda devices 是 {devices}")
+
+        if self._devices[0].type == "cuda":
+            self._model = model.cuda(self._devices[0])
+        else:
+            self._model = model.cpu()
 
         self._loss = loss
         self._metrics = metrics
@@ -160,7 +168,7 @@ class Trainer:
         if self._lr_scheduler is None:
             torch.save(None, lr_scheduler_file_path)
         else:
-            torch.save(self._lr_scheduler.sate_dict(), lr_scheduler_file_path)
+            torch.save(self._lr_scheduler.state_dict(), lr_scheduler_file_path)
 
         # metric 保存
         # 这里保存的是当前 epoch 的 metric, 在最外面还会保存一份完整的 metric tracker
@@ -288,9 +296,9 @@ class Trainer:
                                                    model_inputs.labels
 
                 # 设置到 cuda 训练
-                if self._cuda_devices is not None:
-                    batch_inputs = cuda_util.cuda(batch_inputs, cuda_device=self._cuda_devices[0])
-                    labels = cuda_util.cuda(labels, cuda_device=self._cuda_devices[0])
+                if self._devices[0].type == "cuda":  # 仅仅处理 GPU, 默认使用 CPU
+                    batch_inputs = cuda_util.cuda(batch_inputs, cuda_device=self._devices[0])
+                    labels = cuda_util.cuda(labels, cuda_device=self._devices[0])
 
                 outputs = self._model(**batch_inputs)
                 batch_loss: torch.Tensor = self._loss(outputs, labels)

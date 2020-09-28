@@ -146,7 +146,7 @@ class Train:
             metrics=EventF1MetricAdapter(event_type_vocabulary=event_type_vocabulary),
             patient=10,
             num_check_point_keep=5,
-            cuda_devices=None
+            devices=None
         )
 
         train_dataset = EventDataset(dataset_file_path=train_dataset_file_path,
