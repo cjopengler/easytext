@@ -25,7 +25,7 @@ setup(
     license="MIT",
     packages=find_packages(include=("easytext","easytext.*")),   # 指定需要安装的模块
 
-    install_requires=["torch>=1.4.0", "transformers>=3.1.0"],
+    install_requires=["torch>=1.2.0", "transformers>=3.1.0"],
     python_requires='>=3.6',
 
     classifiers=[
