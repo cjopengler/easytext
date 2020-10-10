@@ -75,8 +75,6 @@ class SpanF1Metric(F1Metric):
             if mask.dim() != 2:
                 raise RuntimeError(f"mask shape 应该是: (B, SeqLen), 现在是:{mask.size()}")
 
-
-
         # 转换到 cpu 进行计算
         prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
