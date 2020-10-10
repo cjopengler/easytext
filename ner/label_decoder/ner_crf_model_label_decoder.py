@@ -37,15 +37,22 @@ class NerCRFModelLabelDecoder(ModelLabelDecoder):
         """
         解码出 label index, 使用 crf 解码
         :param model_outputs: 模型输出结果
-        :return: label indices
+        :return: label indices， 注意 device 是 cpu 的。
         """
+
+        # 不转换成 cpu, 因为在 CRFLabelIndexDecoder 用到了 viterbi
+        # 而 viterbi 用到了 crf 的 transition matrix 参数
+        # transition matrix 参数，是模型的一部分。所以如果模型是 gpu，那么
+        # transition matrix 就是 GPU. 这样保证 logits, mask 与 transition matrix 的 device 一致。
+        logits = model_outputs.logits.detach()
+        mask = model_outputs.mask.detach()
 
         if self._label_index_decoder is None:
             self._label_index_decoder = CRFLabelIndexDecoder(label_vocabulary=self._label_vocabulary,
                                                              crf=model_outputs.crf)
 
-        return self._label_index_decoder(logits=model_outputs.logits,
-                                         mask=model_outputs.mask)
+        return self._label_index_decoder(logits=logits,
+                                         mask=mask)
 
     def decode_label(self, model_outputs: NerModelOutputs, label_indices: torch.LongTensor) -> List:
         """
@@ -57,5 +64,7 @@ class NerCRFModelLabelDecoder(ModelLabelDecoder):
         if self._label_decoder is None:
             self._label_decoder = SequenceLabelDecoder(label_vocabulary=self._label_vocabulary)
 
-        return self._label_decoder(label_indices=label_indices, mask=model_outputs.mask)
+        mask = model_outputs.mask.detach().cpu()
+        label_indices = label_indices.detach().cpu()
+        return self._label_decoder(label_indices=label_indices, mask=mask)
 
