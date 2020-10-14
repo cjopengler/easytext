@@ -31,9 +31,11 @@ from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
 from easytext.trainer.metric_tracker import MetricTracker
 from easytext.trainer.grad_rescaled import GradRescaled
+from easytext.trainer import Record
+from easytext.trainer.trainer_callback import TrainerCallback
 
 
-class Trainer:
+class Trainer(TrainerCallback):
     """
     训练器
     """
@@ -321,7 +323,7 @@ class Trainer:
                              f"batch metrics: {json2str(batch_metrics)}, "
                              f"target metric: {json2str(target_metric)}")
 
-        # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有一般要再除以一次了
+        # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有必要再除以一次了
         return total_loss
 
     def recovery_train(self,
@@ -388,18 +390,26 @@ class Trainer:
 
         for epoch in range(start_epoch, self._num_epoch + 1):
 
+            record = Record(epoch=epoch)
+
             self._current_epoch = epoch
 
             logging.info(f"Start train epoch: {self._current_epoch}")
+            self.on_train_epoch_start(trainer=self, record=record)
 
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN,
                                                  data_loader=train_data_loader)
+            record.epoch_train_loss = train_loss
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
             logging.info(
                 f"Train epoch: {epoch}, loss: {train_loss}, target metric: {train_target_metric.name}:{train_target_metric.value} "
                 f"metrics: {json2str(train_metric_dict)}")
+
+            self.on_train_epoch_stop(trainer=self, record=record)
+
+            self.on_evaluate_epoch_start(trainer=self, record=record)
 
             evaluate_loss = self.evaluate(validation_data_loader=validation_data_loader)
             validation_metric_dict, validation_target_metric = self._metrics.metric
@@ -413,6 +423,9 @@ class Trainer:
                 f"Evaluate Valid epoch: {epoch}, loss: {evaluate_loss}, "
                 f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
                 f"metrics: {json2str(validation_metric_dict)}")
+
+            record.epoch_evaluate_loss = evaluate_loss
+            self.on_train_epoch_stop(trainer=self, record=record)
 
             # 设置 lr scheduler
             # 注意这样设置会有点问题，对于某些 scheduler step 需要参数, 例如: ReduceLROnPlateau
@@ -430,3 +443,15 @@ class Trainer:
             if self._metric_tracker.early_stopping(epoch):
                 logging.info(f"Epoch: {epoch}, early stopping!")
                 break
+
+    def on_train_epoch_start(self, trainer: "Trainer", record: Record):
+        logging.info(f"on_train_epoch_start: {record.epoch}")
+
+    def on_train_epoch_stop(self, trainer: "Trainer", record: Record):
+        logging.info(f"on_train_epoch_stop: {record.epoch}")
+
+    def on_evaluate_epoch_start(self, trainer: "Trainer", record: Record):
+        logging.info(f"on_evaluate_epoch_start: {record.epoch}")
+
+    def on_evaluate_epoch_stop(self, trainer: "Trainer", record: Record):
+        logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
