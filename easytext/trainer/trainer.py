@@ -406,6 +406,10 @@ class Trainer(TrainerCallback):
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
+
+            record.train_metric = train_metric_dict
+            record.train_target_metric = train_target_metric
+
             logging.info(
                 f"Train epoch: {epoch}, loss: {train_loss}, target metric: {train_target_metric.name}:{train_target_metric.value} "
                 f"metrics: {json2str(train_metric_dict)}")
@@ -415,7 +419,11 @@ class Trainer(TrainerCallback):
             self.on_evaluate_validation_epoch_start(trainer=self, record=record)
 
             validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
+            record.epoch_validation_loss = validation_loss
+
             validation_metric_dict, validation_target_metric = self._metrics.metric
+            record.validation_metric = validation_metric_dict
+            record.validation_target_metric = validation_target_metric
 
             self._metric_tracker.add_metric(epoch=epoch,
                                             train_metric=train_metric_dict,
@@ -427,8 +435,7 @@ class Trainer(TrainerCallback):
                 f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
                 f"metrics: {json2str(validation_metric_dict)}")
 
-            record.epoch_validation_loss = validation_loss
-            self.on_evaluate_validation_epoch_stop()(trainer=self, record=record)
+            self.on_evaluate_validation_epoch_stop(trainer=self, record=record)
 
             # 设置 lr scheduler
             # 注意这样设置会有点问题，对于某些 scheduler step 需要参数, 例如: ReduceLROnPlateau

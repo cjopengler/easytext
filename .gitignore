@@ -293,5 +293,6 @@ data/event/*
 data/ner/*
 data/dataset/*
 data/pretrained
+data/tensorboard
 ace_english_event/
 log/
