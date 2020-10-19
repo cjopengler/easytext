@@ -53,7 +53,8 @@ class Trainer(TrainerCallback):
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
-                 devices: Union[str, List[str]] = None):
+                 devices: Union[str, List[str]] = None,
+                 trainer_callback: TrainerCallback = None):
         """
         训练器初始化
         :param num_epoch: 训练的 epoch 数量
@@ -106,6 +107,7 @@ class Trainer(TrainerCallback):
         self._num_check_point_keep = num_check_point_keep
         self._num_epoch = num_epoch
         self._current_epoch: int = None
+        self._trainer_callback = trainer_callback
 
     @property
     def model(self):
@@ -390,7 +392,8 @@ class Trainer(TrainerCallback):
 
         for epoch in range(start_epoch, self._num_epoch + 1):
 
-            record = Record(epoch=epoch)
+            record = Record()
+            record.epoch = epoch
 
             self._current_epoch = epoch
 
@@ -409,9 +412,9 @@ class Trainer(TrainerCallback):
 
             self.on_train_epoch_stop(trainer=self, record=record)
 
-            self.on_evaluate_epoch_start(trainer=self, record=record)
+            self.on_evaluate_validation_epoch_start(trainer=self, record=record)
 
-            evaluate_loss = self.evaluate(validation_data_loader=validation_data_loader)
+            validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
             validation_metric_dict, validation_target_metric = self._metrics.metric
 
             self._metric_tracker.add_metric(epoch=epoch,
@@ -420,12 +423,12 @@ class Trainer(TrainerCallback):
                                             validation_metric=validation_metric_dict,
                                             validation_model_target_metric=validation_target_metric)
             logging.info(
-                f"Evaluate Valid epoch: {epoch}, loss: {evaluate_loss}, "
+                f"Evaluate Valid epoch: {epoch}, loss: {validation_loss}, "
                 f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
                 f"metrics: {json2str(validation_metric_dict)}")
 
-            record.epoch_evaluate_loss = evaluate_loss
-            self.on_train_epoch_stop(trainer=self, record=record)
+            record.epoch_validation_loss = validation_loss
+            self.on_evaluate_validation_epoch_stop()(trainer=self, record=record)
 
             # 设置 lr scheduler
             # 注意这样设置会有点问题，对于某些 scheduler step 需要参数, 例如: ReduceLROnPlateau
@@ -434,7 +437,7 @@ class Trainer(TrainerCallback):
 
             if self._lr_scheduler is not None:
                 if isinstance(self._lr_scheduler, ReduceLROnPlateau):
-                    self._lr_scheduler.step(metrics=evaluate_loss, epoch=epoch)
+                    self._lr_scheduler.step(metrics=validation_loss, epoch=epoch)
                 else:
                     self._lr_scheduler.step(epoch=epoch)
 
@@ -444,14 +447,29 @@ class Trainer(TrainerCallback):
                 logging.info(f"Epoch: {epoch}, early stopping!")
                 break
 
-    def on_train_epoch_start(self, trainer: "Trainer", record: Record):
+        self.on_training_complete(trainer=self, record=record)
+
+    def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_train_epoch_start: {record.epoch}")
+        self._trainer_callback.on_train_epoch_start(trainer=trainer,
+                                                    record=record)
 
-    def on_train_epoch_stop(self, trainer: "Trainer", record: Record):
+    def on_train_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_train_epoch_stop: {record.epoch}")
+        self._trainer_callback.on_train_epoch_stop(trainer=trainer,
+                                                   record=record)
 
-    def on_evaluate_epoch_start(self, trainer: "Trainer", record: Record):
+    def on_evaluate_validation_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_evaluate_epoch_start: {record.epoch}")
+        self._trainer_callback.on_evaluate_validation_epoch_start(trainer=trainer,
+                                                                  record=record)
 
-    def on_evaluate_epoch_stop(self, trainer: "Trainer", record: Record):
+    def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
+        self._trainer_callback.on_evaluate_validation_epoch_stop(trainer=trainer,
+                                                                 record=record)
+
+    def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
+        logging.info(f"on_training_complete: {record.epoch}")
+        self._trainer_callback.on_training_complete(trainer=trainer,
+                                                    record=record)

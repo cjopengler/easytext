@@ -24,7 +24,7 @@ class TrainerCallback:
     trainer callbeck 接口
     """
 
-    def on_train_epoch_start(self, trainer: "Trainer", record: Record):
+    def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         """
         在每一个 epoch 训练开始时候会调用
         :param trainer: 训练器
@@ -33,7 +33,7 @@ class TrainerCallback:
         """
         raise NotImplemented()
 
-    def on_train_epoch_stop(self, trainer: "Trainer", record: Record):
+    def on_train_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         """
         在每一个 epoch 训练结束时候会调用
         :param trainer: 训练器
@@ -42,7 +42,7 @@ class TrainerCallback:
         """
         raise NotImplemented()
 
-    def on_evaluate_epoch_start(self, trainer: "Trainer", record: Record):
+    def on_evaluate_validation_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         """
         在每一个 epoch evaluate 验证集开始的时候会调用
         :param trainer: 训练器
@@ -51,7 +51,7 @@ class TrainerCallback:
         """
         raise NotImplemented()
 
-    def on_evaluate_epoch_stop(self, trainer: "Trainer", record: Record):
+    def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         """
         在每一个 epoch evaluate 验证集结束的时候会调用
         :param trainer: 训练器
@@ -59,4 +59,13 @@ class TrainerCallback:
         :return:
         """
         raise NotImplemented()
+
+    def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
+        """
+        训练过程全部结束
+        :param trainer: 训练器
+        :param record: 训练中的记录数据
+        :return:
+        """
+        raise NotImplemented
 
