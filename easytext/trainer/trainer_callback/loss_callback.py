@@ -45,9 +45,9 @@ class LossCallback(TrainerCallback):
 
     def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
 
-        logging.info(f"Epoch {record.epoch} evaluate validation loss: {record.epoch_evaluate_loss:.4f}")
-        self._writer.add_scalars(main_tag=MainTagManager.EPOCH_USED_TIME,
-                                 tag_scalar_dict={"validation": record.epoch_evaluate_loss},
+        logging.info(f"Epoch {record.epoch} evaluate validation loss: {record.epoch_validation_loss:.4f}")
+        self._writer.add_scalars(main_tag=MainTagManager.EPOCH_LOSS,
+                                 tag_scalar_dict={"validation": record.epoch_validation_loss},
                                  global_step=record.epoch)
 
     def on_training_complete(self, trainer: "Trainer", record: Record) -> None:

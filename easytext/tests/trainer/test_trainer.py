@@ -28,6 +28,7 @@ from easytext.model import ModelOutputs
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
+from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
 from easytext.utils.json_util import json2str
@@ -203,6 +204,11 @@ def _run_train(devices: List[str] = None):
     loss = _DemoLoss()
     metric = _DemoMetric()
 
+    tensorboard_log_dir = "data/tensorboard"
+
+    tensorboard_log_dir = os.path.join(ROOT_PATH, tensorboard_log_dir)
+    shutil.rmtree(tensorboard_log_dir)
+
     trainer = Trainer(num_epoch=100,
                       model=model,
                       loss=loss,
@@ -211,7 +217,8 @@ def _run_train(devices: List[str] = None):
                       serialize_dir=serialize_dir,
                       patient=20,
                       num_check_point_keep=25,
-                      devices=devices
+                      devices=devices,
+                      trainer_callback=BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
                       )
 
     train_dataset = _DemoDataset()

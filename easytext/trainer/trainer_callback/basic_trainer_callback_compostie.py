@@ -33,9 +33,9 @@ class BasicTrainerCallbackComposite(TrainerCallbackComposite):
         super().__init__()
         self._summary_writer = SummaryWriter(log_dir=tensorboard_log_dir)
 
-        self._callbacks.add(TimeConsumeCallback())
-        self._callbacks.add(LossCallback())
-        self._callbacks.add(MetricCallback())
+        self._callbacks.add(TimeConsumeCallback(tensorboard_summary_writer=self._summary_writer))
+        self._callbacks.add(LossCallback(tensorboard_summary_writer=self._summary_writer))
+        self._callbacks.add(MetricCallback(tensorboard_summary_writer=self._summary_writer))
 
     def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
         self._summary_writer.close()
