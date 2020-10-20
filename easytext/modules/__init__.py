@@ -12,3 +12,4 @@ Date:    2020/06/23 11:58:00
 """
 
 from .conditional_random_field import ConditionalRandomField
+from .dynamic_rnn import DynamicRnn, DynamicRnnOutput

@@ -17,7 +17,6 @@ from torch.nn import Module
 from torch.nn import Conv1d
 from torch.nn import ModuleList
 from torch.nn import ReLU
-from torch.nn import MaxPool1d
 
 
 class CnnSeq2Vec(Module):
