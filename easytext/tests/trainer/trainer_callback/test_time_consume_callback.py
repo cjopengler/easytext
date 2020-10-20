@@ -29,7 +29,8 @@ def test_time_consume_callback(summary_writer):
     callback = TimeConsumeCallback(tensorboard_summary_writer=summary_writer)
 
     for i in range(1, 10):
-        record = Record(epoch=i)
+        record = Record()
+        record.epoch = i
 
         callback.on_train_epoch_start(trainer=None, record=record)
         time.sleep(0.02)

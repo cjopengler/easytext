@@ -11,7 +11,7 @@ Authors: PanXu
 Date:    2020/09/25 08:11:00
 """
 
-from easytext.data import GeneralPretrainedWordEmbeddingLoader
+from easytext.data.pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
 
 
 class SGNSLoader(GeneralPretrainedWordEmbeddingLoader):
