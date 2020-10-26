@@ -458,25 +458,30 @@ class Trainer(TrainerCallback):
 
     def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_train_epoch_start: {record.epoch}")
-        self._trainer_callback.on_train_epoch_start(trainer=trainer,
-                                                    record=record)
+        if self._trainer_callback is not None:
+            self._trainer_callback.on_train_epoch_start(trainer=trainer,
+                                                        record=record)
 
     def on_train_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_train_epoch_stop: {record.epoch}")
-        self._trainer_callback.on_train_epoch_stop(trainer=trainer,
-                                                   record=record)
+        if self._trainer_callback is not None:
+            self._trainer_callback.on_train_epoch_stop(trainer=trainer,
+                                                       record=record)
 
     def on_evaluate_validation_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_evaluate_epoch_start: {record.epoch}")
-        self._trainer_callback.on_evaluate_validation_epoch_start(trainer=trainer,
-                                                                  record=record)
+        if self._trainer_callback is not None:
+            self._trainer_callback.on_evaluate_validation_epoch_start(trainer=trainer,
+                                                                      record=record)
 
     def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
-        self._trainer_callback.on_evaluate_validation_epoch_stop(trainer=trainer,
-                                                                 record=record)
+        if self._trainer_callback is not None:
+            self._trainer_callback.on_evaluate_validation_epoch_stop(trainer=trainer,
+                                                                     record=record)
 
     def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
         logging.info(f"on_training_complete: {record.epoch}")
-        self._trainer_callback.on_training_complete(trainer=trainer,
-                                                    record=record)
+        if self._trainer_callback is not None:
+            self._trainer_callback.on_training_complete(trainer=trainer,
+                                                        record=record)
