@@ -48,8 +48,8 @@ class _ModelWithObjParam(Model):
 def test_component_factory():
 
     param_dict = OrderedDict({"model": {
-        "type": "my_model",
-        "name_space": "model",
+        "__type__": "my_model",
+        "__name_space__": "model",
         "input_size": 2,
         "output_size": 4
     }})
@@ -64,14 +64,14 @@ def test_component_factory():
 def test_component_nested_factory():
 
     param_dict = OrderedDict({"model": {
-        "type": "nested_model",
-        "name_space": "model",
+        "__type__": "nested_model",
+        "__name_space__": "model",
         "input_size": 2,
         "output_size": 4,
 
         "my_model": {
-            "type": "my_model",
-            "name_space": "model",
+            "__type__": "my_model",
+            "__name_space__": "model",
             "input_size": 3,
             "output_size": 6
         }
@@ -91,13 +91,13 @@ def test_component_object_factory():
         return Vocabulary(tokens=[["A", "B", "C"]])
 
     param_dict = OrderedDict({"model": {
-        "type": "model_with_obj_param",
-        "name_space": "model",
+        "__type__": "model_with_obj_param",
+        "__name_space__": "model",
         "input_size": 2,
         "output_size": 4,
 
         "vocabulary": {
-            "type": "__object__",
+            "__type__": "__object__",
             "name_space": "model"
         }
     }})
@@ -107,7 +107,4 @@ def test_component_object_factory():
     config_obj = factory.create(obj_config=param_dict)
 
     print(config_obj)
-
-
-
 
