@@ -40,6 +40,9 @@ class _NestedModel(Model):
         self.sub_model = Linear(in_features=input_size, out_features=output_size)
         self.my_model = my_model
 
+    def reset_parameters(self):
+        pass
+
 
 @ModelRegister.register_class(name="model_with_obj_param")
 class _ModelWithObjParam(Model):
@@ -48,6 +51,9 @@ class _ModelWithObjParam(Model):
         super().__init__()
         self.sub_model = Linear(in_features=input_size, out_features=output_size)
         self.vocabulary = vocabulary
+
+    def reset_parameters(self):
+        pass
 
 
 def test_component_factory():
