@@ -10,6 +10,8 @@
 Authors: PanXu
 Date:    2020/10/27 17:46:00
 """
+import json
+import os
 from collections import OrderedDict
 from torch.nn import Linear
 
@@ -17,6 +19,9 @@ from easytext.model import Model
 from easytext.data import Vocabulary
 from easytext.component.register import ModelRegister
 from easytext.component.factory import ComponentFactory
+
+from easytext.tests import ASSERT
+from easytext.tests import ROOT_PATH
 
 
 @ModelRegister.register_class(name="my_model")
@@ -46,65 +51,45 @@ class _ModelWithObjParam(Model):
 
 
 def test_component_factory():
-
-    param_dict = OrderedDict({"model": {
-        "__type__": "my_model",
-        "__name_space__": "model",
-        "input_size": 2,
-        "output_size": 4
-    }})
+    config_dict = OrderedDict(
+        {
+            "model":
+                {
+                    "__type__": "my_model",
+                    "__name_space__": "model",
+                    "input_size": 2,
+                    "output_size": 4
+                }
+        })
 
     factory = ComponentFactory()
 
-    config_obj = factory.create(obj_config=param_dict)
+    parserd_dict = factory.create(config=config_dict)
 
-    print(config_obj)
+    model = parserd_dict["model"]
+
+    ASSERT.assertTrue(model.linear is not None)
+    ASSERT.assertEqual((2, 4), (model.linear.in_features, model.linear.out_features))
 
 
 def test_component_nested_factory():
 
-    param_dict = OrderedDict({"model": {
-        "__type__": "nested_model",
-        "__name_space__": "model",
-        "input_size": 2,
-        "output_size": 4,
+    nested_json_file_path = "data/easytext/tests/component/nested.json"
+    nested_json_file_path = os.path.join(ROOT_PATH, nested_json_file_path)
+    with open(nested_json_file_path, encoding="utf-8") as f:
 
-        "my_model": {
-            "__type__": "my_model",
-            "__name_space__": "model",
-            "input_size": 3,
-            "output_size": 6
-        }
-    }})
+        param_dict = json.load(f, object_pairs_hook=OrderedDict)
 
     factory = ComponentFactory()
 
-    config_obj = factory.create(obj_config=param_dict)
+    parsed_dict = factory.create(config=param_dict)
 
-    print(config_obj)
+    model = parsed_dict["model"]
 
+    ASSERT.assertTrue(model.sub_model is not None)
+    ASSERT.assertEqual((2, 4), (model.sub_model.in_features, model.sub_model.out_features))
 
-def test_component_object_factory():
-
-    @ModelRegister.register_object("vocabulary")
-    def create_vocabulary():
-        return Vocabulary(tokens=[["A", "B", "C"]])
-
-    param_dict = OrderedDict({"model": {
-        "__type__": "model_with_obj_param",
-        "__name_space__": "model",
-        "input_size": 2,
-        "output_size": 4,
-
-        "vocabulary": {
-            "__type__": "__object__",
-            "name_space": "model"
-        }
-    }})
-
-    factory = ComponentFactory()
-
-    config_obj = factory.create(obj_config=param_dict)
-
-    print(config_obj)
+    ASSERT.assertTrue(model.my_model is not None)
+    ASSERT.assertTrue(model.my_model.linear is not None)
+    ASSERT.assertEqual((3, 6), (model.my_model.linear.in_features, model.my_model.linear.out_features))
 

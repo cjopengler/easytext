@@ -10,11 +10,10 @@ Component Factory
 Authors: PanXu
 Date:    2020/10/27 16:14:00
 """
-
-from typing import OrderedDict
+from collections import OrderedDict
 
 from easytext.component.component_builtin_key import ComponentBuiltinKey
-from easytext.component.register import Register
+from easytext.component.register import Registry
 
 
 class ComponentFactory:
@@ -22,34 +21,49 @@ class ComponentFactory:
     Component Factory
     """
 
-    def create(self, obj_config: OrderedDict, *args, **kwargs):
+    def __init__(self):
+        self._registry = Registry()
 
-        assert isinstance(obj_config, OrderedDict), f"param_dict type: {type(obj_config)} 不是 OrderedDict"
+    def _create(self, param_dict: OrderedDict):
 
-        register = Register()
+        param_dict: OrderedDict = param_dict
 
-        for obj_name, param_dict in obj_config.items():
+        if ComponentBuiltinKey.TYPE not in param_dict:
+            raise RuntimeError(f"{ComponentBuiltinKey.TYPE} 没有在 json 中设置")
 
-            param_dict: OrderedDict = param_dict
-            component_type = param_dict.pop(ComponentBuiltinKey.TYPE)
+        if ComponentBuiltinKey.NAME_SPACE not in param_dict:
+            raise RuntimeError(f"{ComponentBuiltinKey.NAME_SPACE} 没有在 json 中设置")
 
-            name_space = param_dict.pop(ComponentBuiltinKey.NAME_SPACE)
+        component_type = param_dict.pop(ComponentBuiltinKey.TYPE)
+        name_space = param_dict.pop(ComponentBuiltinKey.NAME_SPACE)
 
-            if component_type == ComponentBuiltinKey.OBJECT_TYPE:
-                param_dict[obj_name] = register.find_object(name_space=name_space, obj_name=obj_name)
+        cls = self._registry.find_class(name=component_type, name_space=name_space)
+
+        if cls is None:
+            raise RuntimeError(f"{name_space}:{component_type} 没有被注册")
+
+        for param_name, param_value in param_dict.items():
+
+            if isinstance(param_value, OrderedDict):
+                v_obj = self._create(param_dict=param_value)
+                param_dict[param_name] = v_obj
             else:
-                cls = register.find_class(name=component_type, name_space=name_space)
+                # 不用处理
+                pass
 
-                assert cls is not None, f"{name_space}:{component_type} 没有被注册"
+        return cls(**param_dict)
 
-                for k, v in param_dict.items():
+    def create(self, config: OrderedDict):
+        """
+        创建对象工厂
+        :param config: config 字典, 是 OrderedDict, 其中的 key 会按照顺序执行
+        :return:
+        """
 
-                    if isinstance(v, OrderedDict):
-                        v_obj = self.create(param_dict=v)
-                        param_dict[k] = v_obj
+        assert isinstance(config, OrderedDict), f"param_dict type: {type(config)} 不是 OrderedDict"
 
-                obj_config[obj_name] = cls(**param_dict)
+        parsed_config = OrderedDict(config)
 
-        return obj_config
-
-
+        for obj_name, param_dict in parsed_config.items():
+            parsed_config[obj_name] = self._create(param_dict=param_dict)
+        return parsed_config

@@ -11,8 +11,6 @@ Authors: PanXu
 Date:    2020/10/27 14:53:00
 """
 
-from .class_register import ClassRegister
-from .object_register import ObjectRegister
-from .register import Register
+from .registy import Registry
 from .component_register import ComponentRegister
 from .model_register import ModelRegister
