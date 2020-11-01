@@ -24,6 +24,7 @@ from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.data import GloveLoader
 from easytext.utils import log_util
+from easytext.trainer import Config
 
 from ner.models import NerV1, NerV2, NerV3, NerV4
 from ner.data.dataset import Conll2003Dataset, MsraDataset
@@ -36,20 +37,25 @@ from ner.optimizer import NerOptimizerFactory, NerV4BertOptimizerFactory
 from ner.label_decoder import NerMaxModelLabelDecoder
 from ner.label_decoder import NerCRFModelLabelDecoder
 from ner.config import NerConfigFactory
+from ner import ROOT_PATH
 
 
 class Train:
     NEW_TRAIN = 0  # 全新训练
     RECOVERY_TRAIN = 1  # 恢复训练
 
-    def __init__(self, train_type: int, config: Dict):
+    def __init__(self, train_type: int, config: Dict, config_file_path: str):
         """
         初始化
         :param train_model: 训练类型 NEW_TRAIN: 全新训练, RECOVERY_TRAIN: 恢复训练
         :param config: 配置参数
         """
         self._train_type = train_type
-        self.config = config
+        self._config = config
+
+        self.config = Config(config_file_path=config_file_path)
+
+        print(self.config.training_dataset)
 
     def build_vocabulary(self, dataset: Dataset):
 
@@ -65,7 +71,7 @@ class Train:
             batch_tokens.extend(collate_dict["tokens"])
             batch_sequence_labels.extend(collate_dict["sequence_labels"])
 
-        model_name = self.config["model_name"]
+        model_name = self._config["model_name"]
 
         token_vocabulary = None
 
@@ -76,7 +82,7 @@ class Train:
                                           special_first=True)
 
         if model_name in {NerV2.NAME, NerV3.NAME}:
-            pretrained_word_embedding_file_path = self.config["pretrained_word_embedding_file_path"]
+            pretrained_word_embedding_file_path = self._config["pretrained_word_embedding_file_path"]
             glove_loader = GloveLoader(embedding_dim=100,
                                        pretrained_file_path=pretrained_word_embedding_file_path)
 
@@ -131,8 +137,8 @@ class Train:
         return model
 
     def build_loss(self, label_vocabulary: LabelVocabulary):
-        model_name = self.config["model_name"]
-        model_config = self.config["model"]
+        model_name = self._config["model_name"]
+        model_config = self._config["model"]
 
         if model_name == NerV1.NAME:
             loss = NerLoss()
@@ -148,7 +154,7 @@ class Train:
         return loss
 
     def build_model_metric(self, label_vocabulary: LabelVocabulary):
-        model_name = self.config["model_name"]
+        model_name = self._config["model_name"]
 
         if model_name == NerV1.NAME:
             metric = NerModelMetricAdapter(label_vocabulary=label_vocabulary,
@@ -163,7 +169,7 @@ class Train:
                                            model_label_decoder=NerCRFModelLabelDecoder(
                                                label_vocabulary=label_vocabulary))
         elif model_name == NerV4.NAME:
-            model_config = self.config["model"]
+            model_config = self._config["model"]
             is_used_crf = model_config["is_used_crf"]
 
             if is_used_crf:
@@ -180,14 +186,14 @@ class Train:
         return metric
 
     def build_model_collate(self, token_vocabulary: Vocabulary, label_vocabulary: LabelVocabulary):
-        model_name = self.config["model_name"]
+        model_name = self._config["model_name"]
 
         if model_name in {NerV1.NAME, NerV2.NAME, NerV3.NAME}:
             model_collate = NerModelCollate(token_vocab=token_vocabulary,
                                             sequence_label_vocab=label_vocabulary,
                                             sequence_max_len=512)
         elif model_name == NerV4.NAME:
-            bert_dir = self.config["bert_dir"]
+            bert_dir = self._config["bert_dir"]
             bert_tokenizer = BertTokenizer.from_pretrained(bert_dir)
             model_collate = BertModelCollate(tokenizer=bert_tokenizer,
                                              sequence_label_vocab=label_vocabulary,
@@ -198,8 +204,8 @@ class Train:
 
     def build_optimizer(self):
 
-        model_name = self.config["model_name"]
-        fine_tuning = self.config["fine_tuning"]
+        model_name = self._config["model_name"]
+        fine_tuning = self._config["fine_tuning"]
 
         if model_name in {NerV1.NAME, NerV2.NAME, NerV3.NAME}:
             optimizer_factory = NerOptimizerFactory(fine_tuning=fine_tuning)
@@ -209,7 +215,7 @@ class Train:
         return optimizer_factory
 
     def __call__(self):
-        config = self.config
+        config = self._config
         serialize_dir = config["serialize_dir"]
 
         dataset_name = config["dataset_name"]
@@ -264,7 +270,7 @@ class Train:
                                                  label_vocabulary=label_vocabulary)
         train_data_loader = DataLoader(
             dataset=train_dataset,
-            batch_size=self.config["train_batch_size"],
+            batch_size=self._config["train_batch_size"],
             shuffle=True,
             num_workers=0,
             collate_fn=model_collate
@@ -272,7 +278,7 @@ class Train:
 
         validation_data_loader = DataLoader(
             dataset=validation_dataset,
-            batch_size=self.config["test_batch_size"],
+            batch_size=self._config["test_batch_size"],
             shuffle=False,
             num_workers=0,
             collate_fn=model_collate
@@ -288,4 +294,6 @@ if __name__ == '__main__':
     config = NerConfigFactory(debug=True,
                               model_name=NerV4.NAME,
                               dataset_name=MsraDataset.NAME).create()
-    Train(train_type=Train.NEW_TRAIN, config=config)()
+    config_file_path = "data/ner/config.json"
+    config_file_path = os.path.join(ROOT_PATH, config_file_path)
+    Train(train_type=Train.NEW_TRAIN, config=config, config_file_path=config_file_path)()

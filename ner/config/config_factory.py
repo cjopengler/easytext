@@ -16,7 +16,6 @@ import shutil
 
 import torch
 
-from easytext.trainer import ConfigFactory
 
 from ner import ROOT_PATH
 from ner.models import NerV1, NerV2, NerV3, NerV4
@@ -26,7 +25,7 @@ from ner.config.conll2003_dataset_config import Conll2003DatasetConfig
 from ner.config.msra_dataset_config import MsraDatasetConfig
 
 
-class NerConfigFactory(ConfigFactory):
+class NerConfigFactory:
     """
     Ner Config Factory 子类
     """

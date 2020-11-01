@@ -19,5 +19,6 @@ class ComponentBuiltinKey:
 
     TYPE = "__type__"
     NAME_SPACE = "__name_space__"
-    OBJECT_TYPE = "__object__"
+    OBJECT = "__object__"
     REUSED = "__reused__"
+

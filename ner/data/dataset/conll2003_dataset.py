@@ -20,8 +20,10 @@ from easytext.data import Instance
 from easytext.data.tokenizer import Token
 from easytext.data.tokenizer import EnTokenizer
 from easytext.utils import bio as BIO
+from easytext.component.register import DatasetRegister
 
 
+@DatasetRegister.register_class(name="Conll2003Dataset")
 class Conll2003Dataset(Dataset):
     """
     conll2003 数据集
