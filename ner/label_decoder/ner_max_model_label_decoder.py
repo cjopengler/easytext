@@ -19,9 +19,11 @@ from easytext.data import LabelVocabulary
 from easytext.label_decoder import ModelLabelDecoder
 from easytext.label_decoder import SequenceMaxLabelIndexDecoder
 from easytext.label_decoder import SequenceLabelDecoder
+from easytext.component.register import ComponentRegister
 from ner.models import NerModelOutputs
 
 
+@ComponentRegister.register_class(name="NerMaxModelLabelDecoder", name_space="label_decoder")
 class NerMaxModelLabelDecoder(ModelLabelDecoder):
 
     def __init__(self, label_vocabulary: LabelVocabulary):

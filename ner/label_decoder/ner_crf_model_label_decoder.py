@@ -18,10 +18,12 @@ from easytext.label_decoder import ModelLabelDecoder
 from easytext.label_decoder import CRFLabelIndexDecoder
 from easytext.label_decoder import SequenceLabelDecoder
 from easytext.data import LabelVocabulary
+from easytext.component.register import ComponentRegister
 
 from ner.models import NerModelOutputs
 
 
+@ComponentRegister.register_class(name="NerCRFModelLabelDecoder", name_space="label_decoder")
 class NerCRFModelLabelDecoder(ModelLabelDecoder):
     """
     Ner CRF Model Label Decoder

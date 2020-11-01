@@ -25,18 +25,20 @@ from easytext.modules import ConditionalRandomField
 from easytext.model import Model, ModelOutputs
 from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
 from easytext.utils import bio as BIO
+from easytext.component.register import ComponentRegister
 
-from .ner_model_outputs import NerModelOutputs
+from ner.config.vocabulary_builder import VocabularyBuilder
+from ner.models.ner_model_outputs import NerModelOutputs
 
 
+@ComponentRegister.register_class(name="RnnWithCrf", name_space="model")
 class RnnWithCrf(Model):
     """
     rnn + crf
     """
 
     def __init__(self,
-                 token_vocabulary: Union[Vocabulary, PretrainedVocabulary],
-                 label_vocabulary: LabelVocabulary,
+                 vocabulary_builder: VocabularyBuilder,
                  word_embedding_dim: int,
                  rnn_type: str,
                  hidden_size: int,
@@ -47,19 +49,19 @@ class RnnWithCrf(Model):
         super().__init__()
 
         self.word_embedding_dim = word_embedding_dim
-        self.token_vocabulary = token_vocabulary
-        self.label_vocabulary = label_vocabulary
+        self.token_vocabulary = vocabulary_builder.token_vocabulary
+        self.label_vocabulary = vocabulary_builder.label_vocabulary
         self.is_used_crf = is_used_crf
 
-        if isinstance(token_vocabulary, Vocabulary):
-            self.embedding: Embedding = Embedding(num_embeddings=token_vocabulary.size,
+        if isinstance(self.token_vocabulary, Vocabulary):
+            self.embedding: Embedding = Embedding(num_embeddings=self.token_vocabulary.size,
                                                   embedding_dim=word_embedding_dim,
-                                                  padding_idx=token_vocabulary.padding_index)
+                                                  padding_idx=self.token_vocabulary.padding_index)
 
-        elif isinstance(token_vocabulary, PretrainedVocabulary):
-            self.embedding: Embedding = Embedding.from_pretrained(token_vocabulary.embedding_matrix,
+        elif isinstance(self.token_vocabulary, PretrainedVocabulary):
+            self.embedding: Embedding = Embedding.from_pretrained(self.token_vocabulary.embedding_matrix,
                                                                   freeze=True,
-                                                                  padding_idx=token_vocabulary.padding_index)
+                                                                  padding_idx=self.token_vocabulary.padding_index)
 
         self.hidden_size = hidden_size
 

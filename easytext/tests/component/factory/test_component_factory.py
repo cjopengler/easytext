@@ -20,14 +20,14 @@ from torch.nn import Linear
 from easytext.model import Model
 from easytext.data import Vocabulary
 from easytext.component import Component
-from easytext.component.register import ComponentRegister, ModelRegister
+from easytext.component.register import ComponentRegister
 from easytext.component.factory import ComponentFactory
 
 from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
 
 
-@ModelRegister.register_class(name="_MyModel")
+@ComponentRegister.register_class(name="_MyModel", name_space="model")
 class _MyModel(Model):
 
     def __init__(self, input_size: int, output_size: int):
@@ -35,7 +35,7 @@ class _MyModel(Model):
         self.linear = Linear(in_features=input_size, out_features=output_size)
 
 
-@ModelRegister.register_class(name="_NestedModel")
+@ComponentRegister.register_class(name="_NestedModel", name_space="model")
 class _NestedModel(Model):
 
     def __init__(self, input_size: int, output_size: int, my_model: _MyModel):
@@ -56,7 +56,7 @@ class _CustomerObj(Component):
         self.value = value
 
 
-@ModelRegister.register_class(name="_ModelWithObjParam")
+@ComponentRegister.register_class(name="_ModelWithObjParam", name_space="model")
 class _ModelWithObjParam(Model):
 
     def __init__(self, input_size: int, output_size: int, customer_obj: _CustomerObj):
