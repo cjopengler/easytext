@@ -18,16 +18,16 @@ from collections import OrderedDict
 from torch.nn import Linear
 
 from easytext.model import Model
-from easytext.data import Vocabulary
 from easytext.component import Component
 from easytext.component.register import ComponentRegister
 from easytext.component.factory import ComponentFactory
+from easytext.component.register import Registry
 
 from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
 
 
-@ComponentRegister.register_class(name="_MyModel", name_space="model")
+@ComponentRegister.register(name="_MyModel", name_space="model")
 class _MyModel(Model):
 
     def __init__(self, input_size: int, output_size: int):
@@ -35,7 +35,7 @@ class _MyModel(Model):
         self.linear = Linear(in_features=input_size, out_features=output_size)
 
 
-@ComponentRegister.register_class(name="_NestedModel", name_space="model")
+@ComponentRegister.register(name="_NestedModel", name_space="model")
 class _NestedModel(Model):
 
     def __init__(self, input_size: int, output_size: int, my_model: _MyModel):
@@ -47,7 +47,7 @@ class _NestedModel(Model):
         pass
 
 
-@ComponentRegister.register_class(name="_CustomerObj", name_space="test")
+@ComponentRegister.register(name="_CustomerObj", name_space="test")
 class _CustomerObj(Component):
 
     def __init__(self, is_training: bool, value: int):
@@ -56,7 +56,7 @@ class _CustomerObj(Component):
         self.value = value
 
 
-@ComponentRegister.register_class(name="_ModelWithObjParam", name_space="model")
+@ComponentRegister.register(name="_ModelWithObjParam", name_space="model")
 class _ModelWithObjParam(Model):
 
     def __init__(self, input_size: int, output_size: int, customer_obj: _CustomerObj):
@@ -68,7 +68,7 @@ class _ModelWithObjParam(Model):
         pass
 
 
-@ComponentRegister.register_class(name="_DictParamComponent", name_space="test")
+@ComponentRegister.register(name="_DictParamComponent", name_space="test")
 class _DictParamComponent(Component):
 
     def __init__(self, is_training: bool, dict_value: Dict, customer_obj: _CustomerObj):
@@ -77,7 +77,7 @@ class _DictParamComponent(Component):
         self.curstomer_obj = customer_obj
 
 
-@ComponentRegister.register_class(name="_TrainingComponent", name_space="training_component")
+@ComponentRegister.register(name="_TrainingComponent", name_space="training_component")
 class _TrainingComponent(Component):
     """
     带有 trainging 的Component
@@ -93,20 +93,16 @@ class _TrainingComponent(Component):
 
 
 def test_component_factory():
-    config_dict = OrderedDict(
-        {
-            "model":
-                {
-                    "__type__": "_MyModel",
-                    "__name_space__": "model",
-                    "input_size": 2,
-                    "output_size": 4
-                }
-        })
+    Registry().clear_objects()
+
+    model_json_file_path = "data/easytext/tests/component/model.json"
+    model_json_file_path = os.path.join(ROOT_PATH, model_json_file_path)
+    with open(model_json_file_path, encoding="utf-8") as f:
+        config = json.load(f, object_pairs_hook=OrderedDict)
 
     factory = ComponentFactory(is_training=True)
 
-    parserd_dict = factory.create(config=config_dict)
+    parserd_dict = factory.create(config=config)
 
     model = parserd_dict["model"]
 
@@ -115,6 +111,7 @@ def test_component_factory():
 
 
 def test_component_nested_factory():
+    Registry().clear_objects()
 
     nested_json_file_path = "data/easytext/tests/component/nested.json"
     nested_json_file_path = os.path.join(ROOT_PATH, nested_json_file_path)
@@ -137,6 +134,7 @@ def test_component_nested_factory():
 
 
 def test_component_training_factory():
+    Registry().clear_objects()
 
     config_json_file_path = "data/easytext/tests/component/training.json"
     config_json_file_path = os.path.join(ROOT_PATH, config_json_file_path)
@@ -154,6 +152,7 @@ def test_component_training_factory():
 
 
 def test_component_evaluate_factory():
+    Registry().clear_objects()
 
     config_json_file_path = "data/easytext/tests/component/training.json"
     config_json_file_path = os.path.join(ROOT_PATH, config_json_file_path)
@@ -175,7 +174,7 @@ def test_component_with_object():
     测试，当 component 构建的时候，某个参数是 object
     :return:
     """
-
+    Registry().clear_objects()
     config_json_file_path = "data/easytext/tests/component/component_with_obj.json"
     config_json_file_path = os.path.join(ROOT_PATH, config_json_file_path)
     with open(config_json_file_path, encoding="utf-8") as f:

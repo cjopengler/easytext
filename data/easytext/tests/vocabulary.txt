@@ -1,9 +1,0 @@
-@@PADDING@@
-@@UNK@@
-<Start>
-<End>
-我
-和
-你
-在
-newline@@NEWLINE@@newline

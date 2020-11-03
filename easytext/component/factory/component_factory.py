@@ -10,11 +10,15 @@ Component Factory
 Authors: PanXu
 Date:    2020/10/27 16:14:00
 """
+import traceback
+import logging
+import inspect
 from collections import OrderedDict
 
 from easytext.component import Component
 from easytext.component.component_builtin_key import ComponentBuiltinKey
 from easytext.component.register import Registry
+from easytext.utils.json_util import json2str
 
 
 class ComponentFactory:
@@ -47,7 +51,7 @@ class ComponentFactory:
         :param param_dict:
         :return:
         """
-        component_type = param_dict.pop(ComponentBuiltinKey.TYPE)
+        component_type = param_dict.pop(ComponentBuiltinKey.NAME)
         name_space = param_dict.pop(ComponentBuiltinKey.NAME_SPACE)
 
         cls = self._registry.find_class(name=component_type, name_space=name_space)
@@ -66,11 +70,25 @@ class ComponentFactory:
                 pass
 
         # 增加 is_training 参数
-        if issubclass(cls, Component):
-            if "is_training" not in param_dict:
-                param_dict["is_training"] = self._is_training
+        need_is_training_parameter = False
+        if inspect.isclass(cls) and issubclass(cls, Component):
+            need_is_training_parameter = True
+        elif inspect.isfunction(cls):
+            if ComponentBuiltinKey.IS_TRAINING in inspect.getfullargspec(cls).args:
+                need_is_training_parameter = True
 
-        obj = cls(**param_dict)
+        else:
+            raise RuntimeError(f"{cls} 错误! 应该是 函数 或者是 类的静态函数, 不能是类函数或者成员函数")
+
+        if need_is_training_parameter and (ComponentBuiltinKey.IS_TRAINING not in param_dict):
+            param_dict[ComponentBuiltinKey.IS_TRAINING] = self._is_training
+
+        try:
+            obj = cls(**param_dict)
+        except TypeError as type_error:
+            logging.fatal(f"Exception: {type_error} for {cls}")
+            logging.fatal(traceback.format_exc())
+            raise type_error
 
         self._registry.register_object(name=path, obj=obj)
         return obj
@@ -102,16 +120,16 @@ class ComponentFactory:
         if ComponentBuiltinKey.OBJECT in param_dict:
             return self._create_by_object(path=path, param_dict=param_dict)
 
-        elif ComponentBuiltinKey.TYPE in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
+        elif ComponentBuiltinKey.NAME in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
             return self._create_by_type(path=path, param_dict=param_dict)
 
-        elif ComponentBuiltinKey.TYPE in param_dict and ComponentBuiltinKey.NAME_SPACE not in param_dict:
+        elif ComponentBuiltinKey.NAME in param_dict and ComponentBuiltinKey.NAME_SPACE not in param_dict:
             raise RuntimeError(f"构建 {path} 错误, "
-                               f"{ComponentBuiltinKey.TYPE} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
+                               f"{ComponentBuiltinKey.NAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
 
-        elif ComponentBuiltinKey.TYPE not in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
+        elif ComponentBuiltinKey.NAME not in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
             raise RuntimeError(f"构建 {path} 错误, "
-                               f"{ComponentBuiltinKey.TYPE} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
+                               f"{ComponentBuiltinKey.NAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
 
         else:
             # 这种情况是指，参数就是一个字典
@@ -129,5 +147,10 @@ class ComponentFactory:
         parsed_config = OrderedDict(config)
 
         for obj_name, param_dict in parsed_config.items():
-            parsed_config[obj_name] = self._create(obj_name, param_dict=param_dict)
+
+            if isinstance(param_dict, OrderedDict):
+                parsed_config[obj_name] = self._create(obj_name, param_dict=param_dict)
+            else:
+                # 对于非字典的根节点下的是基础类型，不用做处理
+                pass
         return parsed_config

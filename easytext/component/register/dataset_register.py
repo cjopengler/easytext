@@ -23,6 +23,6 @@ class DatasetRegister:
 
     @classmethod
     def register_class(cls, name: str, is_allowed_exist: bool = False) -> T:
-        return ComponentRegister.register_class(name, DatasetRegister.NAME_SPACE, is_allowed_exist)
+        return ComponentRegister.register(name, DatasetRegister.NAME_SPACE, is_allowed_exist)
 
 

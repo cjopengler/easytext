@@ -14,10 +14,13 @@ from transformers import AdamW
 
 from easytext.optimizer import OptimizerFactory
 
-from ner.models import NerV4
+from ner.models import BertWithCrf
+
+from easytext.component.register import ComponentRegister
 
 
-class NerV4BertOptimizerFactory(OptimizerFactory):
+@ComponentRegister.register(name="BertOptimizerFactory", name_space="optimizer")
+class BertOptimizerFactory(OptimizerFactory):
     """
     Ner Optimizer Factory 创建 Optimizer
     """
@@ -25,7 +28,7 @@ class NerV4BertOptimizerFactory(OptimizerFactory):
     def __init__(self, fine_tuning=False):
         self.fine_tuning = fine_tuning
 
-    def create(self, model: NerV4) -> "NerOptimizerFactory":
+    def create(self, model: BertWithCrf) -> "NerOptimizerFactory":
 
         optimizer_grouped_parameters = list()
 

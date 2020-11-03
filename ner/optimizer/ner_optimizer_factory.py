@@ -18,7 +18,7 @@ from easytext.model import Model
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register_class(name="NerOptimizerFactory", name_space="optimizer")
+@ComponentRegister.register(name="NerOptimizerFactory", name_space="optimizer")
 class NerOptimizerFactory(OptimizerFactory):
     """
     Ner Optimizer Factory 创建 Optimizer

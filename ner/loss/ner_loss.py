@@ -17,14 +17,13 @@ from torch.nn import CrossEntropyLoss
 from easytext.loss import Loss
 from easytext.model import ModelOutputs
 from easytext.modules import ConditionalRandomField
-from easytext.data import LabelVocabulary
 from easytext.component.register import ComponentRegister
 
 from ner.models import NerModelOutputs
-from ner.config.vocabulary_builder import VocabularyBuilder
+from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register_class(name="NerLoss", name_space="loss")
+@ComponentRegister.register(name="NerLoss", name_space="loss")
 class NerLoss(Loss):
     """
     Ner CRF Loss

@@ -40,6 +40,14 @@ class Registry:
         pass
 
     def register_class(self, cls: Type[T], name_space: str, name: str, is_allowed_exist: bool = False) -> "Registry":
+        """
+        注册类
+        :param cls: 要注册的 类
+        :param name_space: 命名空间
+        :param name: 配置文件中的名字
+        :param is_allowed_exist: True: 如果名字和命名空间一样, 会覆盖存在的类; False: 会报错
+        :return:
+        """
 
         name_space_dict = self._class_registry.get(name_space, dict())
 
@@ -52,9 +60,21 @@ class Registry:
         return self
 
     def find_class(self, name_space: str, name: str) -> Type[T]:
+        """
+        根据 name space 或 name 找到 class 或 function
+        :param name_space: 类在config文件中的命名空间
+        :param name: 泪在 config 文件中的 类型
+        :return:
+        """
         return self._class_registry.get(name_space, dict()).get(name, None)
 
     def register_object(self, obj: T, name: str) -> "Registry":
+        """
+        注册 object
+        :param obj: 实例对象
+        :param name: 实例对象的名字
+        :return:
+        """
 
         if name in self._object_registry:
             raise RuntimeError(f"{name} object 已经存在!")
@@ -64,6 +84,20 @@ class Registry:
         return self
 
     def find_object(self, name: str) -> T:
+        """
+        根据配置文件中的名字找到对象
+        :param name: 对象的名字
+        :return:
+        """
         return self._object_registry[name]
+
+    def clear_objects(self) -> "Registry":
+        """
+        清空注册表
+        :return:
+        """
+        self._object_registry.clear()
+
+        return self
 
 

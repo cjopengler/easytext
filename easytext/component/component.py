@@ -24,3 +24,4 @@ class Component:
         """
         self._is_training = is_training
 
+

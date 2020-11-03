@@ -17,8 +17,8 @@ class ComponentBuiltinKey:
     组件内建 key 会用在config的文件中
     """
     OBJECT = "__object__"
-    TYPE = "__type__"
+    NAME = "__name__"
     NAME_SPACE = "__name_space__"
     BUILTIN_NAME_SPACE = "__easy_text__"
-    REUSED = "__reused__"
+    IS_TRAINING = "is_training"
 

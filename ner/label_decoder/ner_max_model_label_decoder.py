@@ -23,7 +23,7 @@ from easytext.component.register import ComponentRegister
 from ner.models import NerModelOutputs
 
 
-@ComponentRegister.register_class(name="NerMaxModelLabelDecoder", name_space="label_decoder")
+@ComponentRegister.register(name="NerMaxModelLabelDecoder", name_space="label_decoder")
 class NerMaxModelLabelDecoder(ModelLabelDecoder):
 
     def __init__(self, label_vocabulary: LabelVocabulary):

@@ -19,6 +19,7 @@ from easytext.utils import log_util
 
 from ner.tests import ASSERT
 from ner.data import NerModelCollate
+from ner.data import VocabularyBuilder
 
 
 log_util.config()
@@ -35,9 +36,18 @@ def test_ner_model_collate(conll2003_dataset, vocabulary):
     token_vocab = vocabulary["token_vocabulary"]
     label_vocab = vocabulary["label_vocabulary"]
 
+    vocabulary_builder = VocabularyBuilder(is_training=False,
+                                           dataset=None,
+                                           vocabulary_collate=None,
+                                           token_vocabulary_dir=None,
+                                           label_vocabulary_dir=None,
+                                           is_build_token_vocabulary=True,
+                                           pretrained_word_embedding_loader=None)
+    vocabulary_builder.token_vocabulary = token_vocab
+    vocabulary_builder.label_vocabulary = label_vocab
+
     sequence_max_len = 5
-    model_collate = NerModelCollate(token_vocab=token_vocab,
-                                    sequence_label_vocab=label_vocab,
+    model_collate = NerModelCollate(vocabulary_builder=vocabulary_builder,
                                     sequence_max_len=sequence_max_len)
 
     data_loader = DataLoader(dataset=conll2003_dataset,

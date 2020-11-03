@@ -17,23 +17,23 @@ import torch
 from easytext.label_decoder import ModelLabelDecoder
 from easytext.label_decoder import CRFLabelIndexDecoder
 from easytext.label_decoder import SequenceLabelDecoder
-from easytext.data import LabelVocabulary
 from easytext.component.register import ComponentRegister
 
 from ner.models import NerModelOutputs
+from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register_class(name="NerCRFModelLabelDecoder", name_space="label_decoder")
+@ComponentRegister.register(name="NerCRFModelLabelDecoder", name_space="label_decoder")
 class NerCRFModelLabelDecoder(ModelLabelDecoder):
     """
     Ner CRF Model Label Decoder
     """
 
-    def __init__(self, label_vocabulary: LabelVocabulary):
+    def __init__(self, vocabulary_builder: VocabularyBuilder):
         super().__init__()
         self._label_index_decoder = None
         self._label_decoder = None
-        self._label_vocabulary = label_vocabulary
+        self._label_vocabulary = vocabulary_builder.label_vocabulary
 
     def decode_label_index(self, model_outputs: NerModelOutputs) -> torch.LongTensor:
         """

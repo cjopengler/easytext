@@ -23,6 +23,6 @@ class BuiltinRegister:
 
     @classmethod
     def register_class(cls, name: str, is_allowed_exist: bool = False) -> T:
-        return ComponentRegister.register_class(name, ComponentBuiltinKey.BUILTIN_NAME_SPACE, is_allowed_exist)
+        return ComponentRegister.register(name, ComponentBuiltinKey.BUILTIN_NAME_SPACE, is_allowed_exist)
 
 

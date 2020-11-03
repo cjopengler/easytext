@@ -10,19 +10,18 @@
 Authors: PanXu
 Date:    2020/06/27 00:24:00
 """
-from typing import Iterable, Union
+from typing import Iterable
 
 import torch
 
 from easytext.data import ModelInputs, Instance
 from easytext.data import ModelCollate
-from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.component.register import ComponentRegister
 
-from ner.config.vocabulary_builder import VocabularyBuilder
+from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register_class(name="NerModelCollate", name_space="data")
+@ComponentRegister.register(name="NerModelCollate", name_space="data")
 class NerModelCollate(ModelCollate):
     """
     ner 的 model collate
@@ -31,7 +30,7 @@ class NerModelCollate(ModelCollate):
     def __init__(self,
                  vocabulary_builder: VocabularyBuilder,
                  sequence_max_len: int = 512):
-        self._token_vocab = vocabulary_builder.token_vocab
+        self._token_vocab = vocabulary_builder.token_vocabulary
         self._sequence_label_vocab = vocabulary_builder.label_vocabulary
         self._max_len = sequence_max_len
 

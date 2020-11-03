@@ -11,27 +11,24 @@ Authors: PanXu
 Date:    2020/10/29 16:17:00
 """
 
-import logging
-from typing import Union, Dict
+from typing import Dict
 
-import torch
 from torch import Tensor
 from torch.nn import LSTM, GRU, Linear, Embedding
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from easytext.modules.seq2seq import RnnSeq2Seq
 from easytext.modules import DynamicRnn
 from easytext.modules import ConditionalRandomField
-from easytext.model import Model, ModelOutputs
-from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
+from easytext.model import Model
+from easytext.data import Vocabulary, PretrainedVocabulary
 from easytext.utils import bio as BIO
 from easytext.component.register import ComponentRegister
 
-from ner.config.vocabulary_builder import VocabularyBuilder
+from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models.ner_model_outputs import NerModelOutputs
 
 
-@ComponentRegister.register_class(name="RnnWithCrf", name_space="model")
+@ComponentRegister.register(name="RnnWithCrf", name_space="model")
 class RnnWithCrf(Model):
     """
     rnn + crf
@@ -71,14 +68,16 @@ class RnnWithCrf(Model):
                         hidden_size=hidden_size,
                         num_layers=num_layer,
                         bidirectional=True,
-                        dropout=dropout)
+                        dropout=dropout,
+                        batch_first=True)
             dynamic_rnn = DynamicRnn(rnn=lstm)
         elif rnn_type == DynamicRnn.GRU:
             gru = GRU(input_size=word_embedding_dim,
                       hidden_size=hidden_size,
                       num_layers=num_layer,
                       bidirectional=True,
-                      dropout=dropout)
+                      dropout=dropout,
+                      batch_first=True)
             dynamic_rnn = DynamicRnn(rnn=gru)
         else:
             raise RuntimeError(f"rnn_type: {rnn_type} 必须是 {DynamicRnn.LSTM} 或 {DynamicRnn.GRU} ")
@@ -86,11 +85,11 @@ class RnnWithCrf(Model):
         self.rnn_seq2seq = RnnSeq2Seq(dynamic_rnn=dynamic_rnn)
 
         self.liner = Linear(in_features=hidden_size * 2,
-                            out_features=label_vocabulary.label_size)
+                            out_features=self.label_vocabulary.label_size)
 
         if self.is_used_crf:
-            constraints = BIO.allowed_transitions(label_vocabulary=label_vocabulary)
-            self.crf = ConditionalRandomField(num_tags=label_vocabulary.label_size,
+            constraints = BIO.allowed_transitions(label_vocabulary=self.label_vocabulary)
+            self.crf = ConditionalRandomField(num_tags=self.label_vocabulary.label_size,
                                               constraints=constraints)
         else:
             self.crf = None

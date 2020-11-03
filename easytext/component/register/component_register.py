@@ -23,9 +23,9 @@ class ComponentRegister:
     """
 
     @classmethod
-    def register_class(cls, name: str, name_space: str, is_allowed_exist: bool = False) -> T:
+    def register(cls, name: str, name_space: str, is_allowed_exist: bool = False) -> T:
         """
-        用作在类上的装饰器
+        用作在类或函数上的装饰器
         :param name: 在配置文件中的 名字
         :param name_space: 配置文件中的 name space
         :param is_allowed_exist: True: 允许名字重复，那么，后面的名字会将前面的名字覆盖, 正常来讲不应该出现这样的设置;

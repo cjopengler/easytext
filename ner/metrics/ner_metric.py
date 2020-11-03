@@ -16,16 +16,14 @@ from torch import Tensor
 
 from easytext.metrics import ModelMetricAdapter, ModelTargetMetric
 from easytext.metrics import SpanF1Metric
-from easytext.model import ModelOutputs
-from easytext.data import LabelVocabulary
 from easytext.label_decoder import ModelLabelDecoder
 from easytext.component.register import ComponentRegister
 
-from ner.config.vocabulary_builder import VocabularyBuilder
+from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models import NerModelOutputs
 
 
-@ComponentRegister.register_class(name="NerModelMetricAdapter", name_space="metric")
+@ComponentRegister.register(name="NerModelMetricAdapter", name_space="metric")
 class NerModelMetricAdapter(ModelMetricAdapter):
     """
     Ner Model Metric Adapter
