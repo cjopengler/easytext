@@ -21,7 +21,7 @@ from easytext.component.register import ComponentRegister
 from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register(name="NerModelCollate", name_space="data")
+@ComponentRegister.register(name_space="ner")
 class NerModelCollate(ModelCollate):
     """
     ner 的 model collate

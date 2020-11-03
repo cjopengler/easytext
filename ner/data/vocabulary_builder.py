@@ -19,7 +19,7 @@ from easytext.data import Vocabulary, PretrainedVocabulary, PretrainedWordEmbedd
 from easytext.component import Component
 
 
-@ComponentRegister.register(name="VocabularyBuilder", name_space="data")
+@ComponentRegister.register(name_space="ner")
 class VocabularyBuilder(Component):
     """
     Vocabulary 构建器
@@ -82,11 +82,11 @@ class VocabularyBuilder(Component):
         self.label_vocabulary = label_vocabulary
 
     @staticmethod
-    @ComponentRegister.register(name="label_vocabulary", name_space="data")
+    @ComponentRegister.register(name_space="ner")
     def label_vocabulary(vocabulary_builder: "VocabularyBuilder") -> LabelVocabulary:
         return vocabulary_builder.label_vocabulary
 
     @staticmethod
-    @ComponentRegister.register(name="token_vocabulary", name_space="data")
+    @ComponentRegister.register(name_space="ner")
     def token_vocabulary(vocabulary_builder: "VocabularyBuilder") -> Vocabulary:
         return vocabulary_builder.token_vocabulary

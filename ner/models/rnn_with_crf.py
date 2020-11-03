@@ -28,7 +28,7 @@ from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models.ner_model_outputs import NerModelOutputs
 
 
-@ComponentRegister.register(name="RnnWithCrf", name_space="model")
+@ComponentRegister.register(name_space="ner")
 class RnnWithCrf(Model):
     """
     rnn + crf

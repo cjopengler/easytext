@@ -15,10 +15,10 @@ from torch.utils.data import Dataset
 
 from easytext.data import Instance
 from easytext.data.tokenizer import ZhTokenizer
-from easytext.component.register import DatasetRegister
+from easytext.component.register import ComponentRegister
 
 
-@DatasetRegister.register_class(name="MsraDataset")
+@ComponentRegister.register(name_space="ner")
 class MsraDataset(Dataset):
     """
     Msra Dataset 处理，相应说明请参考 docs/docs/ner/命名实体识别.md

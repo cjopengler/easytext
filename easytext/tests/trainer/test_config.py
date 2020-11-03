@@ -19,12 +19,12 @@ from easytext.tests import ROOT_PATH
 from easytext.tests import ASSERT
 
 
-@ComponentRegister.register(name="Optimizer", name_space="optimizer")
+@ComponentRegister.register(typename="Optimizer", name_space="optimizer")
 class _MyOpitmizer:
     pass
 
 
-@ComponentRegister.register(name="MyModel", name_space="model")
+@ComponentRegister.register(typename="MyModel", name_space="model")
 class _MyModel:
 
     def __init__(self, input_size: int, output_size: int):

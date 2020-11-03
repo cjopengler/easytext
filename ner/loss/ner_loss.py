@@ -23,7 +23,7 @@ from ner.models import NerModelOutputs
 from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register(name="NerLoss", name_space="loss")
+@ComponentRegister.register(name_space="ner")
 class NerLoss(Loss):
     """
     Ner CRF Loss

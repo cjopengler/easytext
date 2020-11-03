@@ -16,13 +16,15 @@ from easytext.component.register import ComponentRegister
 from easytext.component.register.component_register import T
 
 
-class BuiltinRegister:
+class EasytextRegister:
     """
     easytext 系统使用的注册器，外部永远不要使用这个注册器，而应该使用 ComponentRegister
     """
 
     @classmethod
-    def register_class(cls, name: str, is_allowed_exist: bool = False) -> T:
-        return ComponentRegister.register(name, ComponentBuiltinKey.BUILTIN_NAME_SPACE, is_allowed_exist)
+    def register(cls, typename: str = None, is_allowed_exist: bool = False) -> T:
+        return ComponentRegister.register(typename=typename,
+                                          name_space=ComponentBuiltinKey.EASYTEXT_NAME_SPACE,
+                                          is_allowed_exist=is_allowed_exist)
 
 

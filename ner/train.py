@@ -22,7 +22,7 @@ from transformers import BertTokenizer
 
 from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
-from easytext.data import GloveLoader
+from easytext.data import GloveLoader, SGNSLoader
 from easytext.utils import log_util
 from easytext.trainer import Config
 

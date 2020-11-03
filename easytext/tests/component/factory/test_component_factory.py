@@ -27,7 +27,7 @@ from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
 
 
-@ComponentRegister.register(name="_MyModel", name_space="model")
+@ComponentRegister.register(typename="_MyModel", name_space="model")
 class _MyModel(Model):
 
     def __init__(self, input_size: int, output_size: int):
@@ -35,7 +35,7 @@ class _MyModel(Model):
         self.linear = Linear(in_features=input_size, out_features=output_size)
 
 
-@ComponentRegister.register(name="_NestedModel", name_space="model")
+@ComponentRegister.register(typename="_NestedModel", name_space="model")
 class _NestedModel(Model):
 
     def __init__(self, input_size: int, output_size: int, my_model: _MyModel):
@@ -47,7 +47,7 @@ class _NestedModel(Model):
         pass
 
 
-@ComponentRegister.register(name="_CustomerObj", name_space="test")
+@ComponentRegister.register(typename="_CustomerObj", name_space="test")
 class _CustomerObj(Component):
 
     def __init__(self, is_training: bool, value: int):
@@ -56,7 +56,7 @@ class _CustomerObj(Component):
         self.value = value
 
 
-@ComponentRegister.register(name="_ModelWithObjParam", name_space="model")
+@ComponentRegister.register(typename="_ModelWithObjParam", name_space="model")
 class _ModelWithObjParam(Model):
 
     def __init__(self, input_size: int, output_size: int, customer_obj: _CustomerObj):
@@ -68,7 +68,7 @@ class _ModelWithObjParam(Model):
         pass
 
 
-@ComponentRegister.register(name="_DictParamComponent", name_space="test")
+@ComponentRegister.register(typename="_DictParamComponent", name_space="test")
 class _DictParamComponent(Component):
 
     def __init__(self, is_training: bool, dict_value: Dict, customer_obj: _CustomerObj):
@@ -77,7 +77,7 @@ class _DictParamComponent(Component):
         self.curstomer_obj = customer_obj
 
 
-@ComponentRegister.register(name="_TrainingComponent", name_space="training_component")
+@ComponentRegister.register(typename="_TrainingComponent", name_space="training_component")
 class _TrainingComponent(Component):
     """
     带有 trainging 的Component
@@ -90,6 +90,18 @@ class _TrainingComponent(Component):
             self.value = f"training_{value}"
         else:
             self.value = f"evaluate_{value}"
+
+
+@ComponentRegister.register(typename="my_object", name_space="test")
+def _my_object(value: str):
+    return f"my_{value}"
+
+
+@ComponentRegister.register(name_space="test")
+class _DefaultTypename:
+
+    def __init__(self, value):
+        self.value = value + 1
 
 
 def test_component_factory():
@@ -211,3 +223,25 @@ def test_component_with_object():
     ASSERT.assertEqual(2, dict_param_component.dict_value["b"])
     ASSERT.assertEqual(30, dict_param_component.dict_value["c_obj"].value)
 
+    my_object = parsed_dict["my_object"]
+    ASSERT.assertEqual("my_test_value", my_object)
+
+
+def test_default_typename():
+    """
+    测试，当 component 构建的时候，某个参数是 object
+    :return:
+    """
+    Registry().clear_objects()
+    config_json_file_path = "data/easytext/tests/component/default_typename.json"
+    config_json_file_path = os.path.join(ROOT_PATH, config_json_file_path)
+    with open(config_json_file_path, encoding="utf-8") as f:
+        param_dict = json.load(f, object_pairs_hook=OrderedDict)
+
+    factory = ComponentFactory(is_training=False)
+
+    parsed_dict = factory.create(config=param_dict)
+
+    default_typename = parsed_dict["default_typename"]
+
+    ASSERT.assertEqual(10, default_typename.value)

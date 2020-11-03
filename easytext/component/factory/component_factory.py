@@ -51,7 +51,7 @@ class ComponentFactory:
         :param param_dict:
         :return:
         """
-        component_type = param_dict.pop(ComponentBuiltinKey.NAME)
+        component_type = param_dict.pop(ComponentBuiltinKey.TYPENAME)
         name_space = param_dict.pop(ComponentBuiltinKey.NAME_SPACE)
 
         cls = self._registry.find_class(name=component_type, name_space=name_space)
@@ -71,8 +71,12 @@ class ComponentFactory:
 
         # 增加 is_training 参数
         need_is_training_parameter = False
-        if inspect.isclass(cls) and issubclass(cls, Component):
-            need_is_training_parameter = True
+        if inspect.isclass(cls):
+            if issubclass(cls, Component):
+                need_is_training_parameter = True
+            else:
+                # 非 Component 类，不做任何处理
+                pass
         elif inspect.isfunction(cls):
             if ComponentBuiltinKey.IS_TRAINING in inspect.getfullargspec(cls).args:
                 need_is_training_parameter = True
@@ -120,16 +124,16 @@ class ComponentFactory:
         if ComponentBuiltinKey.OBJECT in param_dict:
             return self._create_by_object(path=path, param_dict=param_dict)
 
-        elif ComponentBuiltinKey.NAME in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
+        elif ComponentBuiltinKey.TYPENAME in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
             return self._create_by_type(path=path, param_dict=param_dict)
 
-        elif ComponentBuiltinKey.NAME in param_dict and ComponentBuiltinKey.NAME_SPACE not in param_dict:
+        elif ComponentBuiltinKey.TYPENAME in param_dict and ComponentBuiltinKey.NAME_SPACE not in param_dict:
             raise RuntimeError(f"构建 {path} 错误, "
-                               f"{ComponentBuiltinKey.NAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
+                               f"{ComponentBuiltinKey.TYPENAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
 
-        elif ComponentBuiltinKey.NAME not in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
+        elif ComponentBuiltinKey.TYPENAME not in param_dict and ComponentBuiltinKey.NAME_SPACE in param_dict:
             raise RuntimeError(f"构建 {path} 错误, "
-                               f"{ComponentBuiltinKey.NAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
+                               f"{ComponentBuiltinKey.TYPENAME} 与 {ComponentBuiltinKey.NAME_SPACE} 必须同时出现")
 
         else:
             # 这种情况是指，参数就是一个字典

@@ -23,7 +23,7 @@ from ner.models import NerModelOutputs
 from ner.data.vocabulary_builder import VocabularyBuilder
 
 
-@ComponentRegister.register(name="NerCRFModelLabelDecoder", name_space="label_decoder")
+@ComponentRegister.register(name_space="ner")
 class NerCRFModelLabelDecoder(ModelLabelDecoder):
     """
     Ner CRF Model Label Decoder

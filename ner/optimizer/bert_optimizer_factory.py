@@ -19,7 +19,7 @@ from ner.models import BertWithCrf
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register(name="BertOptimizerFactory", name_space="optimizer")
+@ComponentRegister.register(name_space="ner")
 class BertOptimizerFactory(OptimizerFactory):
     """
     Ner Optimizer Factory 创建 Optimizer

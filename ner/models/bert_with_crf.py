@@ -31,7 +31,7 @@ from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models.ner_model_outputs import NerModelOutputs
 
 
-@ComponentRegister.register(name="BertWithCrf", name_space="model")
+@ComponentRegister.register(name_space="ner")
 class BertWithCrf(Model):
     """
     Bert With Crf

@@ -23,7 +23,7 @@ from easytext.data import LabelVocabulary
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register(name="BertModelCollate", name_space="data")
+@ComponentRegister.register(name_space="ner")
 class BertModelCollate(ModelCollate):
     """
     ner 的 bert model collate

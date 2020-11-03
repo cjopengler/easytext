@@ -16,6 +16,6 @@ from transformers import BertTokenizer
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register(name="BertTokenizer", name_space="data")
+@ComponentRegister.register(typename="BertTokenizer", name_space="ner")
 def bert_tokenizer(bert_dir: str):
     return BertTokenizer.from_pretrained(bert_dir)

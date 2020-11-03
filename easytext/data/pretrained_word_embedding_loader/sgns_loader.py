@@ -12,10 +12,10 @@ Date:    2020/09/25 08:11:00
 """
 
 from easytext.data.pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
-from easytext.component.register import BuiltinRegister
+from easytext.component.register import EasytextRegister
 
 
-@BuiltinRegister.register_class(name="SGNSLoader")
+@EasytextRegister.register()
 class SGNSLoader(GeneralPretrainedWordEmbeddingLoader):
     """
     SGNS Word Embedding Loader.

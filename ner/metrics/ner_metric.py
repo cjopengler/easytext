@@ -23,7 +23,7 @@ from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models import NerModelOutputs
 
 
-@ComponentRegister.register(name="NerModelMetricAdapter", name_space="metric")
+@ComponentRegister.register(name_space="ner")
 class NerModelMetricAdapter(ModelMetricAdapter):
     """
     Ner Model Metric Adapter

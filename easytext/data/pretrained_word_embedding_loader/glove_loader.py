@@ -11,11 +11,11 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/06/25 09:57:00
 """
 
-from easytext.component.register import BuiltinRegister
+from easytext.component.register import EasytextRegister
 from easytext.data.pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
 
 
-@BuiltinRegister.register_class("GloveLoader")
+@EasytextRegister.register("GloveLoader")
 class GloveLoader(GeneralPretrainedWordEmbeddingLoader):
     """
     Glove Word Embedding Loader.

@@ -1,26 +1,26 @@
 {
   "training_dataset": {
-    "__name__": "MsraDataset",
-    "__name_space__": "dataset",
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
     "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
   },
 
   "validation_dataset": {
-    "__name__": "MsraDataset",
-    "__name_space__": "dataset",
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
     "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
   },
 
   "vocabulary_builder": {
-    "__name__": "VocabularyBuilder",
-    "__name_space__": "data",
+    "__type__": "VocabularyBuilder",
+    "__name_space__": "ner",
 
     "dataset": {
       "__object__": "training_dataset"
     },
     "vocabulary_collate": {
-      "__name__": "VocabularyCollate",
-      "__name_space__": "data"
+      "__type__": "VocabularyCollate",
+      "__name_space__": "ner"
     },
 
     "token_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/vocabulary/token_vocabulary",
@@ -28,8 +28,8 @@
     "is_build_token_vocabulary": true,
 
     "pretrained_word_embedding_loader": {
-      "__name__": "SGNSLoader",
-      "__name_space__": "__easy_text__",
+      "__type__": "SGNSLoader",
+      "__name_space__": "__easytext__",
       "embedding_dim": 300,
       "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/sgns/sgns.baidubaike.bigram-char",
       "max_size": 10
@@ -37,8 +37,8 @@
   },
 
   "model_collate": {
-     "__name__": "NerModelCollate",
-     "__name_space__": "data",
+     "__type__": "NerModelCollate",
+     "__name_space__": "ner",
 
      "vocabulary_builder": {
        "__object__": "vocabulary_builder"
@@ -48,16 +48,16 @@
   },
 
   "model_label_decoder": {
-    "__name__": "NerCRFModelLabelDecoder",
-    "__name_space__": "label_decoder",
+    "__type__": "NerCRFModelLabelDecoder",
+    "__name_space__": "ner",
     "vocabulary_builder": {
       "__object__": "vocabulary_builder"
     }
   },
 
   "metric": {
-     "__name__": "NerModelMetricAdapter",
-     "__name_space__": "metric",
+     "__type__": "NerModelMetricAdapter",
+     "__name_space__": "ner",
 
      "vocabulary_builder": {
        "__object__": "vocabulary_builder"
@@ -68,8 +68,8 @@
   },
 
   "model": {
-     "__name__": "RnnWithCrf",
-     "__name_space__": "model",
+     "__type__": "RnnWithCrf",
+     "__name_space__": "ner",
      "vocabulary_builder": {
        "__object__": "vocabulary_builder"
      },
@@ -83,14 +83,14 @@
   },
 
   "optimizer": {
-     "__name__":"NerOptimizerFactory",
-     "__name_space__": "optimizer",
+     "__type__":"NerOptimizerFactory",
+     "__name_space__": "ner",
      "fine_tuning": true
   },
 
   "loss": {
-    "__name__":"NerLoss",
-     "__name_space__": "loss",
+    "__type__":"NerLoss",
+     "__name_space__": "ner",
     "is_used_crf": true,
     "vocabulary_builder": {
       "__object__": "vocabulary_builder"
