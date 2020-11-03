@@ -14,8 +14,10 @@ Date:    2020/06/26 22:50:00
 from typing import List, Dict
 
 from easytext.data import Instance
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="ner")
 class VocabularyCollate:
     """
     词汇表的 collate 产生的结果用来构建词汇表

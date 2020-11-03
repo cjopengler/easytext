@@ -1,0 +1,107 @@
+{
+  "training_dataset": {
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+  },
+
+  "validation_dataset": {
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+  },
+
+  "vocabulary_builder": {
+    "__type__": "VocabularyBuilder",
+    "__name_space__": "ner",
+
+    "dataset": {
+      "__object__": "training_dataset"
+    },
+    "vocabulary_collate": {
+      "__type__": "VocabularyCollate",
+      "__name_space__": "ner"
+    },
+
+    "token_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/vocabulary/label_vocabulary",
+    "is_build_token_vocabulary": true,
+
+    "pretrained_word_embedding_loader": {
+      "__type__": "SGNSLoader",
+      "__name_space__": "__easytext__",
+      "embedding_dim": 300,
+      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/sgns/sgns.baidubaike.bigram-char",
+      "max_size": 10
+    }
+  },
+
+  "model_collate": {
+     "__type__": "NerModelCollate",
+     "__name_space__": "ner",
+
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+
+     "sequence_max_len": 512
+  },
+
+  "model_label_decoder": {
+    "__type__": "NerCRFModelLabelDecoder",
+    "__name_space__": "ner",
+    "vocabulary_builder": {
+      "__object__": "vocabulary_builder"
+    }
+  },
+
+  "metric": {
+     "__type__": "NerModelMetricAdapter",
+     "__name_space__": "ner",
+
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+    "model_label_decoder": {
+      "__object__": "model_label_decoder"
+    }
+  },
+
+  "model": {
+     "__type__": "RnnWithCrf",
+     "__name_space__": "ner",
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+
+    "word_embedding_dim": 300,
+    "rnn_type": "lstm",
+    "hidden_size": 300,
+    "num_layer": 2,
+    "dropout": 0.4,
+    "is_used_crf": true
+  },
+
+  "optimizer": {
+     "__type__":"NerOptimizerFactory",
+     "__name_space__": "ner",
+     "fine_tuning": true
+  },
+
+  "loss": {
+    "__type__":"NerLoss",
+     "__name_space__": "ner",
+    "is_used_crf": true,
+    "vocabulary_builder": {
+      "__object__": "vocabulary_builder"
+    }
+  },
+
+  "num_epoch": 200,
+  "patient": 50,
+  "num_check_point_keep": 2,
+  "cuda": "cpu",
+  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/train",
+  "train_batch_size": 64,
+  "test_batch_size": 128
+}

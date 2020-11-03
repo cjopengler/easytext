@@ -16,13 +16,14 @@ from torch import Tensor
 
 from easytext.metrics import ModelMetricAdapter, ModelTargetMetric
 from easytext.metrics import SpanF1Metric
-from easytext.model import ModelOutputs
-from easytext.data import LabelVocabulary
 from easytext.label_decoder import ModelLabelDecoder
+from easytext.component.register import ComponentRegister
 
+from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models import NerModelOutputs
 
 
+@ComponentRegister.register(name_space="ner")
 class NerModelMetricAdapter(ModelMetricAdapter):
     """
     Ner Model Metric Adapter
@@ -30,9 +31,9 @@ class NerModelMetricAdapter(ModelMetricAdapter):
     """
 
     def __init__(self,
-                 label_vocabulary: LabelVocabulary,
+                 vocabulary_builder: VocabularyBuilder,
                  model_label_decoder: ModelLabelDecoder):
-        self.span_f1_metric = SpanF1Metric(label_vocabulary)
+        self.span_f1_metric = SpanF1Metric(vocabulary_builder.label_vocabulary)
         self.model_label_decoder = model_label_decoder
 
     def __call__(self, model_outputs: NerModelOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:

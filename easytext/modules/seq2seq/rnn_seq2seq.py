@@ -25,6 +25,7 @@ class RnnSeq2Seq(Module):
     """
 
     def __init__(self, dynamic_rnn: DynamicRnn):
+        super().__init__()
         self.rnn = dynamic_rnn
 
     def forward(self, sequence: Tensor, mask: BoolTensor) -> Dict[str, Tensor]:

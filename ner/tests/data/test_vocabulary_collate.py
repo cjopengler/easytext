@@ -27,24 +27,6 @@ def test_vocabuary_collate(vocabulary):
     :return: None
     """
 
-    # data_loader = DataLoader(dataset=conll2003_dataset,
-    #                          batch_size=2,
-    #                          shuffle=False,
-    #                          num_workers=0,
-    #                          collate_fn=VocabularyCollate())
-    #
-    # batch_tokens = list()
-    # batch_sequence_labels = list()
-    #
-    # for collate_dict in data_loader:
-    #     batch_tokens.extend(collate_dict["tokens"])
-    #     batch_sequence_labels.extend(collate_dict["sequence_labels"])
-    #
-    # word_vocabulary = Vocabulary(tokens=batch_tokens,
-    #                         padding=Vocabulary.PADDING,
-    #                         unk=Vocabulary.UNK,
-    #                         special_first=True)
-
     word_vocabulary = vocabulary["token_vocabulary"]
     ASSERT.assertEqual(13 + 2, word_vocabulary.size)
 

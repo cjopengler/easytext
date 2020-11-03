@@ -10,26 +10,28 @@
 Authors: PanXu
 Date:    2020/06/27 00:24:00
 """
-from typing import Iterable, Union
+from typing import Iterable
 
 import torch
 
 from easytext.data import ModelInputs, Instance
 from easytext.data import ModelCollate
-from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
+from easytext.component.register import ComponentRegister
+
+from ner.data.vocabulary_builder import VocabularyBuilder
 
 
+@ComponentRegister.register(name_space="ner")
 class NerModelCollate(ModelCollate):
     """
     ner 的 model collate
     """
 
     def __init__(self,
-                 token_vocab: Union[Vocabulary, PretrainedVocabulary],
-                 sequence_label_vocab: LabelVocabulary,
+                 vocabulary_builder: VocabularyBuilder,
                  sequence_max_len: int = 512):
-        self._token_vocab = token_vocab
-        self._sequence_label_vocab = sequence_label_vocab
+        self._token_vocab = vocabulary_builder.token_vocabulary
+        self._sequence_label_vocab = vocabulary_builder.label_vocabulary
         self._max_len = sequence_max_len
 
     def __call__(self, instances: Iterable[Instance]) -> ModelInputs:

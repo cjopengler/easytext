@@ -14,4 +14,4 @@ Date:    2020/06/28 08:42:00
 from .ner_optimizer_factory import NerOptimizerFactory
 from .ner_lr_scheduler_factory import NerLRSchedulerFactory
 
-from .ner_v4_bert_optimizer_factory import NerV4BertOptimizerFactory
+from .bert_optimizer_factory import BertOptimizerFactory

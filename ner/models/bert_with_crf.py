@@ -25,43 +25,44 @@ from easytext.model import Model, ModelOutputs
 from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
 from easytext.modules import ConditionalRandomField
 from easytext.utils import bio as BIO
+from easytext.component.register import ComponentRegister
 
-from .ner_model_outputs import NerModelOutputs
+from ner.data.vocabulary_builder import VocabularyBuilder
+from ner.models.ner_model_outputs import NerModelOutputs
 
 
-class NerV4(Model):
+@ComponentRegister.register(name_space="ner")
+class BertWithCrf(Model):
     """
-    Ner v4 版本，bert+crf
+    Bert With Crf
     """
-    NAME = "ner_v4"
-    DESTCRIPTION = "bert + crf"
 
     def __init__(self,
                  bert_dir: str,
-                 label_vocabulary: LabelVocabulary,
+                 vocabulary_builder: VocabularyBuilder,
                  dropout: float,
                  is_used_crf: bool):
         """
         初始化
         :param bert_dir: 预训练好的 bert 模型所在 dir
-        :param label_vocabulary: label vocabulary
+        :param vocabulary_builder: vocabulary builder
         :param dropout: bert 最后一层输出的 dropout
         :param is_used_crf: 是否使用 crf, True: 使用 crf; False: 不使用 crf
         """
 
         super().__init__()
 
-        self.label_vocabulary = label_vocabulary
+        self.label_vocabulary = vocabulary_builder.label_vocabulary
         self.dropout = Dropout(dropout)
         self.is_used_crf = is_used_crf
         self.bert = BertModel.from_pretrained(bert_dir)
         bert_config: BertConfig = self.bert.config
 
-        self.classifier = Linear(bert_config.hidden_size, label_vocabulary.label_size)
+        self.classifier = Linear(bert_config.hidden_size, self.label_vocabulary.label_size)
 
         if self.is_used_crf:
-            constraints = BIO.allowed_transitions(label_vocabulary=label_vocabulary)
-            self.crf = ConditionalRandomField(num_tags=label_vocabulary.label_size,
+            constraints = BIO.allowed_transitions(label_vocabulary=self.label_vocabulary)
+            self.crf = ConditionalRandomField(num_tags=self.label_vocabulary.label_size,
                                               constraints=constraints)
         else:
             self.crf = None

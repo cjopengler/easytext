@@ -12,4 +12,3 @@ Date:    2020/06/27 19:49:00
 """
 
 from .ner_loss import NerLoss
-from .ner_crf_loss import NerCRFLoss

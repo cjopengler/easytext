@@ -13,4 +13,4 @@ Date:    2020/10/27 14:53:00
 
 from .registy import Registry
 from .component_register import ComponentRegister
-from .model_register import ModelRegister
+from .easytext_register import EasytextRegister

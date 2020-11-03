@@ -11,4 +11,6 @@ Authors: PanXu
 Date:    2020/10/27 14:53:00
 """
 
+from .component import Component
+from .component_builtin_key import ComponentBuiltinKey
 
