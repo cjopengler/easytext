@@ -14,12 +14,13 @@ Date:    2020/05/16 00:34:00
 import os
 import torch
 import logging
-from typing import List, Union
+from typing import List, Union, Optional
 from tqdm import tqdm
 import shutil
 
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch import distributed as Distributed
 
 from easytext.model import Model
 from easytext.loss import Loss
@@ -29,13 +30,14 @@ from easytext.data.model_collate import ModelInputs
 from easytext.metrics import ModelMetricAdapter
 from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
+from easytext.utils.distributed_util import DistributedFuncWrapper
 from easytext.trainer.metric_tracker import MetricTracker
 from easytext.trainer.grad_rescaled import GradRescaled
-from easytext.trainer import Record
+from easytext.trainer import Record, DistributedRecord
 from easytext.trainer.trainer_callback import TrainerCallback
 
 
-class Trainer(TrainerCallback):
+class DistributedTrainer(TrainerCallback):
     """
     训练器
     """
@@ -53,8 +55,10 @@ class Trainer(TrainerCallback):
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
-                 devices: Union[str, List[str]] = None,
-                 trainer_callback: TrainerCallback = None):
+                 device: Union[str, int] = None,
+                 trainer_callback: TrainerCallback = None,
+                 distributed_func_wrapper: Optional[DistributedFuncWrapper] = None
+                 ):
         """
         训练器初始化
         :param num_epoch: 训练的 epoch 数量
@@ -69,26 +73,20 @@ class Trainer(TrainerCallback):
         否则, 当前训练的指标超出了 patient 个 epoch 将会 early stopping.
         :param num_check_point_keep: checkpoint 保留的数量。如果是 `None` 则全部保留;
         否则，保留 num_check_point_keep 个checkpoint.
-        :param devices: device 字符串, "cuda:0" 或者 "cpu"; 列表类型，多个gpu,  例如 ["cuda:0", "cuda:1"]; 如果是 cpu, 只能是 ["cpu"].
+        :param device: device 字符串, "cuda:0" 或者 "cpu"; 如果是 None, 那么 model 将不会执行 model.to, 数据集上会默认用cpu
+                       device = None 是因为, 某些 model 是不要进行 model.to(device) 操作的。
+        :param distributed_func_wrapper: 分布式调用某些函数时候的包装器
         """
-        if devices is None or len(devices) == 0:
-            self._devices = [torch.device("cpu")]
+        if device is None:
+            self._device = torch.device("cpu")
+            self._model = model  # 这里不进行 model.to(self._device), 将会保持 model 的默认 device
         else:
+            self._device = torch.device(device)
 
-            if isinstance(devices, str):
-                self._devices = [torch.device(devices)]
-            elif isinstance(devices, list):
-                self._devices = [torch.device(device) for device in devices]
+            if self._device.type == "cuda":
+                self._model = model.cuda(self._device)
             else:
-                raise RuntimeError(f"devices type: {type(devices)} 不是 str 或者 list!")
-
-            if len(self._devices) != 1:
-                raise RuntimeError(f"目前仅仅支持单 GPU 或 CPU 训练, 设置的 cuda devices 是 {devices}")
-
-        if self._devices[0].type == "cuda":
-            self._model = model.cuda(self._devices[0])
-        else:
-            self._model = model.cpu()
+                self._model = model.cpu()
 
         self._loss = loss
         self._metrics = metrics
@@ -108,6 +106,8 @@ class Trainer(TrainerCallback):
         self._num_epoch = num_epoch
         self._current_epoch: int = None
         self._trainer_callback = trainer_callback
+        self._distributed_func_wrapper = distributed_func_wrapper
+        self._is_distrbuted = True
 
     @property
     def model(self):
@@ -246,17 +246,17 @@ class Trainer(TrainerCallback):
         :return: self
         """
 
-        last_epoch = Trainer._find_last_epoch(serialize_dir=serialize_dir)
+        last_epoch = DistributedTrainer._find_last_epoch(serialize_dir=serialize_dir)
 
         if last_epoch is not None:
             self._current_epoch = last_epoch
-            logging.info(f"Load checkpoint, 当前 epoch: {last_epoch}")
+            self._distributed_func_wrapper(logging.info, f"Load checkpoint, 当前 epoch: {last_epoch}")
             saved_dir = os.path.join(serialize_dir, f"checkpoint_epoch_{last_epoch}")
 
             model_file_path = os.path.join(saved_dir, "model.pt")
             self._model.load_state_dict(torch.load(model_file_path))
 
-            logging.info(f"last epoch{last_epoch}, loaded: {self._model.state_dict()}")
+            self._distributed_func_wrapper(logging.info, f"last epoch{last_epoch}, loaded: {self._model.state_dict()}")
 
             optimizer_file_path = os.path.join(saved_dir, "optimizer.pt")
             self._optimizer.load_state_dict(torch.load(optimizer_file_path))
@@ -284,14 +284,14 @@ class Trainer(TrainerCallback):
         total_num = 0
         self._metrics.reset()
 
-        if phrase == Trainer._TRAIN:
+        if phrase == DistributedTrainer._TRAIN:
             self._model.train()
-        elif phrase == Trainer._EVALUATE:
+        elif phrase == DistributedTrainer._EVALUATE:
             self._model.eval()
         else:
-            raise RuntimeError(f"phrase: {phrase} 应该是 {Trainer._TRAIN} 或 {Trainer._EVALUATE}")
+            raise RuntimeError(f"phrase: {phrase} 应该是 {DistributedTrainer._TRAIN} 或 {DistributedTrainer._EVALUATE}")
 
-        with torch.set_grad_enabled(phrase == Trainer._TRAIN):
+        with torch.set_grad_enabled(phrase == DistributedTrainer._TRAIN):
             for model_inputs in tqdm(data_loader):
                 model_inputs: ModelInputs = model_inputs
 
@@ -300,14 +300,14 @@ class Trainer(TrainerCallback):
                                                    model_inputs.labels
 
                 # 设置到 cuda 训练
-                if self._devices[0].type == "cuda":  # 仅仅处理 GPU, 默认使用 CPU
-                    batch_inputs = cuda_util.cuda(batch_inputs, cuda_device=self._devices[0])
-                    labels = cuda_util.cuda(labels, cuda_device=self._devices[0])
+                if self._device.type == "cuda":  # 仅仅处理 GPU, 默认使用 CPU
+                    batch_inputs = cuda_util.cuda(batch_inputs, cuda_device=self._device)
+                    labels = cuda_util.cuda(labels, cuda_device=self._device)
 
                 outputs = self._model(**batch_inputs)
                 batch_loss: torch.Tensor = self._loss(outputs, labels)
 
-                if phrase == Trainer._TRAIN:
+                if phrase == DistributedTrainer._TRAIN:
                     self._optimizer.zero_grad()
                     batch_loss.backward()
 
@@ -321,12 +321,14 @@ class Trainer(TrainerCallback):
                 total_num += batch_size
 
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
-                logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
-                             f"batch metrics: {json2str(batch_metrics)}, "
-                             f"target metric: {json2str(target_metric)}")
+                self._distributed_func_wrapper(
+                    logging.info,
+                    f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
+                    f"batch metrics: {json2str(batch_metrics)}, "
+                    f"target metric: {json2str(target_metric)}")
 
         # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有必要再除以一次了
-        return total_loss
+        return total_loss, total_num
 
     def recovery_train(self,
                        train_data_loader: DataLoader,
@@ -349,7 +351,7 @@ class Trainer(TrainerCallback):
         :param validation_data_loader: 验证集data loader
         :return: loss 结果
         """
-        return self._train_or_evaluate(phrase=Trainer._EVALUATE,
+        return self._train_or_evaluate(phrase=DistributedTrainer._EVALUATE,
                                        data_loader=validation_data_loader)
 
     def _is_serialize_empty(self):
@@ -369,8 +371,11 @@ class Trainer(TrainerCallback):
 
     def train(self, train_data_loader: DataLoader,
               validation_data_loader: DataLoader) -> None:
-        if not self._is_serialize_empty():
+
+        if not self._distributed_func_wrapper(self._is_serialize_empty):
             raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
+
+        Distributed.barrier()
 
         return self._train(train_data_loader=train_data_loader,
                            validation_data_loader=validation_data_loader)
@@ -392,17 +397,34 @@ class Trainer(TrainerCallback):
 
         for epoch in range(start_epoch, self._num_epoch + 1):
 
-            record = Record()
+            record = DistributedRecord()
             record.epoch = epoch
 
             self._current_epoch = epoch
 
-            logging.info(f"Start train epoch: {self._current_epoch}")
+            if self._distributed_func_wrapper is not None:
+                self._distributed_func_wrapper(logging.info, f"Start train epoch: {self._current_epoch}")
+
             self.on_train_epoch_start(trainer=self, record=record)
 
-            train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN,
+            train_loss, total_num = self._train_or_evaluate(phrase=DistributedTrainer._TRAIN,
                                                  data_loader=train_data_loader)
+
+            # 对于分布式来说需要得到分布式的 loss
+            dist_loss_tensor = torch.tensor([train_loss, total_num], dtype=torch.float)
+
+            if Distributed.get_backend() == "nccl":
+                dist_loss_tensor.to(Distributed.get_rank())
+
+            Distributed.all_reduce(dist_loss_tensor)
+
+            record.distributed_epoch_train_loss = dist_loss_tensor[0].item()
+            record.distributed_epoch_train_num = int(dist_loss_tensor[1].item())
+
+            dist_loss_tensor.detach()
+
             record.epoch_train_loss = train_loss
+            record.epoch_train_num = total_num
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
@@ -410,9 +432,11 @@ class Trainer(TrainerCallback):
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
 
-            logging.info(
-                f"Train epoch: {epoch}, loss: {train_loss}, target metric: {train_target_metric.name}:{train_target_metric.value} "
-                f"metrics: {json2str(train_metric_dict)}")
+            self._distributed_func_wrapper(logging.info,
+                                           f"Train epoch: {epoch}, "
+                                           f"loss: {train_loss}, "
+                                           f"target metric: {train_target_metric.name}:{train_target_metric.value},"
+                                           f"metrics: {json2str(train_metric_dict)}")
 
             self.on_train_epoch_stop(trainer=self, record=record)
 
@@ -430,7 +454,9 @@ class Trainer(TrainerCallback):
                                             train_model_target_metric=train_target_metric,
                                             validation_metric=validation_metric_dict,
                                             validation_model_target_metric=validation_target_metric)
-            logging.info(
+
+            self._distributed_func_wrapper(
+                logging.info,
                 f"Evaluate Valid epoch: {epoch}, loss: {validation_loss}, "
                 f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
                 f"metrics: {json2str(validation_metric_dict)}")
@@ -451,37 +477,41 @@ class Trainer(TrainerCallback):
             self.save_checkpoint(epoch=epoch)
 
             if self._metric_tracker.early_stopping(epoch):
-                logging.info(f"Epoch: {epoch}, early stopping!")
+                self._distributed_func_wrapper(
+                    logging.info, f"Epoch: {epoch}, early stopping!")
                 break
 
         self.on_training_complete(trainer=self, record=record)
 
     def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
-        logging.info(f"on_train_epoch_start: {record.epoch}")
+
+        self._distributed_func_wrapper(logging.info, f"on_train_epoch_start: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_train_epoch_start(trainer=trainer,
                                                         record=record)
 
     def on_train_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
-        logging.info(f"on_train_epoch_stop: {record.epoch}")
+        self._distributed_func_wrapper(logging.info, f"on_train_epoch_stop: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_train_epoch_stop(trainer=trainer,
                                                        record=record)
 
     def on_evaluate_validation_epoch_start(self, trainer: "Trainer", record: Record) -> None:
-        logging.info(f"on_evaluate_epoch_start: {record.epoch}")
+        self._distributed_func_wrapper(logging.info, f"on_evaluate_epoch_start: {record.epoch}")
         if self._trainer_callback is not None:
             self._trainer_callback.on_evaluate_validation_epoch_start(trainer=trainer,
                                                                       record=record)
 
     def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
-        logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
+        self._distributed_func_wrapper(logging.info, f"on_evaluate_epoch_stop: {record.epoch}")
         if self._trainer_callback is not None:
             self._trainer_callback.on_evaluate_validation_epoch_stop(trainer=trainer,
                                                                      record=record)
 
     def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
-        logging.info(f"on_training_complete: {record.epoch}")
+        self._distributed_func_wrapper(logging.info, f"on_training_complete: {record.epoch}")
         if self._trainer_callback is not None:
             self._trainer_callback.on_training_complete(trainer=trainer,
                                                         record=record)

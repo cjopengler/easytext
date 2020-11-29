@@ -17,12 +17,16 @@ import torch
 from torch import Tensor
 
 from easytext.model import ModelOutputs
+from easytext.distributed import Distributed
 
 
-class Metric:
+class Metric(Distributed):
     """
     Metrics
     """
+
+    def __init__(self, is_distributed: bool = False):
+        super().__init__(is_distributed=is_distributed)
 
     def __call__(self, prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,

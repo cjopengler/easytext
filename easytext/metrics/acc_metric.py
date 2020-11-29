@@ -14,7 +14,21 @@ from typing import Dict
 
 import torch
 
-from .metric import Metric
+from easytext.metrics import Metric
+
+
+class _AccMetricData:
+
+    def __init__(self):
+        self.num_true = 0
+        self.num_total = 0
+
+    def to_tensor(self) -> torch.LongTensor:
+        return torch.tensor([self._num_true, self._num_total], dtype=torch.long)
+
+    def update_from_tensor(self, values: torch.LongTensor) -> None:
+        self.num_true = values[0]
+        self.num_total = values[1]
 
 
 class AccMetric(Metric):
@@ -24,10 +38,12 @@ class AccMetric(Metric):
 
     ACC = "acc"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, is_distributed: bool = False):
+        super().__init__(is_distributed=is_distributed)
+
         self._num_true = 0
         self._num_total = 0
+        self._data = _AccMetricData()
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -48,8 +64,8 @@ class AccMetric(Metric):
         num_true = (prediction_labels == gold_labels).sum().item()
         num_total = gold_labels.size(0)
 
-        self._num_true += num_true
-        self._num_total += num_total
+        self._data.num_true += num_true
+        self._data.num_total += num_total
 
         acc = AccMetric._compute(num_true=num_true, num_total=num_total)
         return {AccMetric.ACC: acc}
@@ -58,14 +74,28 @@ class AccMetric(Metric):
     def _compute(num_true: int, num_total: int):
         return num_true / (float(num_total) + 1e-10)
 
+    def _distributed_data(self):
+        distributed_tensor = self._data.to_tensor()
+
+        if torch.distributed.get_backend() == "nccl":
+            distributed_tensor.to(torch.distributed.get_rank())
+
+        torch.distributed.all_reduce(tensor=distributed_tensor)
+
+        self._data.update_from_tensor(distributed_tensor)
+
     @property
     def metric(self) -> Dict:
-        acc = AccMetric._compute(self._num_true, self._num_total)
+
+        if self.is_distributed:
+            self._distributed_data()
+
+        acc = AccMetric._compute(self._data.num_true,
+                                 self._data.num_total)
 
         return {AccMetric.ACC: acc}
 
     def reset(self):
-        self._num_true = 0
-        self._num_total = 0
+        self._data = _AccMetricData()
         return self
 

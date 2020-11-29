@@ -26,19 +26,29 @@ class SpanF1Metric(F1Metric):
     """
 
     def __init__(self,
-                 label_vocabulary: LabelVocabulary) -> None:
+                 label_vocabulary: LabelVocabulary,
+                 is_distributed: bool = False) -> None:
         """
         初始化
         :param label_vocabulary: label 的 vocabulary
+        :param is_distributed: True: 分布式计算 F1; False: 非分布式计算
         """
-        super().__init__()
+        labels = set()
+
+        # 从 B-Label, I-Label, 中获取 Label
+        for index in range(label_vocabulary.size):
+            bio_label: str = label_vocabulary[index]
+            if bio_label == "O":
+                continue
+
+            label = bio_label.split("-")[1]
+            labels.add(label)
+
+        labels = [_ for _ in labels]
+
+        super().__init__(labels=labels, is_distributed=is_distributed)
 
         self.label_vocabulary = label_vocabulary
-
-        # 下面之所以是字典，是为了计算多个 tag 的 f1, 比如: B-Per, B-Loc 就是需要需要计算 Per 以及 Loc 的 F1
-        self._true_positives: Dict[str, int] = defaultdict(int)
-        self._false_positives: Dict[str, int] = defaultdict(int)
-        self._false_negatives: Dict[str, int] = defaultdict(int)
 
     @property
     def schema(self):
@@ -138,6 +148,7 @@ class SpanF1Metric(F1Metric):
         for label, num in num_golden.items():
             false_negatives[label] = num - true_positives[label]
 
+        # 更新
         for k, v in true_positives.items():
             self._true_positives[k] += v
 
