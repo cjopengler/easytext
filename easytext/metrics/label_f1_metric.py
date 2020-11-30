@@ -16,7 +16,7 @@ import torch
 
 from .f1_metric import F1Metric
 
-from easytext.data.vocabulary import Vocabulary
+from easytext.data.vocabulary import LabelVocabulary
 
 
 class LabelF1Metric(F1Metric):
@@ -26,7 +26,7 @@ class LabelF1Metric(F1Metric):
     """
 
     def __init__(self,
-                 label_vocabulary: Vocabulary,
+                 label_vocabulary: LabelVocabulary,
                  labels: List[Union[str, int]] = None,
                  is_distributed: bool = False):
         """
@@ -41,10 +41,11 @@ class LabelF1Metric(F1Metric):
         :param is_distributed: True: 分布式训练的 Metric; False: 非分布式训练的 Metric
         """
 
-        assert labels is None and label_vocabulary is None, f"labels 和 label_vocabulary 非法, 全部是 None."
+        if labels is None and label_vocabulary is None:
+            raise RuntimeError(f"labels 和 label_vocabulary 非法, 全部是 None.")
 
         if labels is None:
-            labels = [label_vocabulary.token(index) for index in range(label_vocabulary.size)]
+            labels = [label_vocabulary.token(index) for index in range(label_vocabulary.label_size)]
 
         if isinstance(labels[0], str) and label_vocabulary is None:
             raise RuntimeError("labels 是 str 类型, label_vocabulary 不能是 None, "

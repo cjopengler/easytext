@@ -34,7 +34,7 @@ class _F1MetricData:
 
         for label in labels:
             self.true_positives[label] = 0
-            self.false_negatives[label] = 0
+            self.false_positives[label] = 0
             self.false_negatives[label] = 0
 
     def to_tensor(self) -> torch.LongTensor:

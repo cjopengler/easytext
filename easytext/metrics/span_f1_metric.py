@@ -36,8 +36,9 @@ class SpanF1Metric(F1Metric):
         labels = set()
 
         # 从 B-Label, I-Label, 中获取 Label
-        for index in range(label_vocabulary.size):
-            bio_label: str = label_vocabulary[index]
+        for index in range(label_vocabulary.label_size):
+            bio_label: str = label_vocabulary.token(index)
+
             if bio_label == "O":
                 continue
 
@@ -150,13 +151,13 @@ class SpanF1Metric(F1Metric):
 
         # 更新
         for k, v in true_positives.items():
-            self._true_positives[k] += v
+            self._data.true_positives[k] += v
 
         for k, v in false_positives.items():
-            self._false_positives[k] += v
+            self._data.false_positives[k] += v
 
         for k, v in false_negatives.items():
-            self._false_negatives[k] += v
+            self._data.false_negatives[k] += v
 
         return self._metric(true_positives=true_positives,
                             false_positives=false_positives,
