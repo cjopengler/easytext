@@ -21,6 +21,7 @@ import shutil
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch import distributed as Distributed
+from torch.nn.parallel import DistributedDataParallel
 
 from easytext.model import Model
 from easytext.loss import Loss
@@ -55,9 +56,10 @@ class DistributedTrainer(TrainerCallback):
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
-                 device: Union[str, int] = None,
+                 devices: Union[str, int, List[str], List[int]] = None,
                  trainer_callback: TrainerCallback = None,
-                 distributed_func_wrapper: Optional[DistributedFuncWrapper] = None
+                 distributed_func_wrapper: Optional[DistributedFuncWrapper] = None,
+                 backend: Optional[str] = None
                  ):
         """
         训练器初始化
@@ -73,24 +75,34 @@ class DistributedTrainer(TrainerCallback):
         否则, 当前训练的指标超出了 patient 个 epoch 将会 early stopping.
         :param num_check_point_keep: checkpoint 保留的数量。如果是 `None` 则全部保留;
         否则，保留 num_check_point_keep 个checkpoint.
-        :param device: device 字符串, "cuda:0" 或者 "cpu"; 如果是 None, 那么 model 将不会执行 model.to, 数据集上会默认用cpu
+        :param devices: device 字符串, "cuda:0" 或者 "cpu"; 如果是 None, 那么 model 将不会执行 model.to, 数据集上会默认用cpu
                        device = None 是因为, 某些 model 是不要进行 model.to(device) 操作的。
+                       TODO:// 1. None 不对model设置 2. 设置到 cpu 或者 gpu 3. 多gpu 4. 使用全部GPU
         :param distributed_func_wrapper: 分布式调用某些函数时候的包装器
+        :param backend: distributed 使用的 backend, 如果 devices 不是多 gpu, 该参数是 None; 否则, 应该是 "nccl" 或者 "gloo"
         """
-        if device is None:
+        if devices is None:
+            self._devices = [torch.device("cpu")]
             self._device = torch.device("cpu")
-            self._model = model  # 这里不进行 model.to(self._device), 将会保持 model 的默认 device
+
         else:
-            self._device = torch.device(device)
-
-            if self._device.type == "cuda":
-                self._model = model.cuda(self._device)
+            if isinstance(devices, list):
+                self._devices = [torch.device(device) for device in devices]
+                self._device = None
+                self._model = DistributedDataParallel(model)
             else:
-                self._model = model.cpu()
+                self._devices = [torch.device(devices)]
+                self._device = torch.device(devices)
 
+        if len(self._devices) > 1:
+            self._is_distributed = True
+        else:
+            self._is_distributed = False
+
+        self._model = model  # 这里不进行 model.to(self._device), 将会保持 model 的默认 device
         self._loss = loss
         self._metrics = metrics
-        self._optimizer = optimizer_factory.create(model=self._model)
+        self._optimizer_factory = optimizer_factory
 
         if lr_scheduler_factory is not None:
             self._lr_scheduler = lr_scheduler_factory.create(optimizer=self.optimizer,
@@ -107,7 +119,7 @@ class DistributedTrainer(TrainerCallback):
         self._current_epoch: int = None
         self._trainer_callback = trainer_callback
         self._distributed_func_wrapper = distributed_func_wrapper
-        self._is_distrbuted = True
+        self._backend = backend
 
     @property
     def model(self):
@@ -375,20 +387,47 @@ class DistributedTrainer(TrainerCallback):
         if not self._distributed_func_wrapper(self._is_serialize_empty):
             raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
 
-        Distributed.barrier()
+        if self._is_distrbuted:
 
-        return self._train(train_data_loader=train_data_loader,
-                           validation_data_loader=validation_data_loader)
+            torch.multiprocessing.spawn(fn=self._train,
+                                        args=(train_data_loader, validation_data_loader),
+                                        nprocs=len(self._devices))
+        else:
+            return self._train(rank=0,
+                               train_data_loader=train_data_loader,
+                               validation_data_loader=validation_data_loader)
 
     def _train(self,
+               rank: int,
                train_data_loader: DataLoader,
                validation_data_loader: DataLoader) -> None:
         """
         模型训练
+        :param rank: 当前进程号
         :param train_data_loader: 训练集 data loader
         :param validation_data_loader: 验证集 data loader
         :return:
         """
+
+        if self._is_distributed:
+            Distributed.init_process_group(backend=self._backend,
+                                           world_size=len(self._devices),
+                                           rank=rank)
+            self._device = self._devices[rank]
+            torch.cuda.set_device(self._device)
+            self._model.cuda(self._device)
+            self._optimizer = self._optimizer_factory.create(self._model)
+
+            self._model = DistributedDataParallel(module=self._model,
+                                                  device_ids=[self._device],
+                                                  output_device=self._device)
+        else:
+            if self._device.type == "cpu":
+                self._model.cpu()
+            else:
+                self._model.cuda(self._device)
+            self._optimizer = self._optimizer_factory.create(self._model)
+
 
         if self._current_epoch is None:
             start_epoch = 1
