@@ -28,7 +28,9 @@ from easytext.model import ModelOutputs
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
+from easytext.trainer.distributed_trainer import DistributedTrainer
 from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
+from easytext.trainer import DistributedParameter
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
 from easytext.utils.json_util import json2str
@@ -209,17 +211,32 @@ def _run_train(devices: List[str] = None):
     tensorboard_log_dir = os.path.join(ROOT_PATH, tensorboard_log_dir)
     shutil.rmtree(tensorboard_log_dir)
 
-    trainer = Trainer(num_epoch=100,
-                      model=model,
-                      loss=loss,
-                      metrics=metric,
-                      optimizer_factory=optimizer_factory,
-                      serialize_dir=serialize_dir,
-                      patient=20,
-                      num_check_point_keep=25,
-                      devices=devices,
-                      trainer_callback=BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
-                      )
+    if len(devices) == 1:
+        trainer = Trainer(num_epoch=100,
+                          model=model,
+                          loss=loss,
+                          metrics=metric,
+                          optimizer_factory=optimizer_factory,
+                          serialize_dir=serialize_dir,
+                          patient=20,
+                          num_check_point_keep=25,
+                          devices=devices,
+                          trainer_callback=BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
+                          )
+    else:
+        trainer = DistributedTrainer(
+            num_epoch=100,
+            model=model,
+            loss=loss,
+            metrics=metric,
+            optimizer_factory=optimizer_factory,
+            serialize_dir=serialize_dir,
+            patient=20,
+            num_check_point_keep=25,
+            devices=devices,
+            trainer_callback=None,
+            distributed_paramter=DistributedParameter(backend="gloo", free_port=2345)
+        )
 
     train_dataset = _DemoDataset()
 
@@ -285,5 +302,9 @@ def test_trainer_save_load_gpu():
         _run_train(devices=cuda_devices)
     else:
         logging.warning("由于没有GPU，忽略这个case测试")
+
+
+def test_multi_gpu_trainer():
+    _run_train(devices=["cpu", "cpu"])
 
 

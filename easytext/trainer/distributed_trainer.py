@@ -36,6 +36,7 @@ from easytext.trainer.metric_tracker import MetricTracker
 from easytext.trainer.grad_rescaled import GradRescaled
 from easytext.trainer import Record, DistributedRecord
 from easytext.trainer.trainer_callback import TrainerCallback
+from easytext.trainer import DistributedParameter
 
 
 class DistributedTrainer(TrainerCallback):
@@ -58,8 +59,7 @@ class DistributedTrainer(TrainerCallback):
                  num_check_point_keep: int = None,
                  devices: Union[str, int, List[str], List[int]] = None,
                  trainer_callback: TrainerCallback = None,
-                 distributed_func_wrapper: Optional[DistributedFuncWrapper] = None,
-                 backend: Optional[str] = None
+                 distributed_paramter: DistributedParameter = None
                  ):
         """
         训练器初始化
@@ -75,29 +75,34 @@ class DistributedTrainer(TrainerCallback):
         否则, 当前训练的指标超出了 patient 个 epoch 将会 early stopping.
         :param num_check_point_keep: checkpoint 保留的数量。如果是 `None` 则全部保留;
         否则，保留 num_check_point_keep 个checkpoint.
-        :param devices: device 字符串, "cuda:0" 或者 "cpu"; 如果是 None, 那么 model 将不会执行 model.to, 数据集上会默认用cpu
-                       device = None 是因为, 某些 model 是不要进行 model.to(device) 操作的。
-                       TODO:// 1. None 不对model设置 2. 设置到 cpu 或者 gpu 3. 多gpu 4. 使用全部GPU
+        :param devices: 1. None: cpu 2. "cpu"设置到 cpu; 3: "cuda:0" 0块 gpu
+        4. list 多gpu, 可以是 ["cuda:0", "cuda:1"] 也可以使 [0, 1, ...] 5. "all" 或者 -1 表示使用能够获取到的全部 GPU
         :param distributed_func_wrapper: 分布式调用某些函数时候的包装器
-        :param backend: distributed 使用的 backend, 如果 devices 不是多 gpu, 该参数是 None; 否则, 应该是 "nccl" 或者 "gloo"
         """
         if devices is None:
             self._devices = [torch.device("cpu")]
-            self._device = torch.device("cpu")
-
         else:
-            if isinstance(devices, list):
+            if isinstance(devices, str):
+                if devices == "all":
+                    self._devices = [torch.device(device) for device in torch.cuda.device_count()]
+                else:
+                    self._devices = [torch.device(devices)]
+            elif isinstance(devices, int):
+                if devices == -1:
+                    self._devices = [torch.device(device) for device in torch.cuda.device_count()]
+                else:
+                    self._devices = [torch.device(devices)]
+            elif isinstance(devices, list):
                 self._devices = [torch.device(device) for device in devices]
-                self._device = None
-                self._model = DistributedDataParallel(model)
             else:
                 self._devices = [torch.device(devices)]
-                self._device = torch.device(devices)
 
         if len(self._devices) > 1:
             self._is_distributed = True
+            self._device = None  # 在训练时候指定
         else:
             self._is_distributed = False
+            self._device = self._devices[0]
 
         self._model = model  # 这里不进行 model.to(self._device), 将会保持 model 的默认 device
         self._loss = loss
@@ -118,8 +123,14 @@ class DistributedTrainer(TrainerCallback):
         self._num_epoch = num_epoch
         self._current_epoch: int = None
         self._trainer_callback = trainer_callback
-        self._distributed_func_wrapper = distributed_func_wrapper
-        self._backend = backend
+
+        self._distributed_parameter = distributed_paramter
+
+        if self._is_distributed:
+            assert self._distributed_parameter is not None, f"分布式训练, distributed_parameter 不能是 None"
+            self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=0)
+        else:
+            self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=None)
 
     @property
     def model(self):
@@ -262,7 +273,9 @@ class DistributedTrainer(TrainerCallback):
 
         if last_epoch is not None:
             self._current_epoch = last_epoch
+
             self._distributed_func_wrapper(logging.info, f"Load checkpoint, 当前 epoch: {last_epoch}")
+
             saved_dir = os.path.join(serialize_dir, f"checkpoint_epoch_{last_epoch}")
 
             model_file_path = os.path.join(saved_dir, "model.pt")
@@ -427,7 +440,6 @@ class DistributedTrainer(TrainerCallback):
             else:
                 self._model.cuda(self._device)
             self._optimizer = self._optimizer_factory.create(self._model)
-
 
         if self._current_epoch is None:
             start_epoch = 1

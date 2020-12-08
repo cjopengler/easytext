@@ -14,10 +14,8 @@ from typing import Union
 from torch import distributed
 
 
-class NotCall:
-
-    def __init__(self, rank):
-        self.rank = rank
+class NotCallException(RuntimeWarning):
+    pass
 
 
 class DistributedFuncWrapper:
@@ -25,22 +23,25 @@ class DistributedFuncWrapper:
     分布式训练函数包装器, 会根据指定的进程 rank 进行处理
     """
 
-    def __init__(self, dst_rank: int = None):
+    def __init__(self, dst_rank: int = 0):
         """
         初始化
-        :param dst_rank: 需要调用函数的 dst rank
+        :param dst_rank: 需要调用函数的 dst rank, 如果是 None, 则表示直接返回不会进行分布式处理
         """
         self._dst_rank = dst_rank
 
-    def __call__(self, func, *args, **kwargs) -> Union[NotCall, object]:
+    def __call__(self, func, *args, **kwargs) -> object:
         """
         在指定的 dst rank 进程运行该函数
         :param func: 函数对象
         :param args: 函数的参数
         :param kwargs: 函数的参数
-        :return: 如果没有被运行, 返回 NotCall object; 否则, 返回 函数的返回值。
+        :return: 如果没有被运行, 则跑出 NotCallException 异常; 否则, 返回 函数的返回值。
         """
 
-        if distributed.get_rank() == self._dst_rank:
-            return func(*args)
-        return NotCall(rank=self._dst_rank)
+        if self._dst_rank is not None:
+            if distributed.get_rank() == self._dst_rank:
+                return func(*args, **kwargs)
+            raise NotCallException()
+        else:
+            return func(*args, **kwargs)
