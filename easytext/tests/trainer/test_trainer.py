@@ -209,7 +209,8 @@ def _run_train(devices: List[str] = None):
     tensorboard_log_dir = "data/tensorboard"
 
     tensorboard_log_dir = os.path.join(ROOT_PATH, tensorboard_log_dir)
-    shutil.rmtree(tensorboard_log_dir)
+
+    # shutil.rmtree(tensorboard_log_dir)
 
     if len(devices) == 1:
         trainer = Trainer(num_epoch=100,
@@ -235,7 +236,7 @@ def _run_train(devices: List[str] = None):
             num_check_point_keep=25,
             devices=devices,
             trainer_callback=None,
-            distributed_paramter=DistributedParameter(backend="gloo", free_port=2345)
+            distributed_paramter=DistributedParameter(backend="gloo", port=2345)
         )
 
     train_dataset = _DemoDataset()

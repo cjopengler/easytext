@@ -397,10 +397,10 @@ class DistributedTrainer(TrainerCallback):
     def train(self, train_data_loader: DataLoader,
               validation_data_loader: DataLoader) -> None:
 
-        if not self._distributed_func_wrapper(self._is_serialize_empty):
+        if not self._is_serialize_empty():
             raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
 
-        if self._is_distrbuted:
+        if self._is_distributed:
 
             torch.multiprocessing.spawn(fn=self._train,
                                         args=(train_data_loader, validation_data_loader),
@@ -423,12 +423,18 @@ class DistributedTrainer(TrainerCallback):
         """
 
         if self._is_distributed:
-            Distributed.init_process_group(backend=self._backend,
+            Distributed.init_process_group(backend=self._distributed_parameter.backend,
                                            world_size=len(self._devices),
-                                           rank=rank)
+                                           rank=rank,
+                                           init_method=self._distributed_parameter.url)
             self._device = self._devices[rank]
-            torch.cuda.set_device(self._device)
-            self._model.cuda(self._device)
+
+            if self._device.type == "cpu":
+                self._model.cpu()
+            else:
+                torch.cuda.set_device(self._device)
+                self._model.cuda(self._device)
+
             self._optimizer = self._optimizer_factory.create(self._model)
 
             self._model = DistributedDataParallel(module=self._model,
@@ -453,8 +459,7 @@ class DistributedTrainer(TrainerCallback):
 
             self._current_epoch = epoch
 
-            if self._distributed_func_wrapper is not None:
-                self._distributed_func_wrapper(logging.info, f"Start train epoch: {self._current_epoch}")
+            self._distributed_func_wrapper(logging.info, f"Start train epoch: {self._current_epoch}")
 
             self.on_train_epoch_start(trainer=self, record=record)
 

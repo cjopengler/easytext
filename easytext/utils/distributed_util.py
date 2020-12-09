@@ -14,7 +14,7 @@ from typing import Union
 from torch import distributed
 
 
-class NotCallException(RuntimeWarning):
+class NotCall:
     pass
 
 
@@ -30,18 +30,18 @@ class DistributedFuncWrapper:
         """
         self._dst_rank = dst_rank
 
-    def __call__(self, func, *args, **kwargs) -> object:
+    def __call__(self, func, *args, **kwargs) -> Union[NotCall, object]:
         """
         在指定的 dst rank 进程运行该函数
         :param func: 函数对象
         :param args: 函数的参数
         :param kwargs: 函数的参数
-        :return: 如果没有被运行, 则跑出 NotCallException 异常; 否则, 返回 函数的返回值。
+        :return: 如果没有被运行, 返回 NotCall 对象; 否则, 返回 函数的返回值。
         """
 
         if self._dst_rank is not None:
             if distributed.get_rank() == self._dst_rank:
                 return func(*args, **kwargs)
-            raise NotCallException()
+            return NotCall()
         else:
             return func(*args, **kwargs)
