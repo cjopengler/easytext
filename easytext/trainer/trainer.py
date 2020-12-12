@@ -17,7 +17,7 @@ import logging
 from tqdm import tqdm
 import shutil
 
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -183,7 +183,6 @@ class Trainer(TrainerCallback, Distributed):
                         epoch: int) -> "Trainer":
         """
         保存 checkpoint 到指定的路径下。
-        :param serialize_dir: 保存 模型训练相关的文件夹，包括 checkpoint 以及 其他信息
         :param epoch: 保存的 epoch
         :return: self
         """
@@ -321,7 +320,7 @@ class Trainer(TrainerCallback, Distributed):
                            data_loader: DataLoader) -> float:
 
         total_loss = 0.
-        total_num = 0
+
         self._metrics.reset()
 
         if phrase == Trainer._TRAIN:
@@ -357,8 +356,7 @@ class Trainer(TrainerCallback, Distributed):
 
                     self._optimizer.step()
 
-                total_loss += batch_loss.detach().cpu().item() * batch_size
-                total_num += batch_size
+                total_loss += batch_loss.detach() * batch_size
 
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
                 self._distributed_func_wrapper(
@@ -367,8 +365,12 @@ class Trainer(TrainerCallback, Distributed):
                     f"batch metrics: {json2str(batch_metrics)}, "
                     f"target metric: {json2str(target_metric)}")
 
+        if self.is_distributed:
+            # 对于分布式来说需要得到分布式的 loss
+            TorchDist.all_reduce(total_loss)
+
         # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有必要再除以一次了
-        return total_loss, total_num
+        return total_loss.item()
 
     def recovery_train(self,
                        train_data_loader: DataLoader,
@@ -385,11 +387,11 @@ class Trainer(TrainerCallback, Distributed):
                     validation_data_loader=validation_data_loader)
 
     def evaluate(self,
-                 validation_data_loader: DataLoader) -> float:
+                 validation_data_loader: DataLoader) -> Tuple[float, int]:
         """
         评估验证集
         :param validation_data_loader: 验证集data loader
-        :return: loss 结果
+        :return: loss 结果, 以及当前数量
         """
         return self._train_or_evaluate(phrase=Trainer._EVALUATE,
                                        data_loader=validation_data_loader)
@@ -467,8 +469,7 @@ class Trainer(TrainerCallback, Distributed):
 
             self.on_train_epoch_start(trainer=self, record=record)
 
-            train_loss, total_num = self._train_or_evaluate(phrase=Trainer._TRAIN,
-                                                            data_loader=train_data_loader)
+            train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
             if self.is_distributed:
                 # 对于分布式来说需要得到分布式的 loss
@@ -480,11 +481,10 @@ class Trainer(TrainerCallback, Distributed):
                 TorchDist.all_reduce(dist_loss_tensor)
 
                 record.epoch_train_loss = dist_loss_tensor[0].item()
-                record.epoch_train_num = int(dist_loss_tensor[1].item())
             else:
 
                 record.epoch_train_loss = train_loss
-                record.epoch_train_num = total_num
+
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
