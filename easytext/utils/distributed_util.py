@@ -10,7 +10,7 @@
 Authors: PanXu
 Date:    2020/11/09 18:08:00
 """
-from typing import Union
+from typing import Union, Optional
 from torch import distributed
 
 
@@ -23,7 +23,7 @@ class DistributedFuncWrapper:
     分布式训练函数包装器, 会根据指定的进程 rank 进行处理
     """
 
-    def __init__(self, dst_rank: int = 0):
+    def __init__(self, dst_rank: Optional[int] = 0):
         """
         初始化
         :param dst_rank: 需要调用函数的 dst rank, 如果是 None, 则表示直接返回不会进行分布式处理

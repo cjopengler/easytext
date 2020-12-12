@@ -15,6 +15,7 @@ from typing import List, Union, Optional
 import logging
 
 import torch
+from torch import distributed as TorchDist
 
 from easytext.trainer import Config
 from easytext.trainer import DistributedParameter
@@ -54,7 +55,7 @@ class Launcher:
         :param rank: 多 GPU 训练时, 当前进程 id; 单 GPU 或 CPU 该参数为 None.
         :return: None
         """
-        torch.distributed.init_process_group(backend=self._distributed_parameter.backend,
+        TorchDist.init_process_group(backend=self._distributed_parameter.backend,
                                              world_size=len(self._devices),
                                              rank=rank,
                                              init_method=self._distributed_parameter.url)

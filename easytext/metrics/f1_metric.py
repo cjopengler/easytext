@@ -15,6 +15,7 @@ from typing import Dict, Set, List
 from collections import OrderedDict
 
 import torch
+from torch import distributed as TorchDist
 
 from easytext.metrics import Metric
 
@@ -158,10 +159,10 @@ class F1Metric(Metric):
     def _distributed_data(self):
         distributed_tensor = self._data.to_tensor()
 
-        if torch.distributed.get_backend() == "nccl":
+        if TorchDist.get_backend() == "nccl":
             distributed_tensor.to(torch.distributed.get_rank())
 
-        torch.distributed.all_reduce(tensor=distributed_tensor)
+        TorchDist.all_reduce(tensor=distributed_tensor)
 
         self._data.update_from_tensor(distributed_tensor)
 
