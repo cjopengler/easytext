@@ -33,18 +33,3 @@ class Record:
         self.validation_metric: Dict = None
         self.validation_target_metric: ModelTargetMetric = None
 
-
-class DistributedRecord(Record):
-
-    def __init__(self):
-        super().__init__()
-
-        self.distributed_epoch_train_num: int = None
-        self.distributed_epoch_train_loss: float = None
-        self.distributed_epoch_validation_num: int = None
-        self.distributed_epoch_validation_loss: float = None
-
-        self.distributed_train_metric: Dict = None
-        self.distributed_train_target_metric: ModelTargetMetric = None
-        self.distributed_validation_metric: Dict = None
-        self.distributed_validation_target_metric: ModelTargetMetric = None

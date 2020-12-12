@@ -83,9 +83,14 @@ class F1Metric(Metric):
         :param labels: 最终输出的 F1 的 label
         :param is_distributed: True: 分布式 metric; False: 非分布式 metric
         """
-        super().__init__(is_distributed=is_distributed)
+        super().__init__()
         self._labels = labels
         self._data = _F1MetricData(labels=labels)
+        self._is_distributed = is_distributed
+
+    @property
+    def is_distributed(self) -> bool:
+        return self._is_distributed
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
