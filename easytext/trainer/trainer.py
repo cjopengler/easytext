@@ -17,9 +17,10 @@ import logging
 from tqdm import tqdm
 import shutil
 
-from typing import Optional
+from typing import Optional, Union, List
 
 from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.parallel import DistributedDataParallel
 from torch import distributed as TorchDist
@@ -60,7 +61,7 @@ class Trainer(TrainerCallback, Distributed):
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
-                 trainer_callback: TrainerCallback = None,
+                 trainer_callback: Union[TrainerCallback, List[TrainerCallback], None] = None,
                  ):
         """
         训练器初始化
@@ -78,6 +79,8 @@ class Trainer(TrainerCallback, Distributed):
         否则, 当前训练的指标超出了 patient 个 epoch 将会 early stopping.
         :param num_check_point_keep: checkpoint 保留的数量。如果是 `None` 则全部保留;
         否则，保留 num_check_point_keep 个checkpoint.
+        :param trainer_callback: 训练中的回调。可以是 List, 如果是 List, 怎按照顺序逐个执行.
+            当 Trainer.is_distributed == True, 会去查看 trainer_back.is_distributed, True 表示
         """
 
         self._device = device
@@ -96,13 +99,13 @@ class Trainer(TrainerCallback, Distributed):
 
         self._is_distributed = is_distributed
 
-        if self._is_distributed:
+        if self.is_distributed:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=0)
         else:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=None)
 
         self._model = model
-        if self._is_distributed:
+        if self.is_distributed:
 
             assert self._device.type != "cpu", f"多 GPU 训练, device 不能是 cpu"
 
@@ -122,6 +125,23 @@ class Trainer(TrainerCallback, Distributed):
                                                              model=self.model)
         else:
             self._lr_scheduler = None
+
+        self._check_distributed()
+
+    def _check_distributed(self):
+        """
+        检查 metric 的合法性, 如果非法会抛出异常
+        :return:
+        """
+
+        assert self._metrics.is_distributed == self.is_distributed, \
+            f"当前 metrics is_distributed: {self._metrics.is_distributed} " \
+            f"与 trainer is_distributed:{self.is_distributed} 不相等"
+
+        if self._trainer_callback is not None:
+            assert self._trainer_callback.is_distributed == self.is_distributed, \
+                f"当前 trainer_callback is_distributed: {self._trainer_callback.is_distributed} " \
+                f"与 trainer is_distributed:{self.is_distributed} 不相等"
 
     @property
     def is_distributed(self) -> bool:
@@ -389,11 +409,19 @@ class Trainer(TrainerCallback, Distributed):
                 break
         return is_empty
 
+    def _check_data_loader_validity(self, data_loader: DataLoader):
+        """
+        检查 data loader 是否有效
+        :return:
+        """
 
+        if self.is_distributed:
+            assert isinstance(data_loader.sampler, DistributedSampler), \
+                f"data_loader.sampler 必须是 DistributedSampler 实例"
 
     def train(self,
-               train_data_loader: DataLoader,
-               validation_data_loader: DataLoader) -> None:
+              train_data_loader: DataLoader,
+              validation_data_loader: DataLoader) -> None:
         """
         模型训练
         :param train_data_loader: 训练集 data loader
@@ -404,8 +432,11 @@ class Trainer(TrainerCallback, Distributed):
         if not self._is_serialize_empty():
             raise RuntimeError(f"新训练，请清空保存文件件: {self._serialize_dir}")
 
-        if self._is_distributed:
+        if self.is_distributed:
             TorchDist.barrier()
+
+        self._check_data_loader_validity(train_data_loader)
+        self._check_data_loader_validity(validation_data_loader)
 
         self._train(train_data_loader=train_data_loader,
                     validation_data_loader=validation_data_loader)
@@ -437,9 +468,9 @@ class Trainer(TrainerCallback, Distributed):
             self.on_train_epoch_start(trainer=self, record=record)
 
             train_loss, total_num = self._train_or_evaluate(phrase=Trainer._TRAIN,
-                                                 data_loader=train_data_loader)
+                                                            data_loader=train_data_loader)
 
-            if self._is_distributed:
+            if self.is_distributed:
                 # 对于分布式来说需要得到分布式的 loss
                 dist_loss_tensor = torch.tensor([train_loss, total_num], dtype=torch.float)
 
@@ -473,7 +504,7 @@ class Trainer(TrainerCallback, Distributed):
 
             validation_loss, validation_num = self.evaluate(validation_data_loader=validation_data_loader)
 
-            if self._is_distributed:
+            if self.is_distributed:
                 # 对于分布式来说需要得到分布式的 loss
                 dist_loss_tensor = torch.tensor([validation_loss, validation_num], dtype=torch.float)
 
