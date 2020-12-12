@@ -17,7 +17,7 @@ import logging
 from tqdm import tqdm
 import shutil
 
-from typing import Optional, Union, List, Tuple
+from typing import Optional, Union, List
 
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -319,7 +319,7 @@ class Trainer(TrainerCallback, Distributed):
                            phrase: int,
                            data_loader: DataLoader) -> float:
 
-        total_loss = 0.
+        total_loss = torch.tensor(0, dtype=torch.float).to(self._device)
 
         self._metrics.reset()
 
@@ -334,9 +334,8 @@ class Trainer(TrainerCallback, Distributed):
             for model_inputs in tqdm(data_loader):
                 model_inputs: ModelInputs = model_inputs
 
-                batch_size, batch_inputs, labels = model_inputs.batch_size, \
-                                                   model_inputs.model_inputs, \
-                                                   model_inputs.labels
+                batch_size, batch_inputs, labels \
+                    = model_inputs.batch_size, model_inputs.model_inputs, model_inputs.labels
 
                 # 设置到 cuda 训练
                 if self._device.type == "cuda":  # 仅仅处理 GPU, 默认使用 CPU
@@ -387,7 +386,7 @@ class Trainer(TrainerCallback, Distributed):
                     validation_data_loader=validation_data_loader)
 
     def evaluate(self,
-                 validation_data_loader: DataLoader) -> Tuple[float, int]:
+                 validation_data_loader: DataLoader) -> float:
         """
         评估验证集
         :param validation_data_loader: 验证集data loader
@@ -414,6 +413,7 @@ class Trainer(TrainerCallback, Distributed):
     def _check_data_loader_validity(self, data_loader: DataLoader):
         """
         检查 data loader 是否有效
+        :param data_loader: data loader
         :return:
         """
 
@@ -458,9 +458,9 @@ class Trainer(TrainerCallback, Distributed):
         else:
             start_epoch = self._current_epoch
 
-        for epoch in range(start_epoch, self._num_epoch + 1):
+        record = Record()
 
-            record = Record()
+        for epoch in range(start_epoch, self._num_epoch + 1):
             record.epoch = epoch
 
             self._current_epoch = epoch
@@ -471,20 +471,7 @@ class Trainer(TrainerCallback, Distributed):
 
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
-            if self.is_distributed:
-                # 对于分布式来说需要得到分布式的 loss
-                dist_loss_tensor = torch.tensor([train_loss, total_num], dtype=torch.float)
-
-                if TorchDist.get_backend() == "nccl":
-                    dist_loss_tensor.to(TorchDist.get_rank())
-
-                TorchDist.all_reduce(dist_loss_tensor)
-
-                record.epoch_train_loss = dist_loss_tensor[0].item()
-            else:
-
-                record.epoch_train_loss = train_loss
-
+            record.epoch_train_loss = train_loss
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
@@ -502,23 +489,8 @@ class Trainer(TrainerCallback, Distributed):
 
             self.on_evaluate_validation_epoch_start(trainer=self, record=record)
 
-            validation_loss, validation_num = self.evaluate(validation_data_loader=validation_data_loader)
-
-            if self.is_distributed:
-                # 对于分布式来说需要得到分布式的 loss
-                dist_loss_tensor = torch.tensor([validation_loss, validation_num], dtype=torch.float)
-
-                if TorchDist.get_backend() == "nccl":
-                    dist_loss_tensor.to(TorchDist.get_rank())
-
-                TorchDist.all_reduce(dist_loss_tensor)
-
-                record.epoch_validation_loss = dist_loss_tensor[0].item()
-                record.epoch_validation_num = int(dist_loss_tensor[1].item())
-            else:
-
-                record.epoch_validation_loss = validation_loss
-                record.epoch_validation_num = validation_num
+            validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
+            record.epoch_validation_loss = validation_loss
 
             validation_metric_dict, validation_target_metric = self._metrics.metric
             record.validation_metric = validation_metric_dict
