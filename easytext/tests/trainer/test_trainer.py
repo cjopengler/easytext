@@ -201,6 +201,30 @@ class _CpuLauncher(Launcher):
         _run_train(device=device)
 
 
+class _SingleGpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cuda:0")]
+
+    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+        return None
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        _run_train(device=device)
+
+
+class _MultiGpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cuda:0"), torch.device("cuda:1")]
+
+    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+        return None
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        _run_train(device=device)
+
+
 def _run_train(device: torch.device):
     serialize_dir = os.path.join(ROOT_PATH, "data/easytext/tests/trainer/save_and_load")
 
@@ -294,11 +318,16 @@ def test_trainer_save_and_load_cpu_with_none_parameter():
 
 def test_trainer_save_load_gpu():
     if torch.cuda.is_available():
-        cuda_devices = ["cuda:0"]
-        _run_train(devices=cuda_devices)
+        luancher = _SingleGpuLauncher()
+        luancher()
     else:
         logging.warning("由于没有GPU，忽略这个case测试")
 
 
 def test_multi_gpu_trainer():
-    _run_train(devices=["cpu", "cpu"])
+
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        launcher = _MultiGpuLauncher()
+        launcher()
+    else:
+        logging.warning("由于没有多个GPU，忽略这个case测试")
