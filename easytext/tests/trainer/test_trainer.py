@@ -19,6 +19,7 @@ from typing import Iterable, List, Dict, Tuple, Optional, Union
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
 
 from easytext.data import Instance, LabelVocabulary
 from easytext.data.model_collate import ModelInputs
@@ -127,8 +128,8 @@ class _DemoLabelDecoder(ModelLabelDecoder):
 
 class _DemoMetric(ModelMetricAdapter):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, is_distributed: bool):
+        super().__init__(is_distributed=is_distributed)
         self._acc = AccMetric()
         self._label_decoder = _DemoLabelDecoder()
 
@@ -198,7 +199,7 @@ class _CpuLauncher(Launcher):
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        _run_train(device=device)
+        _run_train(device=device, is_distributed=False)
 
 
 class _SingleGpuLauncher(Launcher):
@@ -210,7 +211,7 @@ class _SingleGpuLauncher(Launcher):
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        _run_train(device=device)
+        _run_train(device=device, is_distributed=False)
 
 
 class _MultiGpuLauncher(Launcher):
@@ -223,10 +224,10 @@ class _MultiGpuLauncher(Launcher):
         return param
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        _run_train(device=device)
+        _run_train(device=device, is_distributed=True)
 
 
-def _run_train(device: torch.device):
+def _run_train(device: torch.device, is_distributed: bool):
     serialize_dir = os.path.join(ROOT_PATH, "data/easytext/tests/trainer/save_and_load")
 
     if os.path.isdir(serialize_dir):
@@ -239,7 +240,7 @@ def _run_train(device: torch.device):
     optimizer_factory = _DemoOptimizerFactory()
 
     loss = _DemoLoss()
-    metric = _DemoMetric()
+    metric = _DemoMetric(is_distributed=is_distributed)
 
     tensorboard_log_dir = "data/tensorboard"
 
@@ -256,23 +257,33 @@ def _run_train(device: torch.device):
                       patient=20,
                       num_check_point_keep=25,
                       device=device,
-                      trainer_callback = None,
-                      is_distributed = True
+                      trainer_callback=None,
+                      is_distributed=is_distributed
                       )
     # trainer_callback = BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
     train_dataset = _DemoDataset()
 
+    if is_distributed:
+        sampler = DistributedSampler(dataset=train_dataset)
+    else:
+        sampler = None
+
     train_data_loader = DataLoader(dataset=train_dataset,
                                    collate_fn=_DemoCollate(),
                                    batch_size=200,
-                                   shuffle=False,
-                                   num_workers=0)
+                                   num_workers=0,
+                                   sampler=sampler)
+
+    if is_distributed:
+        sampler = DistributedSampler(dataset=train_dataset)
+    else:
+        sampler = None
 
     validation_data_loader = DataLoader(dataset=train_dataset,
                                         collate_fn=_DemoCollate(),
                                         batch_size=200,
-                                        shuffle=False,
-                                        num_workers=0)
+                                        num_workers=0,
+                                        sampler=sampler)
 
     trainer.train(train_data_loader=train_data_loader,
                   validation_data_loader=validation_data_loader)

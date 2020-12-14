@@ -81,7 +81,7 @@ class ModelMetricAdapter(Metric):
     模型的 metric 在 __call__ 的属于与 metric 不同,
     """
 
-    def __init__(self, is_distributed: bool = False):
+    def __init__(self, is_distributed: bool):
         super().__init__(is_distributed=is_distributed)
 
     def __call__(self,

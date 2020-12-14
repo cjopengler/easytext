@@ -56,7 +56,7 @@ class Trainer(TrainerCallback, Distributed):
                  metrics: ModelMetricAdapter,
                  optimizer_factory: OptimizerFactory,
                  device: torch.device,
-                 is_distributed: bool = False,
+                 is_distributed: bool,
                  lr_scheduler_factory: LRSchedulerFactory = None,
                  grad_scaled: GradRescaled = None,
                  patient: int = None,
