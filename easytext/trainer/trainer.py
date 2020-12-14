@@ -401,8 +401,15 @@ class Trainer(TrainerCallback, Distributed):
         """
 
         self.load_checkpoint(self.serialize_dir)
+
+        if self.is_distributed:
+            TorchDist.barrier()
+
         self._train(train_data_loader=train_data_loader,
                     validation_data_loader=validation_data_loader)
+
+        if self.is_distributed:
+            TorchDist.barrier()
 
     def evaluate(self,
                  validation_data_loader: DataLoader) -> float:
@@ -411,8 +418,12 @@ class Trainer(TrainerCallback, Distributed):
         :param validation_data_loader: 验证集data loader
         :return: loss 结果, 以及当前数量
         """
-        return self._train_or_evaluate(phrase=Trainer._EVALUATE,
+        loss = self._train_or_evaluate(phrase=Trainer._EVALUATE,
                                        data_loader=validation_data_loader)
+        if self.is_distributed:
+            TorchDist.barrier()
+
+        return loss
 
     def _is_serialize_empty(self):
         """
@@ -461,6 +472,11 @@ class Trainer(TrainerCallback, Distributed):
 
         self._train(train_data_loader=train_data_loader,
                     validation_data_loader=validation_data_loader)
+
+        if self.is_distributed:
+            TorchDist.barrier()
+        logging.info(f"compelte: rank: {TorchDist.get_rank()}")
+
 
     def _train(self,
                train_data_loader: DataLoader,
@@ -575,8 +591,6 @@ class Trainer(TrainerCallback, Distributed):
         self.on_training_complete(trainer=self, record=record)
 
     def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
-
-        self._distributed_func_wrapper(logging.info, f"on_train_epoch_start: {record.epoch}")
 
         if self.is_distributed:
 

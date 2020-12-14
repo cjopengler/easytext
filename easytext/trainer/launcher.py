@@ -33,7 +33,7 @@ class Launcher:
         """
         self._config = config
         self._devices = self._init_devices()
-        self._distributed_parameters = self._init_distributed_parameters()
+        self._distributed_parameter = self._init_distributed_parameter()
 
     def _init_devices(self) -> Union[List[torch.device]]:
         """
@@ -42,7 +42,7 @@ class Launcher:
         """
         raise NotImplementedError()
 
-    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
         """
         初始化 多GPU/分布式参数
         :return:
@@ -60,7 +60,7 @@ class Launcher:
                                              rank=rank,
                                              init_method=self._distributed_parameter.url)
 
-        self._start(rank=rank, device=self._devices()[rank])
+        self._start(rank=rank, device=self._devices[rank])
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
         """

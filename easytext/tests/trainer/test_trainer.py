@@ -194,7 +194,7 @@ class _CpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cpu")]
 
-    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
@@ -206,7 +206,7 @@ class _SingleGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0")]
 
-    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
@@ -218,8 +218,9 @@ class _MultiGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0"), torch.device("cuda:1")]
 
-    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
-        return None
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+        param = DistributedParameter(backend="nccl", port=2543)
+        return param
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
         _run_train(device=device)
@@ -255,7 +256,8 @@ def _run_train(device: torch.device):
                       patient=20,
                       num_check_point_keep=25,
                       device=device,
-                      trainer_callback = None
+                      trainer_callback = None,
+                      is_distributed = True
                       )
     # trainer_callback = BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
     train_dataset = _DemoDataset()
