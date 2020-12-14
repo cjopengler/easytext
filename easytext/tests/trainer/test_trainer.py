@@ -14,7 +14,7 @@ import json
 import os
 import shutil
 import logging
-from typing import Iterable, List, Dict, Tuple
+from typing import Iterable, List, Dict, Tuple, Optional, Union
 
 import torch
 from torch import Tensor
@@ -28,9 +28,9 @@ from easytext.model import ModelOutputs
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
-from easytext.trainer.distributed_trainer import DistributedTrainer
 from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
 from easytext.trainer import DistributedParameter
+from easytext.trainer import Launcher
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
 from easytext.utils.json_util import json2str
@@ -39,7 +39,6 @@ from easytext.label_decoder import MaxLabelIndexDecoder
 
 from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
-
 
 log_util.config()
 
@@ -171,7 +170,6 @@ class ModelDemo(Model):
         pass
 
     def forward(self, x: torch.Tensor) -> _DemoOutputs:
-
         # print(self.feed_forward.weight, self.feed_forward.bias)
         logits = self.feed_forward(x)
 
@@ -191,7 +189,19 @@ class _DemoLoss(Loss):
         return self._loss(model_outputs.logits, golden_label)
 
 
-def _run_train(devices: List[str] = None):
+class _CpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cpu")]
+
+    def _init_distributed_parameters(self) -> Optional[DistributedParameter]:
+        return None
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        _run_train(device=device)
+
+
+def _run_train(device: torch.device):
     serialize_dir = os.path.join(ROOT_PATH, "data/easytext/tests/trainer/save_and_load")
 
     if os.path.isdir(serialize_dir):
@@ -212,33 +222,18 @@ def _run_train(devices: List[str] = None):
 
     # shutil.rmtree(tensorboard_log_dir)
 
-    if len(devices) == 1:
-        trainer = Trainer(num_epoch=100,
-                          model=model,
-                          loss=loss,
-                          metrics=metric,
-                          optimizer_factory=optimizer_factory,
-                          serialize_dir=serialize_dir,
-                          patient=20,
-                          num_check_point_keep=25,
-                          devices=devices,
-                          trainer_callback=BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
-                          )
-    else:
-        trainer = DistributedTrainer(
-            num_epoch=100,
-            model=model,
-            loss=loss,
-            metrics=metric,
-            optimizer_factory=optimizer_factory,
-            serialize_dir=serialize_dir,
-            patient=20,
-            num_check_point_keep=25,
-            devices=devices,
-            trainer_callback=None,
-            distributed_paramter=DistributedParameter(backend="gloo", port=2345)
-        )
-
+    trainer = Trainer(num_epoch=100,
+                      model=model,
+                      loss=loss,
+                      metrics=metric,
+                      optimizer_factory=optimizer_factory,
+                      serialize_dir=serialize_dir,
+                      patient=20,
+                      num_check_point_keep=25,
+                      device=device,
+                      trainer_callback = None
+                      )
+    # trainer_callback = BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
     train_dataset = _DemoDataset()
 
     train_data_loader = DataLoader(dataset=train_dataset,
@@ -285,7 +280,8 @@ def test_trainer_save_and_load_cpu():
     测试  trainer 保存和载入
     :return:
     """
-    _run_train(devices="cpu")
+    cpu_launcer = _CpuLauncher(config=None)
+    cpu_launcer()
 
 
 def test_trainer_save_and_load_cpu_with_none_parameter():
@@ -297,7 +293,6 @@ def test_trainer_save_and_load_cpu_with_none_parameter():
 
 
 def test_trainer_save_load_gpu():
-
     if torch.cuda.is_available():
         cuda_devices = ["cuda:0"]
         _run_train(devices=cuda_devices)
@@ -307,5 +302,3 @@ def test_trainer_save_load_gpu():
 
 def test_multi_gpu_trainer():
     _run_train(devices=["cpu", "cpu"])
-
-

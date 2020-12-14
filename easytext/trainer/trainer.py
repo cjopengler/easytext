@@ -288,14 +288,26 @@ class Trainer(TrainerCallback, Distributed):
         if last_epoch is not None:
             self._current_epoch = last_epoch
 
-            self._distributed_func_wrapper(logging.info, f"Load checkpoint, 当前 epoch: {last_epoch}")
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                        and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    logging.info(f"Load checkpoint, 当前 epoch: {last_epoch}")
+            else:
+                logging.info(f"Load checkpoint, 当前 epoch: {last_epoch}")
 
             saved_dir = os.path.join(serialize_dir, f"checkpoint_epoch_{last_epoch}")
 
             model_file_path = os.path.join(saved_dir, "model.pt")
             self._model.load_state_dict(torch.load(model_file_path))
 
-            self._distributed_func_wrapper(logging.info, f"last epoch{last_epoch}, loaded: {self._model.state_dict()}")
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                        and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    logging.info(f"last epoch{last_epoch}, loaded: {self._model.state_dict()}")
+            else:
+                logging.info(f"last epoch{last_epoch}, loaded: {self._model.state_dict()}")
 
             optimizer_file_path = os.path.join(saved_dir, "optimizer.pt")
             self._optimizer.load_state_dict(torch.load(optimizer_file_path))
@@ -358,11 +370,18 @@ class Trainer(TrainerCallback, Distributed):
                 total_loss += batch_loss.detach() * batch_size
 
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
-                self._distributed_func_wrapper(
-                    logging.info,
-                    f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
-                    f"batch metrics: {json2str(batch_metrics)}, "
-                    f"target metric: {json2str(target_metric)}")
+
+                if self.is_distributed:
+
+                    if self._distributed_func_wrapper is not None \
+                            and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                        logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
+                                     f"batch metrics: {json2str(batch_metrics)}, "
+                                     f"target metric: {json2str(target_metric)}")
+                else:
+                    logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
+                                 f"batch metrics: {json2str(batch_metrics)}, "
+                                 f"target metric: {json2str(target_metric)}")
 
         if self.is_distributed:
             # 对于分布式来说需要得到分布式的 loss
@@ -465,7 +484,13 @@ class Trainer(TrainerCallback, Distributed):
 
             self._current_epoch = epoch
 
-            self._distributed_func_wrapper(logging.info, f"Start train epoch: {self._current_epoch}")
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                        and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    logging.info(f"Start train epoch: {self._current_epoch}")
+            else:
+                logging.info(f"Start train epoch: {self._current_epoch}")
 
             self.on_train_epoch_start(trainer=self, record=record)
 
@@ -479,11 +504,19 @@ class Trainer(TrainerCallback, Distributed):
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
 
-            self._distributed_func_wrapper(logging.info,
-                                           f"Train epoch: {epoch}, "
-                                           f"loss: {train_loss}, "
-                                           f"target metric: {train_target_metric.name}:{train_target_metric.value},"
-                                           f"metrics: {json2str(train_metric_dict)}")
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                        and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    logging.info(f"Train epoch: {epoch}, "
+                                 f"loss: {train_loss}, "
+                                 f"target metric: {train_target_metric.name}:{train_target_metric.value},"
+                                 f"metrics: {json2str(train_metric_dict)}")
+            else:
+                logging.info(f"Train epoch: {epoch}, "
+                             f"loss: {train_loss}, "
+                             f"target metric: {train_target_metric.name}:{train_target_metric.value},"
+                             f"metrics: {json2str(train_metric_dict)}")
 
             self.on_train_epoch_stop(trainer=self, record=record)
 
@@ -502,11 +535,17 @@ class Trainer(TrainerCallback, Distributed):
                                             validation_metric=validation_metric_dict,
                                             validation_model_target_metric=validation_target_metric)
 
-            self._distributed_func_wrapper(
-                logging.info,
-                f"Evaluate Valid epoch: {epoch}, loss: {validation_loss}, "
-                f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
-                f"metrics: {json2str(validation_metric_dict)}")
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                        and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    logging.info(f"Evaluate Valid epoch: {epoch}, loss: {validation_loss}, "
+                                 f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
+                                 f"metrics: {json2str(validation_metric_dict)}")
+            else:
+                logging.info(f"Evaluate Valid epoch: {epoch}, loss: {validation_loss}, "
+                             f"target metric: {validation_target_metric.name}:{validation_target_metric.value} "
+                             f"metrics: {json2str(validation_metric_dict)}")
 
             self.on_evaluate_validation_epoch_stop(trainer=self, record=record)
 
@@ -524,8 +563,13 @@ class Trainer(TrainerCallback, Distributed):
             self._distributed_func_wrapper(self.save_checkpoint, epoch=epoch)
 
             if self._metric_tracker.early_stopping(epoch):
-                self._distributed_func_wrapper(
-                    logging.info, f"Epoch: {epoch}, early stopping!")
+                if self.is_distributed:
+
+                    if self._distributed_func_wrapper is not None \
+                            and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                        logging.info(f"Epoch: {epoch}, early stopping!")
+                else:
+                    logging.info(f"Epoch: {epoch}, early stopping!")
                 break
 
         self.on_training_complete(trainer=self, record=record)
@@ -534,31 +578,70 @@ class Trainer(TrainerCallback, Distributed):
 
         self._distributed_func_wrapper(logging.info, f"on_train_epoch_start: {record.epoch}")
 
+        if self.is_distributed:
+
+            if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                logging.info(f"on_train_epoch_start: {record.epoch}")
+        else:
+            logging.info(f"on_train_epoch_start: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_train_epoch_start(trainer=trainer,
                                                         record=record)
 
     def on_train_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
-        self._distributed_func_wrapper(logging.info, f"on_train_epoch_stop: {record.epoch}")
+
+        if self.is_distributed:
+
+            if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                logging.info(f"on_train_epoch_stop: {record.epoch}")
+        else:
+            logging.info(f"on_train_epoch_stop: {record.epoch}")
 
         if self._trainer_callback is not None:
             self._trainer_callback.on_train_epoch_stop(trainer=trainer,
                                                        record=record)
 
     def on_evaluate_validation_epoch_start(self, trainer: "Trainer", record: Record) -> None:
-        self._distributed_func_wrapper(logging.info, f"on_evaluate_epoch_start: {record.epoch}")
+
+        if self.is_distributed:
+
+            if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                logging.info(f"on_evaluate_epoch_start: {record.epoch}")
+        else:
+            logging.info(f"on_evaluate_epoch_start: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_evaluate_validation_epoch_start(trainer=trainer,
                                                                       record=record)
 
     def on_evaluate_validation_epoch_stop(self, trainer: "Trainer", record: Record) -> None:
-        self._distributed_func_wrapper(logging.info, f"on_evaluate_epoch_stop: {record.epoch}")
+
+        if self.is_distributed:
+
+            if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
+        else:
+            logging.info(f"on_evaluate_epoch_stop: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_evaluate_validation_epoch_stop(trainer=trainer,
                                                                      record=record)
 
     def on_training_complete(self, trainer: "Trainer", record: Record) -> None:
-        self._distributed_func_wrapper(logging.info, f"on_training_complete: {record.epoch}")
+
+        if self.is_distributed:
+
+            if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                logging.info(f"on_training_complete: {record.epoch}")
+        else:
+            logging.info(f"on_training_complete: {record.epoch}")
+
         if self._trainer_callback is not None:
             self._trainer_callback.on_training_complete(trainer=trainer,
                                                         record=record)

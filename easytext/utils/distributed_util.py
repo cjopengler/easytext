@@ -30,6 +30,10 @@ class DistributedFuncWrapper:
         """
         self._dst_rank = dst_rank
 
+    @property
+    def dst_rank(self):
+        return self._dst_rank
+
     def __call__(self, func, *args, **kwargs) -> Union[NotCall, object]:
         """
         在指定的 dst rank 进程运行该函数
