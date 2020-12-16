@@ -10,6 +10,7 @@ acc 指标
 Authors: panxu(panxu@baidu.com)
 Date:    2020/05/30 07:36:00
 """
+import logging
 from typing import Dict
 
 import torch
@@ -25,7 +26,7 @@ class _AccMetricData:
         self.num_total = 0
 
     def to_tensor(self) -> torch.LongTensor:
-        return torch.tensor([self._num_true, self._num_total], dtype=torch.long)
+        return torch.tensor([self.num_true, self.num_total], dtype=torch.long)
 
     def update_from_tensor(self, values: torch.LongTensor) -> None:
         self.num_true = values[0]
@@ -45,6 +46,7 @@ class AccMetric(Metric):
         self._num_true = 0
         self._num_total = 0
         self._data = _AccMetricData()
+        self._device = None
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -60,6 +62,7 @@ class AccMetric(Metric):
         if mask is not None:
             raise RuntimeError("对于 Acc 来说, mask 应该为 None")
 
+        self._device = prediction_labels.device
         prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
         num_true = (prediction_labels == gold_labels).sum().item()
@@ -79,7 +82,10 @@ class AccMetric(Metric):
         distributed_tensor = self._data.to_tensor()
 
         if TorchDist.get_backend() == "nccl":
-            distributed_tensor.to(torch.distributed.get_rank())
+            
+            distributed_tensor = distributed_tensor.cuda(torch.distributed.get_rank())
+
+            logging.info(f"nccl: {distributed_tensor.device}: rank {torch.distributed.get_rank()}, {self._device}")
 
         TorchDist.all_reduce(tensor=distributed_tensor)
 

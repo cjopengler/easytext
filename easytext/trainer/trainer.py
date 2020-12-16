@@ -369,8 +369,9 @@ class Trainer(TrainerCallback, Distributed):
 
                 total_loss += batch_loss.detach() * batch_size
 
+                logging.info(f"Etnry metric, {TorchDist.get_rank()}")
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
-
+                logging.info(f"Etnry metric finished, {TorchDist.get_rank()}")
                 if self.is_distributed:
 
                     if self._distributed_func_wrapper is not None \
@@ -473,7 +474,9 @@ class Trainer(TrainerCallback, Distributed):
         self._train(train_data_loader=train_data_loader,
                     validation_data_loader=validation_data_loader)
 
+        logging.info(f"finish train: rank: {TorchDist.get_rank()}")
         if self.is_distributed:
+            logging.info("for barrier: {TorchDist.get_rank()}")
             TorchDist.barrier()
         logging.info(f"compelte: rank: {TorchDist.get_rank()}")
 
@@ -510,8 +513,9 @@ class Trainer(TrainerCallback, Distributed):
 
             self.on_train_epoch_start(trainer=self, record=record)
 
+            logging.info(f"{TorchDist.get_rank()}: ready to train")
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
-
+            logging.info(f"{TorchDist.get_rank()}: finish to train")
             record.epoch_train_loss = train_loss
 
             # 输出metrics
