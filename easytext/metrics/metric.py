@@ -67,6 +67,10 @@ class ModelTargetMetric:
     def value(self):
         return self._metric_value
 
+    @value.setter
+    def value(self, value: float):
+        self._metric_value = value
+
 
 class ModelMetricAdapter:
     """

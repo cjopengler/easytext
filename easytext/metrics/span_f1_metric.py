@@ -10,7 +10,7 @@ brief
 Authors: panxu(panxu@baidu.com)
 Date:    2020/05/19 18:36:00
 """
-from typing import Dict, Set
+from typing import Dict, List, Union
 import torch
 from collections import defaultdict
 
@@ -31,14 +31,22 @@ class SpanF1Metric(F1Metric):
         初始化
         :param label_vocabulary: label 的 vocabulary
         """
-        super().__init__()
+        labels = set()
 
+        # 从 B-Label, I-Label, 中获取 Label
+        for index in range(label_vocabulary.label_size):
+            bio_label: str = label_vocabulary.token(index)
+
+            if bio_label == "O":
+                continue
+
+            label = bio_label.split("-")[1]
+            labels.add(label)
+
+        labels = [_ for _ in labels]
+
+        super().__init__(labels=labels)
         self.label_vocabulary = label_vocabulary
-
-        # 下面之所以是字典，是为了计算多个 tag 的 f1, 比如: B-Per, B-Loc 就是需要需要计算 Per 以及 Loc 的 F1
-        self._true_positives: Dict[str, int] = defaultdict(int)
-        self._false_positives: Dict[str, int] = defaultdict(int)
-        self._false_negatives: Dict[str, int] = defaultdict(int)
 
     @property
     def schema(self):

@@ -19,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 from easytext.trainer import Record
 from easytext.trainer.trainer_callback import TrainerCallback
 from easytext.trainer.tensorboard_manager import MainTagManager
-from easytext.utils.distributed_util import DistributedFuncWrapper
+from easytext.utils.distributed.distributed_util import DistributedFuncWrapper
 
 
 class TimeConsumeCallback(TrainerCallback):

@@ -33,7 +33,8 @@ from easytext.data.model_collate import ModelInputs
 from easytext.metrics import ModelMetricAdapter
 from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
-from easytext.utils.distributed_util import DistributedFuncWrapper
+from easytext.utils.distributed.distributed_util import DistributedFuncWrapper
+from easytext.utils.distributed import Sync
 from easytext.trainer.metric_tracker import MetricTracker
 from easytext.trainer.grad_rescaled import GradRescaled
 from easytext.trainer import Record
@@ -133,10 +134,6 @@ class Trainer(TrainerCallback, Distributed):
         检查 metric 的合法性, 如果非法会抛出异常
         :return:
         """
-
-        assert self._metrics.is_distributed == self.is_distributed, \
-            f"当前 metrics is_distributed: {self._metrics.is_distributed} " \
-            f"与 trainer is_distributed:{self.is_distributed} 不相等"
 
         if self._trainer_callback is not None:
             assert self._trainer_callback.is_distributed == self.is_distributed, \
@@ -331,7 +328,7 @@ class Trainer(TrainerCallback, Distributed):
                            phrase: int,
                            data_loader: DataLoader) -> float:
 
-        total_loss = torch.tensor(0, dtype=torch.float).to(self._device)
+        total_loss = 0.
 
         self._metrics.reset()
 
@@ -367,7 +364,7 @@ class Trainer(TrainerCallback, Distributed):
 
                     self._optimizer.step()
 
-                total_loss += batch_loss.detach() * batch_size
+                total_loss += batch_loss.detach().item() * batch_size
 
                 logging.info(f"Etnry metric, {TorchDist.get_rank()}")
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
@@ -384,12 +381,8 @@ class Trainer(TrainerCallback, Distributed):
                                  f"batch metrics: {json2str(batch_metrics)}, "
                                  f"target metric: {json2str(target_metric)}")
 
-        if self.is_distributed:
-            # 对于分布式来说需要得到分布式的 loss
-            TorchDist.all_reduce(total_loss)
-
         # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有必要再除以一次了
-        return total_loss.item()
+        return total_loss
 
     def recovery_train(self,
                        train_data_loader: DataLoader,
@@ -480,7 +473,6 @@ class Trainer(TrainerCallback, Distributed):
             TorchDist.barrier()
         logging.info(f"compelte: rank: {TorchDist.get_rank()}")
 
-
     def _train(self,
                train_data_loader: DataLoader,
                validation_data_loader: DataLoader) -> None:
@@ -515,11 +507,21 @@ class Trainer(TrainerCallback, Distributed):
 
             logging.info(f"{TorchDist.get_rank()}: ready to train")
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
+
+            if self.is_distributed:
+                train_loss = Sync.sync_value(train_loss, device=self._device, op="mean")
+
             logging.info(f"{TorchDist.get_rank()}: finish to train")
             record.epoch_train_loss = train_loss
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
+
+            if self.is_distributed:
+                train_target_metric_value = Sync.sync_value(train_target_metric.value,
+                                                            device=self._device,
+                                                            op="mean")
+                train_target_metric.value = train_target_metric_value
 
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
@@ -543,9 +545,20 @@ class Trainer(TrainerCallback, Distributed):
             self.on_evaluate_validation_epoch_start(trainer=self, record=record)
 
             validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
+
+            if self.is_distributed:
+                validation_loss = Sync.sync_value(validation_loss, device=self._device, op="mean")
+
             record.epoch_validation_loss = validation_loss
 
             validation_metric_dict, validation_target_metric = self._metrics.metric
+
+            if self.is_distributed:
+                validation_target_metric_value = Sync.sync_value(validation_target_metric.value,
+                                                                 device=self._device,
+                                                                 op="mean")
+                validation_target_metric.value = validation_target_metric_value
+
             record.validation_metric = validation_metric_dict
             record.validation_target_metric = validation_target_metric
 
