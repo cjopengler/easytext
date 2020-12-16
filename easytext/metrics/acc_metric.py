@@ -10,27 +10,11 @@ acc 指标
 Authors: panxu(panxu@baidu.com)
 Date:    2020/05/30 07:36:00
 """
-import logging
 from typing import Dict
 
 import torch
-from torch import distributed as TorchDist
 
-from easytext.metrics import Metric
-
-
-class _AccMetricData:
-
-    def __init__(self):
-        self.num_true = 0
-        self.num_total = 0
-
-    def to_tensor(self) -> torch.LongTensor:
-        return torch.tensor([self.num_true, self.num_total], dtype=torch.long)
-
-    def update_from_tensor(self, values: torch.LongTensor) -> None:
-        self.num_true = values[0]
-        self.num_total = values[1]
+from .metric import Metric
 
 
 class AccMetric(Metric):
@@ -40,13 +24,10 @@ class AccMetric(Metric):
 
     ACC = "acc"
 
-    def __init__(self, is_distributed: bool = False):
-        super().__init__(is_distributed=is_distributed)
-
+    def __init__(self):
+        super().__init__()
         self._num_true = 0
         self._num_total = 0
-        self._data = _AccMetricData()
-        self._device = None
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -62,14 +43,13 @@ class AccMetric(Metric):
         if mask is not None:
             raise RuntimeError("对于 Acc 来说, mask 应该为 None")
 
-        self._device = prediction_labels.device
         prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
 
         num_true = (prediction_labels == gold_labels).sum().item()
         num_total = gold_labels.size(0)
 
-        self._data.num_true += num_true
-        self._data.num_total += num_total
+        self._num_true += num_true
+        self._num_total += num_total
 
         acc = AccMetric._compute(num_true=num_true, num_total=num_total)
         return {AccMetric.ACC: acc}
@@ -78,31 +58,14 @@ class AccMetric(Metric):
     def _compute(num_true: int, num_total: int):
         return num_true / (float(num_total) + 1e-10)
 
-    def _distributed_data(self):
-        distributed_tensor = self._data.to_tensor()
-
-        if TorchDist.get_backend() == "nccl":
-            
-            distributed_tensor = distributed_tensor.cuda(torch.distributed.get_rank())
-
-            logging.info(f"nccl: {distributed_tensor.device}: rank {torch.distributed.get_rank()}, {self._device}")
-
-        TorchDist.all_reduce(tensor=distributed_tensor)
-
-        self._data.update_from_tensor(distributed_tensor)
-
     @property
     def metric(self) -> Dict:
-
-        if self.is_distributed:
-            self._distributed_data()
-
-        acc = AccMetric._compute(self._data.num_true,
-                                 self._data.num_total)
+        acc = AccMetric._compute(self._num_true, self._num_total)
 
         return {AccMetric.ACC: acc}
 
     def reset(self):
-        self._data = _AccMetricData()
+        self._num_true = 0
+        self._num_total = 0
         return self
 

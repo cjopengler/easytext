@@ -16,7 +16,7 @@ import torch
 
 from .f1_metric import F1Metric
 
-from easytext.data.vocabulary import LabelVocabulary
+from easytext.data.vocabulary import Vocabulary
 
 
 class LabelF1Metric(F1Metric):
@@ -25,38 +25,27 @@ class LabelF1Metric(F1Metric):
     f1 的计算是针对 某个 class 的 f1。
     """
 
-    def __init__(self,
-                 label_vocabulary: LabelVocabulary,
-                 labels: List[Union[str, int]] = None,
-                 is_distributed: bool = False):
+    def __init__(self, labels: List[Union[str, int]], label_vocabulary: Vocabulary):
         """
         对 label 的 f1 metric 计算. 适用的情况是, label shape: (B,), 每一个 label 是 [0, num_class) 的值。
         f1 的计算是针对 某个 class 的 f1。
 
-        :param label_vocabulary: label vocabulary 用来将 str label 转换成 label index
         :param labels: 需要计算 f1 的标签序列. 如果类型是 str, 那么, 需要设置 label_vocabulary，用作
-            label 和 index 之间的转换; 如果类型是 int, 那么, 认为是 label index, 不会使用 label_vocabulary 进行转换,
-            此时 label_vocabulary 可以设置为 None. 如果 labels 被设置为 None, 那么表示 使用 label_vocabulary 中全部
-            label 进行计算。
-        :param is_distributed: True: 分布式训练的 Metric; False: 非分布式训练的 Metric
+        label 和 index 之间的转换; 如果类型是 int, 那么, 不会使用 label_ vocabulary 进行转换 （可以设置为 None)，
+        认为是 label index.
+        :param label_vocabulary: label vocabulary 用来将 str label 转换成 label index
         """
-
-        if labels is None and label_vocabulary is None:
-            raise RuntimeError(f"labels 和 label_vocabulary 非法, 全部是 None.")
-
-        if labels is None:
-            labels = [label_vocabulary.token(index) for index in range(label_vocabulary.label_size)]
+        super().__init__()
 
         if isinstance(labels[0], str) and label_vocabulary is None:
             raise RuntimeError("labels 是 str 类型, label_vocabulary 不能是 None, "
                                "因为需要进行 label 到 index转换")
 
-        super().__init__(labels=labels, is_distributed=is_distributed)
-
         self._label_vocabulary = label_vocabulary
+        self._labels = labels
 
         if isinstance(labels[0], str):
-            self._label_indices = [label_vocabulary.index(label) for label in labels]
+            self._label_indices = [label_vocabulary.index(label) for label in self._labels]
         else:
             self._label_indices = labels
 
@@ -115,14 +104,6 @@ class LabelF1Metric(F1Metric):
             true_positives[label] = (label_predictions == label_gold).sum().item()
             false_positives[label] = num_prediction - true_positives[label]
             false_negatives[label] = num_golden - true_positives[label]
-
-        # 更新全局数据
-        for label, value in true_positives.items():
-            self._data.true_positives[label] += value
-        for label, value in false_positives.items():
-            self._data.false_positives[label] += value
-        for label, value in false_negatives.items():
-            self._data.false_negatives[label] += value
 
         return self._metric(true_positives=true_positives,
                             false_positives=false_positives,

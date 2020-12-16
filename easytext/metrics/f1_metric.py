@@ -20,48 +20,6 @@ from torch import distributed as TorchDist
 from easytext.metrics import Metric
 
 
-class _F1MetricData:
-
-    def __init__(self, labels: List[str]):
-        """
-        初始化 F1MetricData
-        :param labels: 最后结果中，需要查看的 F1 值的 label 列表
-        """
-        self.labels = labels
-        # 下面之所以是字典，是为了计算多个 label 的 f1
-        self.true_positives: Dict[str, int] = OrderedDict()
-        self.false_positives: Dict[str, int] = OrderedDict()
-        self.false_negatives: Dict[str, int] = OrderedDict()
-
-        for label in labels:
-            self.true_positives[label] = 0
-            self.false_positives[label] = 0
-            self.false_negatives[label] = 0
-
-    def to_tensor(self) -> torch.LongTensor:
-        """
-        转换成 tensor
-        :return: 转换后的 tensor value
-        """
-        true_positive_values = [value for _, value in self.true_positives.items()]
-        false_positive_values = [value for _, value in self.false_positives.items()]
-        false_negative_values = [value for _, value in self.false_negatives]
-
-        return torch.tensor([true_positive_values, false_positive_values, false_negative_values],
-                            dtype=torch.long)
-
-    def update_from_tensor(self, values: torch.LongTensor) -> None:
-        """
-        使用 tensor value 填充
-        :param values: to_tensor 生成 value
-        :return: self
-        """
-        for i, label in enumerate(self.labels):
-            self.true_positives[label] = values[0][i].item()
-            self.false_positives[label] = values[1][i].item()
-            self.false_negatives[label] = values[2][i].item()
-
-
 class F1Metric(Metric):
     """
     f1 metric 基类，具体的 f1 需要子类实现，来完成
@@ -78,7 +36,7 @@ class F1Metric(Metric):
     RECALL_OVERALL = f"{RECALL}-overall"
     F1_OVERALL = f"{F1}-overall"
 
-    def __init__(self, labels: List[str], is_distributed: bool) -> None:
+    def __init__(self, labels: List[str]) -> None:
         """
         初始化
         :param labels: 最终输出的 F1 的 label
@@ -86,12 +44,16 @@ class F1Metric(Metric):
         """
         super().__init__()
         self._labels = labels
-        self._data = _F1MetricData(labels=labels)
-        self._is_distributed = is_distributed
 
-    @property
-    def is_distributed(self) -> bool:
-        return self._is_distributed
+        # 下面之所以是字典，是为了计算多个 label 的 f1
+        self.true_positives: Dict[str, int] = OrderedDict()
+        self.false_positives: Dict[str, int] = OrderedDict()
+        self.false_negatives: Dict[str, int] = OrderedDict()
+
+        for label in labels:
+            self.true_positives[label] = 0
+            self.false_positives[label] = 0
+            self.false_negatives[label] = 0
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -156,16 +118,6 @@ class F1Metric(Metric):
 
         return all_metrics
 
-    def _distributed_data(self):
-        distributed_tensor = self._data.to_tensor()
-
-        if TorchDist.get_backend() == "nccl":
-            distributed_tensor.to(torch.distributed.get_rank())
-
-        TorchDist.all_reduce(tensor=distributed_tensor)
-
-        self._data.update_from_tensor(distributed_tensor)
-
     @property
     def metric(self) -> Dict:
         """
@@ -183,12 +135,9 @@ class F1Metric(Metric):
         因为有多个tag，那么模型的指标衡量需要一个综合指标来衡量。
         """
 
-        if self.is_distributed:
-            self._distributed_data()
-
-        return self._metric(true_positives=self._data.true_positives,
-                            false_positives=self._data.false_positives,
-                            false_negatives=self._data.false_negatives)
+        return self._metric(true_positives=self._true_positives,
+                            false_positives=self._false_positives,
+                            false_negatives=self._false_negatives)
 
     @staticmethod
     def _compute_metrics(true_positives: int, false_positives: int, false_negatives: int):
@@ -204,6 +153,9 @@ class F1Metric(Metric):
         """
         将所有的状态reset, f1 重新计算。
         """
-        self._data = _F1MetricData(labels=self._data.labels)
+        for label in self._labels:
+            self.true_positives[label] = 0
+            self.false_positives[label] = 0
+            self.false_negatives[label] = 0
         return self
 

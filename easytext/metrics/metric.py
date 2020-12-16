@@ -17,20 +17,12 @@ import torch
 from torch import Tensor
 
 from easytext.model import ModelOutputs
-from easytext.distributed import Distributed
 
 
-class Metric(Distributed):
+class Metric:
     """
     Metrics
     """
-
-    def __init__(self, is_distributed: bool = False):
-        self._is_distributed = is_distributed
-
-    @property
-    def is_distributed(self) -> bool:
-        return self._is_distributed
 
     def __call__(self, prediction_labels: torch.Tensor,
                  gold_labels: torch.Tensor,
@@ -76,13 +68,10 @@ class ModelTargetMetric:
         return self._metric_value
 
 
-class ModelMetricAdapter(Metric):
+class ModelMetricAdapter:
     """
     模型的 metric 在 __call__ 的属于与 metric 不同,
     """
-
-    def __init__(self, is_distributed: bool):
-        super().__init__(is_distributed=is_distributed)
 
     def __call__(self,
                  model_outputs: ModelOutputs,
