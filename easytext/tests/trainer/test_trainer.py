@@ -130,9 +130,9 @@ class _DemoLabelDecoder(ModelLabelDecoder):
 
 class _DemoMetric(ModelMetricAdapter):
 
-    def __init__(self, is_distributed: bool):
-        super().__init__(is_distributed=is_distributed)
-        self._acc = AccMetric(is_distributed=True)
+    def __init__(self):
+        super().__init__()
+        self._acc = AccMetric()
         self._label_decoder = _DemoLabelDecoder()
 
     def __call__(self, model_outputs: _DemoOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
@@ -255,7 +255,7 @@ def _run_train(device: torch.device, is_distributed: bool):
     optimizer_factory = _DemoOptimizerFactory()
 
     loss = _DemoLoss()
-    metric = _DemoMetric(is_distributed=is_distributed)
+    metric = _DemoMetric()
 
     tensorboard_log_dir = "data/tensorboard"
 

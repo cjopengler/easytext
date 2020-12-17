@@ -24,6 +24,7 @@ from torch.utils.data.distributed import DistributedSampler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.parallel import DistributedDataParallel
 from torch import distributed as TorchDist
+from torch.distributed import ReduceOp
 
 from easytext.model import Model
 from easytext.loss import Loss
@@ -509,7 +510,7 @@ class Trainer(TrainerCallback, Distributed):
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
             if self.is_distributed:
-                train_loss = Sync.sync_value(train_loss, device=self._device, op="mean")
+                train_loss = Sync.sync_value(train_loss, device=self._device, op=ReduceOp.SUM)
 
             logging.info(f"{TorchDist.get_rank()}: finish to train")
             record.epoch_train_loss = train_loss
@@ -520,7 +521,7 @@ class Trainer(TrainerCallback, Distributed):
             if self.is_distributed:
                 train_target_metric_value = Sync.sync_value(train_target_metric.value,
                                                             device=self._device,
-                                                            op="mean")
+                                                            op=ReduceOp.SUM)
                 train_target_metric.value = train_target_metric_value
 
             record.train_metric = train_metric_dict
@@ -547,7 +548,7 @@ class Trainer(TrainerCallback, Distributed):
             validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
 
             if self.is_distributed:
-                validation_loss = Sync.sync_value(validation_loss, device=self._device, op="mean")
+                validation_loss = Sync.sync_value(validation_loss, device=self._device, op=ReduceOp.SUM)
 
             record.epoch_validation_loss = validation_loss
 
@@ -556,7 +557,7 @@ class Trainer(TrainerCallback, Distributed):
             if self.is_distributed:
                 validation_target_metric_value = Sync.sync_value(validation_target_metric.value,
                                                                  device=self._device,
-                                                                 op="mean")
+                                                                 op=ReduceOp.SUM)
                 validation_target_metric.value = validation_target_metric_value
 
             record.validation_metric = validation_metric_dict
