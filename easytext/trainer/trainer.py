@@ -515,14 +515,13 @@ class Trainer(TrainerCallback, Distributed):
             logging.info(f"{TorchDist.get_rank()}: finish to train")
             record.epoch_train_loss = train_loss
 
+            if self.is_distributed:
+                sync_data, op = self._metrics.to_synchronized_data()
+                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
+
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
-
-            if self.is_distributed:
-                train_target_metric_value = Sync.sync_value(train_target_metric.value,
-                                                            device=self._device,
-                                                            op=ReduceOp.SUM)
-                train_target_metric.value = train_target_metric_value
 
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
@@ -552,13 +551,12 @@ class Trainer(TrainerCallback, Distributed):
 
             record.epoch_validation_loss = validation_loss
 
-            validation_metric_dict, validation_target_metric = self._metrics.metric
-
             if self.is_distributed:
-                validation_target_metric_value = Sync.sync_value(validation_target_metric.value,
-                                                                 device=self._device,
-                                                                 op=ReduceOp.SUM)
-                validation_target_metric.value = validation_target_metric_value
+                sync_data, op = self._metrics.to_synchronized_data()
+                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
+
+            validation_metric_dict, validation_target_metric = self._metrics.metric
 
             record.validation_metric = validation_metric_dict
             record.validation_target_metric = validation_target_metric

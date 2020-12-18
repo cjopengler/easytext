@@ -11,11 +11,14 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/06/16 09:08:00
 """
 
-from typing import Dict, Set, List
+from typing import Dict, Set, List, Union, Tuple
 from collections import OrderedDict
 
 import torch
+from torch import Tensor
+from torch.distributed import ReduceOp
 from torch import distributed as TorchDist
+
 
 from easytext.metrics import Metric
 
@@ -158,4 +161,44 @@ class F1Metric(Metric):
             self.false_positives[label] = 0
             self.false_negatives[label] = 0
         return self
+
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        true_positives = torch.tensor([v for _, v in self.true_positives.items()], dtype=torch.long)
+
+        false_positives = torch.tensor([v for _, v in self.false_positives.items()], dtype=torch.long)
+        false_negatives = torch.tensor([v for _, v in self.false_negatives.items()], dtype=torch.long)
+
+        sync_data = {"true_positives": true_positives,
+                     "false_positives": false_positives,
+                     "false_negatives": false_negatives}
+        return sync_data, ReduceOp.SUM
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+
+        true_positives: Tensor = sync_data["true_positives"]
+        false_positives = sync_data["false_positives"]
+        false_negatives = sync_data["false_negatives"]
+
+        assert true_positives.size(0) == len(self.true_positives), \
+            f"true_positives length: {true_positives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self.true_positives)} 不一致"
+
+        assert false_positives.size(0) == len(self.false_positives), \
+            f"true_positives length: {false_positives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self.false_positives)} 不一致"
+
+        assert false_negatives.size(0) == len(self.false_negatives), \
+            f"true_positives length: {false_negatives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self.false_negatives)} 不一致"
+
+        for k, _, sync_value in zip(self.true_positives.items(), true_positives):
+            self.true_positives[k] = sync_value
+
+        for k, _, sync_value in zip(self.false_positives.items(), false_positives):
+            self.false_positives[k] = sync_value
+
+        for k, _, sync_value in zip(self.false_negatives.items(), false_negatives):
+            self.false_negatives[k] = sync_value
+
 

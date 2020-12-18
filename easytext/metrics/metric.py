@@ -11,15 +11,17 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/05/16 00:59:00
 """
 
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 import torch
 from torch import Tensor
+from torch.distributed import ReduceOp
 
 from easytext.model import ModelOutputs
+from easytext.distributed import Synchronized
 
 
-class Metric:
+class Metric(Synchronized):
     """
     Metrics
     """
@@ -48,6 +50,13 @@ class Metric:
     def reset(self):
         raise NotImplementedError()
 
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        raise NotImplementedError()
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+        raise NotImplementedError()
+
 
 class ModelTargetMetric:
     """
@@ -67,12 +76,8 @@ class ModelTargetMetric:
     def value(self):
         return self._metric_value
 
-    @value.setter
-    def value(self, value: float):
-        self._metric_value = value
 
-
-class ModelMetricAdapter:
+class ModelMetricAdapter(Synchronized):
     """
     模型的 metric 在 __call__ 的属于与 metric 不同,
     """
@@ -107,5 +112,14 @@ class ModelMetricAdapter:
         :return: self
         """
         raise NotImplementedError()
+
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        raise NotImplementedError()
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+        raise NotImplementedError()
+
+
 
 

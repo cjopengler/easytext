@@ -22,6 +22,7 @@ from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch import distributed as TorchDist
+from torch.distributed import ReduceOp
 
 from easytext.data import Instance, LabelVocabulary
 from easytext.data.model_collate import ModelInputs
@@ -153,6 +154,13 @@ class _DemoMetric(ModelMetricAdapter):
     def reset(self) -> "_DemoMetric":
         self._acc.reset()
         return self
+
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        return self._acc.to_synchronized_data()
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+        self._acc.from_synchronized_data(sync_data=sync_data, reduce_op=reduce_op)
 
 
 class _DemoOptimizerFactory(OptimizerFactory):
