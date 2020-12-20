@@ -345,14 +345,6 @@ def test_trainer_save_and_load_cpu():
     cpu_launcer()
 
 
-def test_trainer_save_and_load_cpu_with_none_parameter():
-    """
-    测试  trainer cpu 保存和载入, 不设置任何参数，默认使用cpu
-    :return:
-    """
-    _run_train()
-
-
 def test_trainer_save_load_gpu():
     if torch.cuda.is_available():
         luancher = _SingleGpuLauncher()

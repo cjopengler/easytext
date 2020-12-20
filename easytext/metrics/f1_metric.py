@@ -49,14 +49,14 @@ class F1Metric(Metric):
         self._labels = labels
 
         # 下面之所以是字典，是为了计算多个 label 的 f1
-        self.true_positives: Dict[str, int] = OrderedDict()
-        self.false_positives: Dict[str, int] = OrderedDict()
-        self.false_negatives: Dict[str, int] = OrderedDict()
+        self._true_positives: Dict[str, int] = OrderedDict()
+        self._false_positives: Dict[str, int] = OrderedDict()
+        self._false_negatives: Dict[str, int] = OrderedDict()
 
         for label in labels:
-            self.true_positives[label] = 0
-            self.false_positives[label] = 0
-            self.false_negatives[label] = 0
+            self._true_positives[label] = 0
+            self._false_positives[label] = 0
+            self._false_negatives[label] = 0
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -157,16 +157,16 @@ class F1Metric(Metric):
         将所有的状态reset, f1 重新计算。
         """
         for label in self._labels:
-            self.true_positives[label] = 0
-            self.false_positives[label] = 0
-            self.false_negatives[label] = 0
+            self._true_positives[label] = 0
+            self._false_positives[label] = 0
+            self._false_negatives[label] = 0
         return self
 
     def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
-        true_positives = torch.tensor([v for _, v in self.true_positives.items()], dtype=torch.long)
+        true_positives = torch.tensor([v for _, v in self._true_positives.items()], dtype=torch.long)
 
-        false_positives = torch.tensor([v for _, v in self.false_positives.items()], dtype=torch.long)
-        false_negatives = torch.tensor([v for _, v in self.false_negatives.items()], dtype=torch.long)
+        false_positives = torch.tensor([v for _, v in self._false_positives.items()], dtype=torch.long)
+        false_negatives = torch.tensor([v for _, v in self._false_negatives.items()], dtype=torch.long)
 
         sync_data = {"true_positives": true_positives,
                      "false_positives": false_positives,
@@ -180,25 +180,25 @@ class F1Metric(Metric):
         false_positives = sync_data["false_positives"]
         false_negatives = sync_data["false_negatives"]
 
-        assert true_positives.size(0) == len(self.true_positives), \
+        assert true_positives.size(0) == len(self._true_positives), \
             f"true_positives length: {true_positives.size(0)} sync data " \
-            f"与 self.true_positives length: {len(self.true_positives)} 不一致"
+            f"与 self.true_positives length: {len(self._true_positives)} 不一致"
 
-        assert false_positives.size(0) == len(self.false_positives), \
+        assert false_positives.size(0) == len(self._false_positives), \
             f"true_positives length: {false_positives.size(0)} sync data " \
-            f"与 self.true_positives length: {len(self.false_positives)} 不一致"
+            f"与 self.true_positives length: {len(self._false_positives)} 不一致"
 
-        assert false_negatives.size(0) == len(self.false_negatives), \
+        assert false_negatives.size(0) == len(self._false_negatives), \
             f"true_positives length: {false_negatives.size(0)} sync data " \
-            f"与 self.true_positives length: {len(self.false_negatives)} 不一致"
+            f"与 self.true_positives length: {len(self._false_negatives)} 不一致"
 
-        for k, _, sync_value in zip(self.true_positives.items(), true_positives):
-            self.true_positives[k] = sync_value
+        for k, _, sync_value in zip(self._true_positives.items(), true_positives):
+            self._true_positives[k] = sync_value
 
-        for k, _, sync_value in zip(self.false_positives.items(), false_positives):
-            self.false_positives[k] = sync_value
+        for k, _, sync_value in zip(self._false_positives.items(), false_positives):
+            self._false_positives[k] = sync_value
 
-        for k, _, sync_value in zip(self.false_negatives.items(), false_negatives):
-            self.false_negatives[k] = sync_value
+        for k, _, sync_value in zip(self._false_negatives.items(), false_negatives):
+            self._false_negatives[k] = sync_value
 
 
