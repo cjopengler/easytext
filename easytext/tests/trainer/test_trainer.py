@@ -283,6 +283,7 @@ def _run_train(device: torch.device, is_distributed: bool):
                       trainer_callback=None,
                       is_distributed=is_distributed
                       )
+    logging.info(f"test is_distributed: {is_distributed}")
     # trainer_callback = BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
     train_dataset = _DemoDataset()
 
@@ -318,7 +319,6 @@ def _run_train(device: torch.device, is_distributed: bool):
     expect_metric = trainer.metrics.metric[0]
     expect_metric_tracker = json.loads(json2str(trainer.metric_tracker))
 
-    logging.info(f"{TorchDist.get_rank()}: ready to load")
     trainer.load_checkpoint(serialize_dir=serialize_dir)
 
     loaded_model_state_dict = json.loads(json2str(trainer.model.state_dict()))

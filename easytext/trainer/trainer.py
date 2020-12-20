@@ -506,9 +506,7 @@ class Trainer(TrainerCallback, Distributed):
 
             if self.is_distributed:
                 before_loss = train_loss
-                
                 train_loss = Sync.sync_value(train_loss, device=self._device, op=ReduceOp.SUM)
-                logging.debug(f"rank: {TorchDist.get_rank()}, sync loss: {before_loss}:{train_loss}")
 
             record.epoch_train_loss = train_loss
 
@@ -517,18 +515,15 @@ class Trainer(TrainerCallback, Distributed):
                 before_sync_data = sync_data
                 before_train_metric_dict, before_train_target_metric = self._metrics.metric
                 sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
-                logging.info(f"rank: {TorchDist.get_rank()}, sync metric: {before_sync_data}:{sync_data}")
 
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
 
-            logging.info(f"train rank: {TorchDist.get_rank()}, sync metric: {before_train_metric_dict}:{train_metric_dict}")
-
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
-
+            
             if self.is_distributed:
 
                 if self._distributed_func_wrapper is not None \
@@ -560,11 +555,8 @@ class Trainer(TrainerCallback, Distributed):
                 before_sync_data = sync_data
                 sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
-                logging.info(f"rank: {TorchDist.get_rank()}, sync metric: {before_sync_data}:{sync_data}")
 
             validation_metric_dict, validation_target_metric = self._metrics.metric
-            logging.info(f"validation rank: {TorchDist.get_rank()}, sync metric: {before_validation_metric_dict}:{validation_metric_dict}")
-
 
             record.validation_metric = validation_metric_dict
             record.validation_target_metric = validation_target_metric
