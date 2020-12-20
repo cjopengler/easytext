@@ -75,12 +75,12 @@ class Launcher:
 
         devices = self._devices
         if len(devices) > 1:
-            devices_str = ",".join([device.type for device in devices])
+            devices_str = ",".join([str(device) for device in devices])
             logging.info(f"开始在 {devices_str} 上训练...")
             torch.multiprocessing.spawn(fn=self._start_process,
                                         nprocs=len(devices))
         elif len(devices) == 1:
-            logging.info(f"开始在 {devices[0].type} 上训练...")
+            logging.info(f"开始在 {devices[0]} 上训练...")
             self._start(rank=None, device=devices[0])
         else:
             logging.info(f"开始在 cpu 上训练...")

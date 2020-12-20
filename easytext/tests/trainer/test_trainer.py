@@ -315,8 +315,8 @@ def _run_train(device: torch.device, is_distributed: bool):
     expect_optimizer_state_dict = json.loads(json2str(trainer.optimizer.state_dict()))
     expect_current_epoch = trainer.current_epoch
     expect_num_epoch = trainer.num_epoch
-    # expect_metric = trainer.metrics.metric[0]
-    # expect_metric_tracker = json.loads(json2str(trainer.metric_tracker))
+    expect_metric = trainer.metrics.metric[0]
+    expect_metric_tracker = json.loads(json2str(trainer.metric_tracker))
 
     logging.info(f"{TorchDist.get_rank()}: ready to load")
     trainer.load_checkpoint(serialize_dir=serialize_dir)
@@ -325,24 +325,15 @@ def _run_train(device: torch.device, is_distributed: bool):
     loaded_optimizer_state_dict = json.loads(json2str(trainer.optimizer.state_dict()))
     current_epoch = trainer.current_epoch
     num_epoch = trainer.num_epoch
-    # metric = trainer.metrics.metric[0]
-    # metric_tracker = json.loads(json2str(trainer.metric_tracker))
+    metric = trainer.metrics.metric[0]
+    metric_tracker = json.loads(json2str(trainer.metric_tracker))
 
     ASSERT.assertDictEqual(expect_model_state_dict, loaded_model_state_dict)
-    # logging.info(f"{TorchDist.get_rank()}: {json2str(expect_optimizer_state_dict)}\n{json2str(loaded_optimizer_state_dict)}")
     ASSERT.assertDictEqual(expect_optimizer_state_dict, loaded_optimizer_state_dict)
-    # logging.info(f"{TorchDist.get_rank()}: {expect_current_epoch}:{current_epoch}")
     ASSERT.assertEqual(expect_current_epoch, current_epoch)
     ASSERT.assertEqual(expect_num_epoch, num_epoch)
-    # ASSERT.assertDictEqual(expect_metric, metric)
-
-    # logging.info(f"rank: {TorchDist.get_rank()}, metrci tracker")
-    if is_distributed:
-         if TorchDist.get_rank() == 0:
-            # 只对 rank == 0的进行比较，因为, tracker 本身就是不同的，因为是在不同的数据集上进行 tracker
-            # ASSERT.assertDictEqual(expect_metric_tracker, metric_tracker)
-            pass
-
+    ASSERT.assertDictEqual(expect_metric, metric)
+    ASSERT.assertDictEqual(expect_metric_tracker, metric_tracker)
 
 
 def test_trainer_save_and_load_cpu():

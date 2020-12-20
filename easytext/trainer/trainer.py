@@ -367,14 +367,13 @@ class Trainer(TrainerCallback, Distributed):
 
                 total_loss += batch_loss.detach().item() * batch_size
 
-                logging.info(f"Etnry metric, {TorchDist.get_rank()}")
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
-                logging.info(f"Etnry metric finished, {TorchDist.get_rank()}")
+
                 if self.is_distributed:
 
                     if self._distributed_func_wrapper is not None \
                             and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
-                        logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss},"
+                        logging.info(f"Epoch: {self._current_epoch}, batch loss: {batch_loss}"
                                      f"batch metrics: {json2str(batch_metrics)}, "
                                      f"target metric: {json2str(target_metric)}")
                 else:
@@ -468,11 +467,8 @@ class Trainer(TrainerCallback, Distributed):
         self._train(train_data_loader=train_data_loader,
                     validation_data_loader=validation_data_loader)
 
-        logging.info(f"finish train: rank: {TorchDist.get_rank()}")
         if self.is_distributed:
-            logging.info("for barrier: {TorchDist.get_rank()}")
             TorchDist.barrier()
-        logging.info(f"compelte: rank: {TorchDist.get_rank()}")
 
     def _train(self,
                train_data_loader: DataLoader,
@@ -506,22 +502,29 @@ class Trainer(TrainerCallback, Distributed):
 
             self.on_train_epoch_start(trainer=self, record=record)
 
-            logging.info(f"{TorchDist.get_rank()}: ready to train")
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
             if self.is_distributed:
+                before_loss = train_loss
+                
                 train_loss = Sync.sync_value(train_loss, device=self._device, op=ReduceOp.SUM)
+                logging.debug(f"rank: {TorchDist.get_rank()}, sync loss: {before_loss}:{train_loss}")
 
-            logging.info(f"{TorchDist.get_rank()}: finish to train")
             record.epoch_train_loss = train_loss
 
             if self.is_distributed:
                 sync_data, op = self._metrics.to_synchronized_data()
+                before_sync_data = sync_data
+                before_train_metric_dict, before_train_target_metric = self._metrics.metric
                 sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                logging.info(f"rank: {TorchDist.get_rank()}, sync metric: {before_sync_data}:{sync_data}")
+
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
             # 输出metrics
             train_metric_dict, train_target_metric = self._metrics.metric
+
+            logging.info(f"train rank: {TorchDist.get_rank()}, sync metric: {before_train_metric_dict}:{train_metric_dict}")
 
             record.train_metric = train_metric_dict
             record.train_target_metric = train_target_metric
@@ -552,11 +555,16 @@ class Trainer(TrainerCallback, Distributed):
             record.epoch_validation_loss = validation_loss
 
             if self.is_distributed:
+                before_validation_metric_dict, before_validation_target_metric = self._metrics.metric
                 sync_data, op = self._metrics.to_synchronized_data()
+                before_sync_data = sync_data
                 sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
+                logging.info(f"rank: {TorchDist.get_rank()}, sync metric: {before_sync_data}:{sync_data}")
 
             validation_metric_dict, validation_target_metric = self._metrics.metric
+            logging.info(f"validation rank: {TorchDist.get_rank()}, sync metric: {before_validation_metric_dict}:{validation_metric_dict}")
+
 
             record.validation_metric = validation_metric_dict
             record.validation_target_metric = validation_target_metric
