@@ -192,13 +192,16 @@ class F1Metric(Metric):
             f"true_positives length: {false_negatives.size(0)} sync data " \
             f"与 self.true_positives length: {len(self._false_negatives)} 不一致"
 
-        for k, _, sync_value in zip(self._true_positives.items(), true_positives):
+        for kv, sync_value in zip(self._true_positives.items(), true_positives):
+            k, _ = kv
             self._true_positives[k] = sync_value
 
-        for k, _, sync_value in zip(self._false_positives.items(), false_positives):
+        for kv, sync_value in zip(self._false_positives.items(), false_positives):
+            k, _ = kv
             self._false_positives[k] = sync_value
 
-        for k, _, sync_value in zip(self._false_negatives.items(), false_negatives):
+        for kv, sync_value in zip(self._false_negatives.items(), false_negatives):
+            k, _ = kv
             self._false_negatives[k] = sync_value
 
 
