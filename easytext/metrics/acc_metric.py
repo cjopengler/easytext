@@ -10,9 +10,11 @@ acc 指标
 Authors: panxu(panxu@baidu.com)
 Date:    2020/05/30 07:36:00
 """
-from typing import Dict
+from typing import Dict, Union, List, Tuple
 
 import torch
+from torch import Tensor
+from torch.distributed import ReduceOp
 
 from .metric import Metric
 
@@ -68,4 +70,16 @@ class AccMetric(Metric):
         self._num_true = 0
         self._num_total = 0
         return self
+
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        sync_data = torch.tensor([self._num_true, self._num_total], dtype=torch.long)
+        return sync_data, ReduceOp.SUM
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+
+        self._num_true = sync_data[0].item()
+        self._num_total = sync_data[1].item()
+
+
 

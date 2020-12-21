@@ -12,6 +12,7 @@ Date:    2020/10/13 09:42:00
 """
 
 from .trainer_callback import TrainerCallback
+from .distributed_callback import DistributedCallback
 from .time_consume_callback import TimeConsumeCallback
 from .loss_callback import LossCallback
 from .metric_callback import MetricCallback

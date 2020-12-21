@@ -39,3 +39,4 @@ def config(level: int = logging.DEBUG,
             datefmt='%Y-%m-%D %H:%M:%S',
             filename=log_file_path,
             filemode=log_mode)
+

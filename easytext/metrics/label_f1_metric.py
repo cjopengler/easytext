@@ -35,14 +35,13 @@ class LabelF1Metric(F1Metric):
         认为是 label index.
         :param label_vocabulary: label vocabulary 用来将 str label 转换成 label index
         """
-        super().__init__()
+        super().__init__(labels=labels)
 
         if isinstance(labels[0], str) and label_vocabulary is None:
             raise RuntimeError("labels 是 str 类型, label_vocabulary 不能是 None, "
                                "因为需要进行 label 到 index转换")
 
         self._label_vocabulary = label_vocabulary
-        self._labels = labels
 
         if isinstance(labels[0], str):
             self._label_indices = [label_vocabulary.index(label) for label in self._labels]
@@ -104,6 +103,15 @@ class LabelF1Metric(F1Metric):
             true_positives[label] = (label_predictions == label_gold).sum().item()
             false_positives[label] = num_prediction - true_positives[label]
             false_negatives[label] = num_golden - true_positives[label]
+
+        for k, v in true_positives.items():
+            self._true_positives[k] += v
+
+        for k, v in false_positives.items():
+            self._false_positives[k] += v
+
+        for k, v in false_negatives.items():
+            self._false_negatives[k] += v
 
         return self._metric(true_positives=true_positives,
                             false_positives=false_positives,

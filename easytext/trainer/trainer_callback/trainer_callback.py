@@ -17,12 +17,17 @@ if TYPE_CHECKING:
     from easytext.trainer import Trainer
 
 from easytext.trainer.record import Record
+from easytext.distributed import Distributed
 
 
-class TrainerCallback:
+class TrainerCallback(Distributed):
     """
     trainer callbeck 接口
     """
+
+    @property
+    def is_distributed(self) -> bool:
+        raise NotImplementedError()
 
     def on_train_epoch_start(self, trainer: "Trainer", record: Record) -> None:
         """

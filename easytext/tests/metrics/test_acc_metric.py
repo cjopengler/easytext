@@ -51,6 +51,45 @@ def test_acc_metric():
     ASSERT.assertAlmostEqual(expect, acc_metric.metric[acc_metric.ACC])
 
 
+def test_synchronized_data():
+    """
+    测试 from_synchronized_data 和 to_synchronized_data
+    :return:
+    """
+
+    acc_metric = AccMetric()
+
+    sync_data, op = acc_metric.to_synchronized_data()
+
+    ASSERT.assertEqual((2,), sync_data.size())
+    ASSERT.assertEqual(0, sync_data[0].item())
+    ASSERT.assertEqual(0, sync_data[1].item())
+
+    # 对应的label是 [1, 1, 0, 1]
+    logits = torch.tensor([[1., 2.], [3., 4.], [5, 4.], [3., 7.]], dtype=torch.float)
+    prediction_labels = torch.argmax(logits, dim=-1)
+
+    golden_labels = torch.tensor([0, 1, 1, 0], dtype=torch.long)
+
+    acc_metric(prediction_labels=prediction_labels, gold_labels=golden_labels, mask=None)
+
+    # acc = 1/4
+
+    sync_data, op = acc_metric.to_synchronized_data()
+    ASSERT.assertListEqual([1, 4], sync_data.tolist())
+
+    acc_metric.from_synchronized_data(sync_data=sync_data, reduce_op=op)
+    acc = acc_metric.metric
+
+    expect = 1/4
+    ASSERT.assertAlmostEqual(expect, acc[AccMetric.ACC])
+
+    new_sync_data, op = acc_metric.to_synchronized_data()
+
+    ASSERT.assertListEqual(sync_data.tolist(), new_sync_data.tolist())
+
+
+
 
 
 

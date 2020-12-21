@@ -23,7 +23,9 @@ class Record:
 
     def __init__(self):
         self.epoch: int = None
+        self.epoch_train_num: int = None
         self.epoch_train_loss: float = None
+        self.epoch_validation_num: int = None
         self.epoch_validation_loss: float = None
 
         self.train_metric: Dict = None

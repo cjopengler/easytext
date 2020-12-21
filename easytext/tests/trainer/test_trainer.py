@@ -14,11 +14,15 @@ import json
 import os
 import shutil
 import logging
-from typing import Iterable, List, Dict, Tuple
+from typing import Iterable, List, Dict, Tuple, Optional, Union
+import traceback
 
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from torch import distributed as TorchDist
+from torch.distributed import ReduceOp
 
 from easytext.data import Instance, LabelVocabulary
 from easytext.data.model_collate import ModelInputs
@@ -29,6 +33,8 @@ from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
 from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
+from easytext.trainer import DistributedParameter
+from easytext.trainer import Launcher
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
 from easytext.utils.json_util import json2str
@@ -37,7 +43,6 @@ from easytext.label_decoder import MaxLabelIndexDecoder
 
 from easytext.tests import ASSERT
 from easytext.tests import ROOT_PATH
-
 
 log_util.config()
 
@@ -150,6 +155,13 @@ class _DemoMetric(ModelMetricAdapter):
         self._acc.reset()
         return self
 
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        return self._acc.to_synchronized_data()
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+        self._acc.from_synchronized_data(sync_data=sync_data, reduce_op=reduce_op)
+
 
 class _DemoOptimizerFactory(OptimizerFactory):
 
@@ -169,7 +181,6 @@ class ModelDemo(Model):
         pass
 
     def forward(self, x: torch.Tensor) -> _DemoOutputs:
-
         # print(self.feed_forward.weight, self.feed_forward.bias)
         logits = self.feed_forward(x)
 
@@ -189,13 +200,63 @@ class _DemoLoss(Loss):
         return self._loss(model_outputs.logits, golden_label)
 
 
-def _run_train(devices: List[str] = None):
+class _CpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cpu")]
+
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+        return None
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        _run_train(device=device, is_distributed=False)
+
+
+class _SingleGpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cuda:0")]
+
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+        return None
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        _run_train(device=device, is_distributed=False)
+
+
+class _MultiGpuLauncher(Launcher):
+
+    def _init_devices(self) -> Union[List[torch.device]]:
+        return [torch.device("cuda:0"), torch.device("cuda:1")]
+
+    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+        param = DistributedParameter(backend="nccl", port=2543)
+        return param
+
+    def _start(self, rank: Optional[int], device: torch.device) -> None:
+        try:
+            _run_train(device=device, is_distributed=True)
+        except Exception as e:
+            logging.fatal(f"{traceback.format_exc()}")
+
+
+def _run_train(device: torch.device, is_distributed: bool):
+
     serialize_dir = os.path.join(ROOT_PATH, "data/easytext/tests/trainer/save_and_load")
+            
+    if is_distributed:
+        if TorchDist.get_rank() == 0:
+            if os.path.isdir(serialize_dir):
+                shutil.rmtree(serialize_dir)
 
-    if os.path.isdir(serialize_dir):
-        shutil.rmtree(serialize_dir)
+            os.makedirs(serialize_dir)
+    
+        TorchDist.barrier()
+    else:
+        if os.path.isdir(serialize_dir):
+            shutil.rmtree(serialize_dir)
 
-    os.makedirs(serialize_dir)
+        os.makedirs(serialize_dir)
 
     model = ModelDemo()
 
@@ -207,7 +268,8 @@ def _run_train(devices: List[str] = None):
     tensorboard_log_dir = "data/tensorboard"
 
     tensorboard_log_dir = os.path.join(ROOT_PATH, tensorboard_log_dir)
-    shutil.rmtree(tensorboard_log_dir)
+
+    # shutil.rmtree(tensorboard_log_dir)
 
     trainer = Trainer(num_epoch=100,
                       model=model,
@@ -217,23 +279,35 @@ def _run_train(devices: List[str] = None):
                       serialize_dir=serialize_dir,
                       patient=20,
                       num_check_point_keep=25,
-                      devices=devices,
-                      trainer_callback=BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
+                      device=device,
+                      trainer_callback=None,
+                      is_distributed=is_distributed
                       )
-
+    logging.info(f"test is_distributed: {is_distributed}")
+    # trainer_callback = BasicTrainerCallbackComposite(tensorboard_log_dir=tensorboard_log_dir)
     train_dataset = _DemoDataset()
+
+    if is_distributed:
+        sampler = DistributedSampler(dataset=train_dataset)
+    else:
+        sampler = None
 
     train_data_loader = DataLoader(dataset=train_dataset,
                                    collate_fn=_DemoCollate(),
                                    batch_size=200,
-                                   shuffle=False,
-                                   num_workers=0)
+                                   num_workers=0,
+                                   sampler=sampler)
+
+    if is_distributed:
+        sampler = DistributedSampler(dataset=train_dataset)
+    else:
+        sampler = None
 
     validation_data_loader = DataLoader(dataset=train_dataset,
                                         collate_fn=_DemoCollate(),
                                         batch_size=200,
-                                        shuffle=False,
-                                        num_workers=0)
+                                        num_workers=0,
+                                        sampler=sampler)
 
     trainer.train(train_data_loader=train_data_loader,
                   validation_data_loader=validation_data_loader)
@@ -267,23 +341,22 @@ def test_trainer_save_and_load_cpu():
     测试  trainer 保存和载入
     :return:
     """
-    _run_train(devices="cpu")
-
-
-def test_trainer_save_and_load_cpu_with_none_parameter():
-    """
-    测试  trainer cpu 保存和载入, 不设置任何参数，默认使用cpu
-    :return:
-    """
-    _run_train()
+    cpu_launcer = _CpuLauncher(config=None)
+    cpu_launcer()
 
 
 def test_trainer_save_load_gpu():
-
     if torch.cuda.is_available():
-        cuda_devices = ["cuda:0"]
-        _run_train(devices=cuda_devices)
+        luancher = _SingleGpuLauncher()
+        luancher()
     else:
         logging.warning("由于没有GPU，忽略这个case测试")
 
 
+def test_multi_gpu_trainer():
+
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        launcher = _MultiGpuLauncher()
+        launcher()
+    else:
+        logging.warning("由于没有多个GPU，忽略这个case测试")

@@ -5,8 +5,7 @@
 # Copyright (c) 2020 Baidu.com, Inc. All Rights Reserved
 #
 """
-brief
 
 Authors: panxu(panxu@baidu.com)
-Date:    2020/05/13 15:20:00
+Date:    2020/05/16 00:57:00
 """

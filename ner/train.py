@@ -74,7 +74,7 @@ class Train:
                           lr_scheduler_factory=None,
                           patient=self.config.patient,
                           num_check_point_keep=self.config.num_check_point_keep,
-                          devices=self.config.cuda)
+                          device=self.config.cuda)
 
         train_data_loader = DataLoader(
             dataset=self.config.training_dataset,

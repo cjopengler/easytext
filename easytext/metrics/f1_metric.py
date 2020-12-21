@@ -11,12 +11,16 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/06/16 09:08:00
 """
 
-from typing import Dict, Set
-from collections import defaultdict
+from typing import Dict, Set, List, Union, Tuple
+from collections import OrderedDict
 
 import torch
+from torch import Tensor
+from torch.distributed import ReduceOp
+from torch import distributed as TorchDist
 
-from .metric import Metric
+
+from easytext.metrics import Metric
 
 
 class F1Metric(Metric):
@@ -35,16 +39,24 @@ class F1Metric(Metric):
     RECALL_OVERALL = f"{RECALL}-overall"
     F1_OVERALL = f"{F1}-overall"
 
-    def __init__(self) -> None:
+    def __init__(self, labels: List[str]) -> None:
         """
         初始化
+        :param labels: 最终输出的 F1 的 label
+        :param is_distributed: True: 分布式 metric; False: 非分布式 metric
         """
         super().__init__()
+        self._labels = labels
 
-        # 下面之所以是字典，是为了计算多个 tag 的 f1
-        self._true_positives: Dict[str, int] = defaultdict(int)
-        self._false_positives: Dict[str, int] = defaultdict(int)
-        self._false_negatives: Dict[str, int] = defaultdict(int)
+        # 下面之所以是字典，是为了计算多个 label 的 f1
+        self._true_positives: Dict[str, int] = OrderedDict()
+        self._false_positives: Dict[str, int] = OrderedDict()
+        self._false_negatives: Dict[str, int] = OrderedDict()
+
+        for label in labels:
+            self._true_positives[label] = 0
+            self._false_positives[label] = 0
+            self._false_negatives[label] = 0
 
     def __call__(self,
                  prediction_labels: torch.Tensor,
@@ -81,18 +93,6 @@ class F1Metric(Metric):
         :param false_negatives:
         :return:
         """
-
-        # 更新 累积 _true_positives
-        for k, v in true_positives.items():
-            self._true_positives[k] += v
-
-        # 更新 累积 _false_positives
-        for k, v in false_positives.items():
-            self._false_positives[k] += v
-
-        # 更新 累积 _false_negatives
-        for k, v in false_negatives.items():
-            self._false_negatives[k] += v
 
         all_tags: Set[str] = set()
         all_tags.update(true_positives.keys())
@@ -137,6 +137,7 @@ class F1Metric(Metric):
         另外注意 precision-overall, recall-overall, f1-overall 是所有的综合指标, 这是非常有必要的
         因为有多个tag，那么模型的指标衡量需要一个综合指标来衡量。
         """
+
         return self._metric(true_positives=self._true_positives,
                             false_positives=self._false_positives,
                             false_negatives=self._false_negatives)
@@ -155,8 +156,52 @@ class F1Metric(Metric):
         """
         将所有的状态reset, f1 重新计算。
         """
-        self._true_positives = defaultdict(int)
-        self._false_positives = defaultdict(int)
-        self._false_negatives = defaultdict(int)
+        for label in self._labels:
+            self._true_positives[label] = 0
+            self._false_positives[label] = 0
+            self._false_negatives[label] = 0
         return self
+
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        true_positives = torch.tensor([v for _, v in self._true_positives.items()], dtype=torch.long)
+
+        false_positives = torch.tensor([v for _, v in self._false_positives.items()], dtype=torch.long)
+        false_negatives = torch.tensor([v for _, v in self._false_negatives.items()], dtype=torch.long)
+
+        sync_data = {"true_positives": true_positives,
+                     "false_positives": false_positives,
+                     "false_negatives": false_negatives}
+        return sync_data, ReduceOp.SUM
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+
+        true_positives: Tensor = sync_data["true_positives"]
+        false_positives = sync_data["false_positives"]
+        false_negatives = sync_data["false_negatives"]
+
+        assert true_positives.size(0) == len(self._true_positives), \
+            f"true_positives length: {true_positives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self._true_positives)} 不一致"
+
+        assert false_positives.size(0) == len(self._false_positives), \
+            f"true_positives length: {false_positives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self._false_positives)} 不一致"
+
+        assert false_negatives.size(0) == len(self._false_negatives), \
+            f"true_positives length: {false_negatives.size(0)} sync data " \
+            f"与 self.true_positives length: {len(self._false_negatives)} 不一致"
+
+        for kv, sync_value in zip(self._true_positives.items(), true_positives):
+            k, _ = kv
+            self._true_positives[k] = sync_value
+
+        for kv, sync_value in zip(self._false_positives.items(), false_positives):
+            k, _ = kv
+            self._false_positives[k] = sync_value
+
+        for kv, sync_value in zip(self._false_negatives.items(), false_negatives):
+            k, _ = kv
+            self._false_negatives[k] = sync_value
+
 
