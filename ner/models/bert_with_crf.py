@@ -30,6 +30,20 @@ from easytext.component.register import ComponentRegister
 from ner.data.vocabulary_builder import VocabularyBuilder
 from ner.models.ner_model_outputs import NerModelOutputs
 
+import itertools
+
+def _find_tensors(obj):
+    """
+    Recursively find all tensors contained in the specified object.
+    """
+    if isinstance(obj, torch.Tensor):
+        return [obj]
+    if isinstance(obj, (list, tuple)):
+        return itertools.chain(*map(_find_tensors, obj))
+    if isinstance(obj, dict):
+        return itertools.chain(*map(_find_tensors, obj.values()))
+    return []
+
 
 @ComponentRegister.register(name_space="ner")
 class BertWithCrf(Model):
@@ -104,4 +118,4 @@ class BertWithCrf(Model):
                                         mask=sequence_mask,
                                         crf=self.crf)
 
-        return model_outputs
+        return [logits, sequence_mask, None]

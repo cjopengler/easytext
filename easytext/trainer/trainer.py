@@ -43,6 +43,23 @@ from easytext.trainer.trainer_callback import TrainerCallback
 from easytext.distributed import Distributed
 
 
+class NerModelOutputs:
+    """
+    Ner Model Outputs
+    """
+
+    def __init__(self, logits, mask, crf):
+        """
+        Ner 模型的输出
+        :param logits: logits 输出
+        :param mask: mask
+        :param crf: 模型中的 crf 输出出来，用来进行 loss 以及 viterbi 解码
+        """
+        self.logits = logits
+        self.mask = mask
+        self.crf = crf
+
+
 class Trainer(TrainerCallback, Distributed):
     """
     训练器
@@ -117,7 +134,8 @@ class Trainer(TrainerCallback, Distributed):
 
             self._model = DistributedDataParallel(module=self._model,
                                                   device_ids=[self._device],
-                                                  output_device=self._device)
+                                                  output_device=self._device,
+                                                  find_unused_parameters=True)
         else:
             self._model = self._model.to(self._device)
             self._optimizer = self._optimizer_factory.create(self._model)
@@ -353,6 +371,10 @@ class Trainer(TrainerCallback, Distributed):
                     labels = cuda_util.cuda(labels, cuda_device=self._device)
 
                 outputs = self._model(**batch_inputs)
+
+                outputs = NerModelOutputs(logits=outputs[0],
+                                        mask=outputs[1],
+                                        crf=outputs[2])
                 batch_loss: torch.Tensor = self._loss(outputs, labels)
 
                 if phrase == Trainer._TRAIN:

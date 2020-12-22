@@ -80,6 +80,7 @@ class Launcher:
 
     def __call__(self):
 
+        self._preprocess()
         devices = self._devices
         if len(devices) > 1:
             devices_str = ",".join([str(device) for device in devices])

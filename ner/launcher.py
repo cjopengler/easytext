@@ -94,7 +94,7 @@ class NerLauncher(Launcher):
         train_sampler = None
 
         if is_distributed:
-            train_sampler = DistributedSampler(dataset=self.config.training_dataset, shuffle=True)
+            train_sampler = DistributedSampler(dataset=self.config.training_dataset, shuffle=False)
 
         train_data_loader = DataLoader(
             dataset=self.config.training_dataset,

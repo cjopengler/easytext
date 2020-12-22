@@ -25,7 +25,7 @@
     },
 
     "token_vocabulary_dir": null,
-    "label_vocabulary_dir": "data/ner/bert_with_crf/vocabulary/label_vocabulary",
+    "label_vocabulary_dir": "data/ner/bert_with_crf/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": false,
 
     "pretrained_word_embedding_loader": null
@@ -112,7 +112,7 @@
   "patient": 50,
   "num_check_point_keep": 2,
   "devices": ["cuda:0", "cuda:1"],
-  "serialize_dir": "data/ner/bert_with_crf/train",
+  "serialize_dir": "data/ner/bert_with_crf/serialize/train",
   "train_batch_size": 8,
   "test_batch_size": 16
 }
