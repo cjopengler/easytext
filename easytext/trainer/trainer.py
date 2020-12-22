@@ -372,9 +372,6 @@ class Trainer(TrainerCallback, Distributed):
 
                 outputs = self._model(**batch_inputs)
 
-                outputs = NerModelOutputs(logits=outputs[0],
-                                        mask=outputs[1],
-                                        crf=outputs[2])
                 batch_loss: torch.Tensor = self._loss(outputs, labels)
 
                 if phrase == Trainer._TRAIN:

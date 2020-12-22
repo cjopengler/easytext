@@ -118,4 +118,4 @@ class BertWithCrf(Model):
                                         mask=sequence_mask,
                                         crf=self.crf)
 
-        return [logits, sequence_mask, None]
+        return model_outputs
