@@ -1,0 +1,118 @@
+{
+  "training_dataset": {
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+  },
+
+  "validation_dataset": {
+    "__type__": "MsraDataset",
+    "__name_space__": "ner",
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+  },
+
+  "vocabulary_builder": {
+    "__type__": "VocabularyBuilder",
+    "__name_space__": "ner",
+
+    "dataset": {
+      "__object__": "training_dataset"
+    },
+
+    "vocabulary_collate": {
+      "__type__": "VocabularyCollate",
+      "__name_space__": "ner"
+    },
+
+    "token_vocabulary_dir": null,
+    "label_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bert_with_crf/vocabulary/label_vocabulary",
+    "is_build_token_vocabulary": false,
+
+    "pretrained_word_embedding_loader": null
+  },
+
+  "model_collate": {
+     "__type__": "BertModelCollate",
+     "__name_space__": "ner",
+
+     "tokenizer": {
+       "__type__": "BertTokenizer",
+       "__name_space__": "ner",
+       "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/bert-base-chinese-pytorch"
+     },
+
+     "sequence_label_vocab": {
+       "__type__": "label_vocabulary",
+       "__name_space__": "ner",
+
+       "vocabulary_builder": {
+         "__object__": "vocabulary_builder"
+       }
+     },
+
+     "sequence_max_len": 512
+  },
+
+  "model_label_decoder": {
+    "__type__": "NerMaxModelLabelDecoder",
+    "__name_space__": "ner",
+    "label_vocabulary": {
+      "__object__": "model_collate.sequence_label_vocab"
+    }
+  },
+
+  "metric": {
+     "__type__": "NerModelMetricAdapter",
+     "__name_space__": "ner",
+
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+    "model_label_decoder": {
+      "__object__": "model_label_decoder"
+    }
+  },
+
+  "model": {
+     "__type__": "BertWithCrf",
+     "__name_space__": "ner",
+
+    "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/bert-base-chinese-pytorch",
+    "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+    "dropout": 0.1,
+    "is_used_crf": false
+  },
+
+  "optimizer": {
+     "__type__":"BertOptimizerFactory",
+     "__name_space__": "ner",
+     "fine_tuning": true
+  },
+
+  "loss": {
+    "__type__":"NerLoss",
+     "__name_space__": "ner",
+    "is_used_crf": false,
+    "vocabulary_builder": {
+      "__object__": "vocabulary_builder"
+    }
+  },
+
+  "distributed_parameter": {
+    "__type__": "DistributedParameter",
+    "__name_space__": "__easytext__",
+    "host": "127.0.0.1",
+    "port": "2345",
+    "backend": "nccl"
+  },
+
+  "num_epoch": 200,
+  "patient": 50,
+  "num_check_point_keep": 2,
+  "devices": ["cuda:0", "cuda:1"],
+  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bert_with_crf/train",
+  "train_batch_size": 8,
+  "test_batch_size": 16
+}

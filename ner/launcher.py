@@ -20,6 +20,7 @@ import shutil
 
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+from torch.utils.data.distributed import DistributedSampler
 
 from transformers import BertTokenizer
 
@@ -74,6 +75,8 @@ class NerLauncher(Launcher):
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
 
+        is_distributed = rank is not None
+
         trainer = Trainer(serialize_dir=self.config.serialize_dir,
                           num_epoch=self.config.num_epoch,
                           model=self.config.model,
@@ -84,22 +87,34 @@ class NerLauncher(Launcher):
                           patient=self.config.patient,
                           num_check_point_keep=self.config.num_check_point_keep,
                           device=device,
-                          is_distributed=(rank is not None))
+                          is_distributed=is_distributed)
+
+        train_sampler = None
+
+        if is_distributed:
+            train_sampler = DistributedSampler(dataset=self.config.training_dataset, shuffle=True)
 
         train_data_loader = DataLoader(
             dataset=self.config.training_dataset,
             batch_size=self.config.train_batch_size,
-            shuffle=True,
+            shuffle=(train_sampler is None),
             num_workers=0,
-            collate_fn=self.config.model_collate
+            collate_fn=self.config.model_collate,
+            sampler=train_sampler
         )
+
+        validation_sampler = None
+
+        if is_distributed:
+            validation_sampler = DistributedSampler(dataset=self.config.training_dataset, shuffle=False)
 
         validation_data_loader = DataLoader(
             dataset=self.config.validation_dataset,
             batch_size=self.config.test_batch_size,
             shuffle=False,
             num_workers=0,
-            collate_fn=self.config.model_collate
+            collate_fn=self.config.model_collate,
+            sampler=validation_sampler
         )
 
         trainer.train(train_data_loader=train_data_loader,
@@ -110,7 +125,8 @@ if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
     config_file_path = "data/ner/rnn_with_crf/config.json"
-    config_file_path = "data/ner/bert_with_crf/config.json"
+    config_file_path = "data/ner/bert_with_crf/config_cpu.json"
+    config_file_path = "data/ner/bert_with_crf/config_multi_gpu.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
 
