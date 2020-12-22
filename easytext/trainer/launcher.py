@@ -31,7 +31,7 @@ class Launcher:
         启动器初始化
         :param config: 当前的配置
         """
-        self._config = config
+        self.config = config
         self._devices = self._init_devices()
         self._distributed_parameter = self._init_distributed_parameter()
 
@@ -56,9 +56,9 @@ class Launcher:
         :return: None
         """
         TorchDist.init_process_group(backend=self._distributed_parameter.backend,
-                                             world_size=len(self._devices),
-                                             rank=rank,
-                                             init_method=self._distributed_parameter.url)
+                                     world_size=len(self._devices),
+                                     rank=rank,
+                                     init_method=self._distributed_parameter.url)
 
         self._start(rank=rank, device=self._devices[rank])
 
@@ -70,6 +70,13 @@ class Launcher:
         :return: None
         """
         raise NotImplementedError()
+
+    def _preprocess(self):
+        """
+        预处理，当多 GPU 训练时候，在主进程中进行的，所以，在训练前一些路径处理等，可以在此处理
+        :return:
+        """
+        pass
 
     def __call__(self):
 

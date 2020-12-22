@@ -234,10 +234,7 @@ class _MultiGpuLauncher(Launcher):
         return param
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        try:
-            _run_train(device=device, is_distributed=True)
-        except Exception as e:
-            logging.fatal(f"{traceback.format_exc()}")
+        _run_train(device=device, is_distributed=True)
 
 
 def _run_train(device: torch.device, is_distributed: bool):

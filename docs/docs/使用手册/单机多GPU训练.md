@@ -48,16 +48,18 @@ def create_dataloader(distributed: bool, dataset: torch.data.Dataset, batch_size
     return data_loader
 ```
 
+关于 `batch_size` 表示每一个 GPU 处理的 `batch_size`, 如果有 N 个 GPU, 那么, 就能同时处理 `batch_size * N`.
 
 ##  `Model` 如何参数更新?
-Model 使用 `torch.nn.parallel.DistributedDataParallel(model)` 设置，会自动多进程进行参数的更新。
+Model, 训练矿建会自动使用 `torch.nn.parallel.DistributedDataParallel(model)` 设置，所以实际代码按照单GPU写即可。
 
 ##  `Loss` 如何计算?
 Loss 会在 Trainer 中自动进行 分布式计算，所以正常写即可。
 
 ##  `Metric` 如何计算?
 
-Metric 会自动对多 GPU 运算的结果，进行 求平均计算。所以正常写即可。
+Metric 由于会对多 GPU 运算的结果进行汇总，所以需要继承  `Synchronized`,
+实现 `to_synchronized_data` 和 `from_synchronized_data` 来设置需要同步的数据。
 
 ## 训练需要其他参数
 
