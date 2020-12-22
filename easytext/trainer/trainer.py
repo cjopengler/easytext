@@ -505,16 +505,13 @@ class Trainer(TrainerCallback, Distributed):
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
             if self.is_distributed:
-                before_loss = train_loss
-                train_loss = Sync.sync_value(train_loss, device=self._device, op=ReduceOp.SUM)
+                train_loss = Sync.sync(train_loss, device=self._device, op=ReduceOp.SUM)
 
             record.epoch_train_loss = train_loss
 
             if self.is_distributed:
                 sync_data, op = self._metrics.to_synchronized_data()
-                before_sync_data = sync_data
-                before_train_metric_dict, before_train_target_metric = self._metrics.metric
-                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                sync_data = Sync.sync(sync_data, device=self._device, op=op)
 
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
@@ -545,15 +542,13 @@ class Trainer(TrainerCallback, Distributed):
             validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
 
             if self.is_distributed:
-                validation_loss = Sync.sync_value(validation_loss, device=self._device, op=ReduceOp.SUM)
+                validation_loss = Sync.sync(validation_loss, device=self._device, op=ReduceOp.SUM)
 
             record.epoch_validation_loss = validation_loss
 
             if self.is_distributed:
-                before_validation_metric_dict, before_validation_target_metric = self._metrics.metric
                 sync_data, op = self._metrics.to_synchronized_data()
-                before_sync_data = sync_data
-                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                sync_data = Sync.sync(sync_data, device=self._device, op=op)
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
             validation_metric_dict, validation_target_metric = self._metrics.metric
