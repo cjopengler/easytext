@@ -29,6 +29,7 @@ from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.data import GloveLoader, SGNSLoader
 from easytext.utils import log_util
 from easytext.trainer import Launcher, DistributedParameter, Config
+from easytext.utils.json_util import json2str
 
 from ner.models import RnnWithCrf, BertWithCrf
 
@@ -75,6 +76,7 @@ class NerLauncher(Launcher):
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
 
+        # print(f"config: {str(self.config)}")
         is_distributed = rank is not None
 
         trainer = Trainer(serialize_dir=self.config.serialize_dir,
@@ -124,11 +126,11 @@ class NerLauncher(Launcher):
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config_file_path = "data/ner/rnn_with_crf/config.json"
-    config_file_path = "data/ner/bert_with_crf/config_cpu.json"
-    config_file_path = "data/ner/bert_with_crf/config_multi_gpu.json"
+    config_file_path = "data/ner/rnn_with_crf/config/config.json"
+    config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
+    config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
-
+    
     ner_launcher = NerLauncher(config_file_path=config_file_path, train_type=NerLauncher.NEW_TRAIN)
     ner_launcher()
