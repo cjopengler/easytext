@@ -126,9 +126,9 @@ class NerLauncher(Launcher):
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config_file_path = "data/ner/rnn_with_crf/config/config.json"
-    config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
-    config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
+    config_file_path = "data/ner/rnn_with_crf/config/config_cpu.json"
+    # config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
+    # config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
     
