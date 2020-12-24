@@ -18,7 +18,7 @@ import torch
 from torch import distributed as TorchDist
 
 from easytext.trainer import Config
-from easytext.trainer import DistributedParameter
+from easytext.trainer import ProcessGroupParameter
 
 
 class Launcher:
@@ -33,7 +33,7 @@ class Launcher:
         """
         self.config = config
         self._devices = self._init_devices()
-        self._distributed_parameter = self._init_distributed_parameter()
+        self._process_group_parameter = self._init_process_group_parameter()
 
     def _init_devices(self) -> Union[List[torch.device]]:
         """
@@ -42,7 +42,7 @@ class Launcher:
         """
         raise NotImplementedError()
 
-    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
         """
         初始化 多GPU/分布式参数
         :return:
@@ -55,10 +55,10 @@ class Launcher:
         :param rank: 多 GPU 训练时, 当前进程 id; 单 GPU 或 CPU 该参数为 None.
         :return: None
         """
-        TorchDist.init_process_group(backend=self._distributed_parameter.backend,
+        TorchDist.init_process_group(backend=self._process_group_parameter.backend,
                                      world_size=len(self._devices),
                                      rank=rank,
-                                     init_method=self._distributed_parameter.url)
+                                     init_method=self._process_group_parameter.url)
 
         self._start(rank=rank, device=self._devices[rank])
 
@@ -83,7 +83,7 @@ class Launcher:
         self._preprocess()
         devices = self._devices
         if len(devices) > 1:
-            devices_str = ",".join([str(device) for device in devices])
+            devices_str = ", ".join([str(device) for device in devices])
             logging.info(f"开始在 {devices_str} 上训练...")
             torch.multiprocessing.spawn(fn=self._start_process,
                                         nprocs=len(devices))

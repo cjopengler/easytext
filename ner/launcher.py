@@ -28,7 +28,7 @@ from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.data import GloveLoader, SGNSLoader
 from easytext.utils import log_util
-from easytext.trainer import Launcher, DistributedParameter, Config
+from easytext.trainer import Launcher, ProcessGroupParameter, Config
 from easytext.utils.json_util import json2str
 
 from ner.models import RnnWithCrf, BertWithCrf
@@ -60,10 +60,9 @@ class NerLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device(device) for device in self.config.devices]
 
-    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
         if len(self._devices) > 1:
-            # return self.config.distributed_parameter
-            return DistributedParameter(2345)
+            return self.config.process_group_parameter
         else:
             return None
 
@@ -76,8 +75,9 @@ class NerLauncher(Launcher):
                 os.makedirs(serialize_dir)
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        print(f"start....")
+
         self.config.build()
+
         is_distributed = rank is not None
 
         trainer = Trainer(serialize_dir=self.config.serialize_dir,
@@ -90,7 +90,8 @@ class NerLauncher(Launcher):
                           patient=self.config.patient,
                           num_check_point_keep=self.config.num_check_point_keep,
                           device=device,
-                          is_distributed=is_distributed)
+                          is_distributed=is_distributed,
+                          distributed_data_parallel_parameter=self.config.distributed_data_parallel_parameter)
 
         train_sampler = None
 

@@ -100,12 +100,18 @@
     }
   },
 
-  "distributed_parameter": {
-    "__type__": "DistributedParameter",
+  "process_group_parameter": {
+    "__type__": "ProcessGroupParameter",
     "__name_space__": "__easytext__",
     "host": "127.0.0.1",
     "port": "2345",
     "backend": "nccl"
+  },
+
+  "distributed_data_parallel_parameter": {
+    "__type__": "DistributedDataParallelParameter",
+    "__name_space__": "__easytext__",
+    "find_unused_parameters": true
   },
 
   "num_epoch": 200,

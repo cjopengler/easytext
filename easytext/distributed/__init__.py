@@ -13,3 +13,4 @@ Date:    2020/11/29 17:52:00
 
 from .distributed import Distributed
 from .synchronized import Synchronized
+from .parameter import ProcessGroupParameter, DistributedDataParallelParameter

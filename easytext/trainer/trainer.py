@@ -41,6 +41,7 @@ from easytext.trainer.grad_rescaled import GradRescaled
 from easytext.trainer import Record
 from easytext.trainer.trainer_callback import TrainerCallback
 from easytext.distributed import Distributed
+from easytext.distributed import DistributedDataParallelParameter, ProcessGroupParameter
 
 
 class NerModelOutputs:
@@ -81,6 +82,7 @@ class Trainer(TrainerCallback, Distributed):
                  patient: int = None,
                  num_check_point_keep: int = None,
                  trainer_callback: Union[TrainerCallback, List[TrainerCallback], None] = None,
+                 distributed_data_parallel_parameter: DistributedDataParallelParameter = None
                  ):
         """
         训练器初始化
@@ -100,6 +102,7 @@ class Trainer(TrainerCallback, Distributed):
         否则，保留 num_check_point_keep 个checkpoint.
         :param trainer_callback: 训练中的回调。可以是 List, 如果是 List, 怎按照顺序逐个执行.
             当 Trainer.is_distributed == True, 会去查看 trainer_back.is_distributed, True 表示
+        :param distributed_data_parallel_parameter:
         """
 
         self._device = device
@@ -120,6 +123,9 @@ class Trainer(TrainerCallback, Distributed):
 
         if self.is_distributed:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=0)
+
+            self._ddp_parameter = DistributedDataParallelParameter(
+                find_unused_parameters=False)
         else:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=None)
 
@@ -135,7 +141,7 @@ class Trainer(TrainerCallback, Distributed):
             self._model = DistributedDataParallel(module=self._model,
                                                   device_ids=[self._device],
                                                   output_device=self._device,
-                                                  find_unused_parameters=False)
+                                                  find_unused_parameters=self._ddp.find_unused_parameters)
         else:
             self._model = self._model.to(self._device)
             self._optimizer = self._optimizer_factory.create(self._model)

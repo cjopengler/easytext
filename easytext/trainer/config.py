@@ -21,17 +21,18 @@ class Config:
     训练器的配置
     """
 
-    def __init__(self, is_training:bool, config_file_path: str, encoding="utf-8"):
-        
-         with open(config_file_path, encoding=encoding) as f:
-
+    def __init__(self, is_training: bool, config_file_path: str, encoding: str = "utf-8"):
+        with open(config_file_path, encoding=encoding) as f:
             config_dict = json.load(f, object_pairs_hook=OrderedDict)
-            self.__config_dict = config_dict
+            self.__config_dict = OrderedDict(config_dict)
             self.__dict__.update(config_dict)
             self._is_training = is_training
 
     def __str__(self):
         return json.dumps(self.__config_dict, ensure_ascii=False)
+
+    def __getattr__(self, item):
+        return self.__dict__.get(item, None)
     
     def build(self):
         component_factory = ComponentFactory(self._is_training)
