@@ -62,7 +62,8 @@ class NerLauncher(Launcher):
 
     def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
         if len(self._devices) > 1:
-            return self.config.distributed_parameter
+            # return self.config.distributed_parameter
+            return DistributedParameter(2345)
         else:
             return None
 
@@ -75,8 +76,8 @@ class NerLauncher(Launcher):
                 os.makedirs(serialize_dir)
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-
-        # print(f"config: {str(self.config)}")
+        print(f"start....")
+        self.config.build()
         is_distributed = rank is not None
 
         trainer = Trainer(serialize_dir=self.config.serialize_dir,
@@ -127,8 +128,9 @@ if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
     config_file_path = "data/ner/rnn_with_crf/config/config_cpu.json"
+    config_file_path = "data/ner/rnn_with_crf/config/config_multi_gpu.json"
     # config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
-    # config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
+    config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
     

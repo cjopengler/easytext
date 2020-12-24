@@ -51,7 +51,7 @@ class NerLoss(Loss):
             f"model_outputs.logits.dim() != 3, 应该是 (batch_size, seq_len, label_size)"
 
         # shape: (batch_size, seq_len)
-        mask = model_outputs.mask
+        mask = model_outputs.mask.long()
         assert mask.dim() == 2, f"mask.dim() != 2, 应该是 (batch_size, seq_len)"
 
         if self.is_used_crf:

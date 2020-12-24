@@ -135,7 +135,7 @@ class Trainer(TrainerCallback, Distributed):
             self._model = DistributedDataParallel(module=self._model,
                                                   device_ids=[self._device],
                                                   output_device=self._device,
-                                                  find_unused_parameters=True)
+                                                  find_unused_parameters=False)
         else:
             self._model = self._model.to(self._device)
             self._optimizer = self._optimizer_factory.create(self._model)

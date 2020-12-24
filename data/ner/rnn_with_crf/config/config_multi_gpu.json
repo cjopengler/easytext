@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MsraDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+    "dataset_file_path": "data/dataset/MSRA/sample.txt"
   },
 
   "validation_dataset": {
     "__type__": "MsraDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/MSRA/sample.txt"
+    "dataset_file_path": "data/dataset/MSRA/sample.txt"
   },
 
   "vocabulary_builder": {
@@ -23,15 +23,15 @@
       "__name_space__": "ner"
     },
 
-    "token_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/vocabulary/token_vocabulary",
-    "label_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/vocabulary/label_vocabulary",
+    "token_vocabulary_dir": "data/ner/rnn_with_crf/serialize/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "data/ner/rnn_with_crf/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": true,
 
     "pretrained_word_embedding_loader": {
       "__type__": "SGNSLoader",
       "__name_space__": "__easytext__",
       "embedding_dim": 300,
-      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/sgns/sgns.baidubaike.bigram-char",
+      "pretrained_file_path": "data/pretrained/sgns/sgns.baidubaike.bigram-char",
       "max_size": 10
     }
   },
@@ -97,11 +97,19 @@
     }
   },
 
+  "distributed_parameter": {
+    "__type__": "DistributedParameter",
+    "__name_space__": "__easytext__",
+    "host": "127.0.0.1",
+    "port": "3001",
+    "backend": "nccl"
+  },
+
   "num_epoch": 200,
   "patient": 50,
   "num_check_point_keep": 2,
-  "devices": ["cpu"],
-  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/rnn_with_crf/train",
+  "devices": ["cuda:0", "cuda:1"],
+  "serialize_dir": "data/ner/rnn_with_crf/serialize/train",
   "train_batch_size": 64,
   "test_batch_size": 128
 }

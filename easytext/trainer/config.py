@@ -22,15 +22,18 @@ class Config:
     """
 
     def __init__(self, is_training:bool, config_file_path: str, encoding="utf-8"):
-        with open(config_file_path, encoding=encoding) as f:
+        
+         with open(config_file_path, encoding=encoding) as f:
 
             config_dict = json.load(f, object_pairs_hook=OrderedDict)
             self.__config_dict = config_dict
-
-            component_factory = ComponentFactory(is_training=is_training)
-
-            self.__dict__.update(component_factory.create(config_dict))
-
+            self.__dict__.update(config_dict)
+            self._is_training = is_training
 
     def __str__(self):
         return json.dumps(self.__config_dict, ensure_ascii=False)
+    
+    def build(self):
+        component_factory = ComponentFactory(self._is_training)
+
+        self.__dict__.update(component_factory.create(self.__config_dict))
