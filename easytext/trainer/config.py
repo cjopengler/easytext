@@ -33,7 +33,13 @@ class Config:
 
     def __getattr__(self, item):
         return self.__dict__.get(item, None)
-    
+
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+
     def build(self):
         component_factory = ComponentFactory(self._is_training)
 

@@ -28,7 +28,8 @@ from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.data import GloveLoader, SGNSLoader
 from easytext.utils import log_util
-from easytext.trainer import Launcher, ProcessGroupParameter, Config
+from easytext.trainer import Launcher, Config
+from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
 
 from ner.models import RnnWithCrf, BertWithCrf
@@ -54,6 +55,7 @@ class NerLauncher(Launcher):
 
     def __init__(self, config_file_path: str, train_type: int):
         config = Config(config_file_path=config_file_path, is_training=True)
+        config.build()
         super().__init__(config)
         self._train_type = train_type
 
@@ -76,7 +78,7 @@ class NerLauncher(Launcher):
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
 
-        self.config.build()
+
 
         is_distributed = rank is not None
 
@@ -131,7 +133,7 @@ if __name__ == '__main__':
     config_file_path = "data/ner/rnn_with_crf/config/config_cpu.json"
     config_file_path = "data/ner/rnn_with_crf/config/config_multi_gpu.json"
     # config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
-    config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
+    # config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
     

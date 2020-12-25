@@ -18,7 +18,7 @@ import torch
 from torch import distributed as TorchDist
 
 from easytext.trainer import Config
-from easytext.trainer import ProcessGroupParameter
+from easytext.distributed import ProcessGroupParameter
 
 
 class Launcher:
