@@ -55,21 +55,20 @@ class NerLauncher(Launcher):
 
     def __init__(self, config_file_path: str, train_type: int):
         config = Config(config_file_path=config_file_path, is_training=True)
-        config.build()
         super().__init__(config)
         self._train_type = train_type
 
     def _init_devices(self) -> Union[List[torch.device]]:
-        return [torch.device(device) for device in self.config.devices]
+        return [torch.device(device) for device in self.config.get("devices")]
 
     def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
         if len(self._devices) > 1:
-            return self.config.process_group_parameter
+            return self.config.get("process_group_parameter")
         else:
             return None
 
     def _preprocess(self):
-        serialize_dir = self.config.serialize_dir
+        serialize_dir = self.config.get("serialize_dir")
         if self._train_type == NerLauncher.NEW_TRAIN:
             # 清理 serialize dir
             if os.path.isdir(serialize_dir):
@@ -78,22 +77,20 @@ class NerLauncher(Launcher):
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
 
-
-
         is_distributed = rank is not None
 
-        trainer = Trainer(serialize_dir=self.config.serialize_dir,
-                          num_epoch=self.config.num_epoch,
-                          model=self.config.model,
-                          loss=self.config.loss,
-                          metrics=self.config.metric,
-                          optimizer_factory=self.config.optimizer,
+        trainer = Trainer(serialize_dir=self.config.get("serialize_dir"),
+                          num_epoch=self.config.get("num_epoch"),
+                          model=self.config.get("model"),
+                          loss=self.config.get("loss"),
+                          metrics=self.config.get("metric"),
+                          optimizer_factory=self.config.get("optimizer"),
                           lr_scheduler_factory=None,
-                          patient=self.config.patient,
-                          num_check_point_keep=self.config.num_check_point_keep,
+                          patient=self.config.get("patient"),
+                          num_check_point_keep=self.config.get("num_check_point_keep"),
                           device=device,
                           is_distributed=is_distributed,
-                          distributed_data_parallel_parameter=self.config.distributed_data_parallel_parameter)
+                          distributed_data_parallel_parameter=self.config.get("distributed_data_parallel_parameter"))
 
         train_sampler = None
 

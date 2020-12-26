@@ -97,8 +97,8 @@
     }
   },
 
-  "distributed_parameter": {
-    "__type__": "DistributedParameter",
+  "process_group_parameter": {
+    "__type__": "ProcessGroupParameter",
     "__name_space__": "__easytext__",
     "host": "127.0.0.1",
     "port": "3001",
