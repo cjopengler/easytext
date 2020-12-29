@@ -102,7 +102,7 @@ class Trainer(TrainerCallback, Distributed):
         否则，保留 num_check_point_keep 个checkpoint.
         :param trainer_callback: 训练中的回调。可以是 List, 如果是 List, 怎按照顺序逐个执行.
             当 Trainer.is_distributed == True, 会去查看 trainer_back.is_distributed, True 表示
-        :param distributed_data_parallel_parameter:
+        :param distributed_data_parallel_parameter: DistributedDataParallel 用到的参数, 目前只支持设置 find_unused_parameters
         """
 
         self._device = device
@@ -124,8 +124,8 @@ class Trainer(TrainerCallback, Distributed):
         if self.is_distributed:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=0)
 
-            self._ddp_parameter = DistributedDataParallelParameter(
-                find_unused_parameters=False)
+            self._ddp = distributed_data_parallel_parameter \
+                        or DistributedDataParallelParameter(find_unused_parameters=False)
         else:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=None)
 
@@ -365,7 +365,17 @@ class Trainer(TrainerCallback, Distributed):
             raise RuntimeError(f"phrase: {phrase} 应该是 {Trainer._TRAIN} 或 {Trainer._EVALUATE}")
 
         with torch.set_grad_enabled(phrase == Trainer._TRAIN):
-            for model_inputs in tqdm(data_loader):
+
+            tqdm_disable = True
+
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    
+                    tqdm_disable = False
+
+            for model_inputs in tqdm(data_loader, disable=tqdm_disable):
                 model_inputs: ModelInputs = model_inputs
 
                 batch_size, batch_inputs, labels \

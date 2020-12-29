@@ -82,18 +82,18 @@ class NerLauncher(Launcher):
 
         is_distributed = rank is not None
 
-        trainer = Trainer(serialize_dir=self.config.get("serialize_dir"),
-                          num_epoch=self.config.get("num_epoch"),
-                          model=self.config.get("model"),
-                          loss=self.config.get("loss"),
-                          metrics=self.config.get("metric"),
-                          optimizer_factory=self.config.get("optimizer"),
+        trainer = Trainer(serialize_dir=self.config.serialize_dir,
+                          num_epoch=self.config.num_epoch,
+                          model=self.config.model,
+                          loss=self.config.loss,
+                          metrics=self.config.metric,
+                          optimizer_factory=self.config.optimizer,
                           lr_scheduler_factory=None,
-                          patient=self.config.get("patient"),
-                          num_check_point_keep=self.config.get("num_check_point_keep"),
+                          patient=self.config.patient,
+                          num_check_point_keep=self.config.num_check_point_keep,
                           device=device,
                           is_distributed=is_distributed,
-                          distributed_data_parallel_parameter=self.config.get("distributed_data_parallel_parameter"))
+                          distributed_data_parallel_parameter=self.config.distributed_data_parallel_parameter)
 
         train_sampler = None
 
@@ -130,10 +130,8 @@ class NerLauncher(Launcher):
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config_file_path = "data/ner/rnn_with_crf/config/config_cpu.json"
-    config_file_path = "data/ner/rnn_with_crf/config/config_multi_gpu.json"
-    # config_file_path = "data/ner/bert_with_crf/config/config_cpu.json"
-    # config_file_path = "data/ner/bert_with_crf/config/config_multi_gpu.json"
+    config_file_path = "data/ner/rnn_with_crf/config/config.json"
+    config_file_path = "data/ner/bert_with_crf/config/config.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
     
