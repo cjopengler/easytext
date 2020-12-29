@@ -11,10 +11,12 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/05/18 10:41:00
 """
 
+from typing import Dict
+
 import torch
 
 
-class ModelOutputs:
+class ModelOutputs(Dict):
     """
     模型的前向运算输出结果
     """
@@ -24,4 +26,11 @@ class ModelOutputs:
         模型输出
         :param logits: 指模型的输出用来计算 loss
         """
-        self.logits = logits
+        self["logits"] = logits
+
+    def __getattr__(self, item):
+        return self[item]
+
+    def __setattr__(self, key, value):
+        self[key] = value
+

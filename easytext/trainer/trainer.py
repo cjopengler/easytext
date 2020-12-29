@@ -41,6 +41,24 @@ from easytext.trainer.grad_rescaled import GradRescaled
 from easytext.trainer import Record
 from easytext.trainer.trainer_callback import TrainerCallback
 from easytext.distributed import Distributed
+from easytext.distributed import DistributedDataParallelParameter, ProcessGroupParameter
+
+
+class NerModelOutputs:
+    """
+    Ner Model Outputs
+    """
+
+    def __init__(self, logits, mask, crf):
+        """
+        Ner 模型的输出
+        :param logits: logits 输出
+        :param mask: mask
+        :param crf: 模型中的 crf 输出出来，用来进行 loss 以及 viterbi 解码
+        """
+        self.logits = logits
+        self.mask = mask
+        self.crf = crf
 
 
 class Trainer(TrainerCallback, Distributed):
@@ -64,6 +82,7 @@ class Trainer(TrainerCallback, Distributed):
                  patient: int = None,
                  num_check_point_keep: int = None,
                  trainer_callback: Union[TrainerCallback, List[TrainerCallback], None] = None,
+                 distributed_data_parallel_parameter: DistributedDataParallelParameter = None
                  ):
         """
         训练器初始化
@@ -83,6 +102,7 @@ class Trainer(TrainerCallback, Distributed):
         否则，保留 num_check_point_keep 个checkpoint.
         :param trainer_callback: 训练中的回调。可以是 List, 如果是 List, 怎按照顺序逐个执行.
             当 Trainer.is_distributed == True, 会去查看 trainer_back.is_distributed, True 表示
+        :param distributed_data_parallel_parameter: DistributedDataParallel 用到的参数, 目前只支持设置 find_unused_parameters
         """
 
         self._device = device
@@ -103,6 +123,9 @@ class Trainer(TrainerCallback, Distributed):
 
         if self.is_distributed:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=0)
+
+            self._ddp = distributed_data_parallel_parameter \
+                        or DistributedDataParallelParameter(find_unused_parameters=False)
         else:
             self._distributed_func_wrapper = DistributedFuncWrapper(dst_rank=None)
 
@@ -117,7 +140,8 @@ class Trainer(TrainerCallback, Distributed):
 
             self._model = DistributedDataParallel(module=self._model,
                                                   device_ids=[self._device],
-                                                  output_device=self._device)
+                                                  output_device=self._device,
+                                                  find_unused_parameters=self._ddp.find_unused_parameters)
         else:
             self._model = self._model.to(self._device)
             self._optimizer = self._optimizer_factory.create(self._model)
@@ -341,7 +365,17 @@ class Trainer(TrainerCallback, Distributed):
             raise RuntimeError(f"phrase: {phrase} 应该是 {Trainer._TRAIN} 或 {Trainer._EVALUATE}")
 
         with torch.set_grad_enabled(phrase == Trainer._TRAIN):
-            for model_inputs in tqdm(data_loader):
+
+            tqdm_disable = True
+
+            if self.is_distributed:
+
+                if self._distributed_func_wrapper is not None \
+                    and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
+                    
+                    tqdm_disable = False
+
+            for model_inputs in tqdm(data_loader, disable=tqdm_disable):
                 model_inputs: ModelInputs = model_inputs
 
                 batch_size, batch_inputs, labels \
@@ -353,6 +387,7 @@ class Trainer(TrainerCallback, Distributed):
                     labels = cuda_util.cuda(labels, cuda_device=self._device)
 
                 outputs = self._model(**batch_inputs)
+
                 batch_loss: torch.Tensor = self._loss(outputs, labels)
 
                 if phrase == Trainer._TRAIN:
@@ -505,16 +540,13 @@ class Trainer(TrainerCallback, Distributed):
             train_loss = self._train_or_evaluate(phrase=Trainer._TRAIN, data_loader=train_data_loader)
 
             if self.is_distributed:
-                before_loss = train_loss
-                train_loss = Sync.sync_value(train_loss, device=self._device, op=ReduceOp.SUM)
+                train_loss = Sync.sync(train_loss, device=self._device, op=ReduceOp.SUM)
 
             record.epoch_train_loss = train_loss
 
             if self.is_distributed:
                 sync_data, op = self._metrics.to_synchronized_data()
-                before_sync_data = sync_data
-                before_train_metric_dict, before_train_target_metric = self._metrics.metric
-                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                sync_data = Sync.sync(sync_data, device=self._device, op=op)
 
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
@@ -545,15 +577,13 @@ class Trainer(TrainerCallback, Distributed):
             validation_loss = self.evaluate(validation_data_loader=validation_data_loader)
 
             if self.is_distributed:
-                validation_loss = Sync.sync_value(validation_loss, device=self._device, op=ReduceOp.SUM)
+                validation_loss = Sync.sync(validation_loss, device=self._device, op=ReduceOp.SUM)
 
             record.epoch_validation_loss = validation_loss
 
             if self.is_distributed:
-                before_validation_metric_dict, before_validation_target_metric = self._metrics.metric
                 sync_data, op = self._metrics.to_synchronized_data()
-                before_sync_data = sync_data
-                sync_data = Sync.sync_tensor(sync_data, device=self._device, op=op)
+                sync_data = Sync.sync(sync_data, device=self._device, op=op)
                 self._metrics.from_synchronized_data(sync_data=sync_data, reduce_op=op)
 
             validation_metric_dict, validation_target_metric = self._metrics.metric

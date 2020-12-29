@@ -14,7 +14,6 @@ from .metric_tracker import MetricTracker
 from .record import Record
 from .trainer import Trainer
 from .config import Config
-from .distributed_parameter import DistributedParameter
 from .launcher import Launcher
 
 

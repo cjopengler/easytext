@@ -146,9 +146,9 @@ class F1Metric(Metric):
     def _compute_metrics(true_positives: int, false_positives: int, false_negatives: int):
         """
         计算 f1 metric
-        """
-        precision = float(true_positives) / float(true_positives + false_positives + 1e-13)
-        recall = float(true_positives) / float(true_positives + false_negatives + 1e-13)
+        """   
+        precision = float(true_positives) / (float(true_positives + false_positives) + 1e-13)
+        recall = float(true_positives) / (float(true_positives + false_negatives) + 1e-13)
         f1_measure = 2. * ((precision * recall) / (precision + recall + 1e-13))
         return precision, recall, f1_measure
 

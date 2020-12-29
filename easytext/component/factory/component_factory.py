@@ -13,6 +13,7 @@ Date:    2020/10/27 16:14:00
 import traceback
 import logging
 import inspect
+import copy
 from collections import OrderedDict
 
 from easytext.component import Component
@@ -148,7 +149,7 @@ class ComponentFactory:
 
         assert isinstance(config, OrderedDict), f"param_dict type: {type(config)} 不是 OrderedDict"
 
-        parsed_config = OrderedDict(config)
+        parsed_config = copy.deepcopy(config)
 
         for obj_name, param_dict in parsed_config.items():
 

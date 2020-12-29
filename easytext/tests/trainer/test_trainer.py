@@ -33,7 +33,7 @@ from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
 from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
-from easytext.trainer import DistributedParameter
+from easytext.trainer import ProcessGroupParameter
 from easytext.trainer import Launcher
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
@@ -205,7 +205,7 @@ class _CpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cpu")]
 
-    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
@@ -217,7 +217,7 @@ class _SingleGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0")]
 
-    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
+    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
         return None
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
@@ -229,15 +229,12 @@ class _MultiGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0"), torch.device("cuda:1")]
 
-    def _init_distributed_parameter(self) -> Optional[DistributedParameter]:
-        param = DistributedParameter(backend="nccl", port=2543)
+    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
+        param = ProcessGroupParameter(backend="nccl", port=2543)
         return param
 
     def _start(self, rank: Optional[int], device: torch.device) -> None:
-        try:
-            _run_train(device=device, is_distributed=True)
-        except Exception as e:
-            logging.fatal(f"{traceback.format_exc()}")
+        _run_train(device=device, is_distributed=True)
 
 
 def _run_train(device: torch.device, is_distributed: bool):

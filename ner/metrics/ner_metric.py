@@ -10,9 +10,10 @@ ner metric
 Authors: PanXu
 Date:    2020/06/27 20:48:00
 """
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Union, List
 
 from torch import Tensor
+from torch.distributed import ReduceOp
 
 from easytext.metrics import ModelMetricAdapter, ModelTargetMetric
 from easytext.metrics import SpanF1Metric
@@ -60,3 +61,11 @@ class NerModelMetricAdapter(ModelMetricAdapter):
         self.span_f1_metric.reset()
 
         return self
+    
+    def to_synchronized_data(self) -> Tuple[Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor], ReduceOp]:
+        return self.span_f1_metric.to_synchronized_data()
+
+    def from_synchronized_data(self, sync_data: Union[Dict[Union[str, int], Tensor], List[Tensor], Tensor],
+                               reduce_op: ReduceOp) -> None:
+        self.span_f1_metric.from_synchronized_data(sync_data=sync_data, reduce_op=reduce_op)
+

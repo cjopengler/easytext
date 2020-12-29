@@ -30,6 +30,8 @@ class _JsonEncoder(json.JSONEncoder):
                 return o.item()
             else:
                 return o.tolist()
+        elif isinstance(o, set):
+            return [_ for _ in o]
         else:
             pass
 

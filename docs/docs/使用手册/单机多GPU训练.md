@@ -3,7 +3,16 @@
 主要实践在: 单机多卡。
 
 分布式训练的思想是: 基于多进程，将数据拆分到不同的进程，进行训练。Pytorch 提供了在不同的进程中
-对参数进行合并的操作。一些组件，必须遵循分布式运算规范。如下:
+对参数进行合并的操作。
+
+## 训练启动器 - Launcher
+
+`Launcher` 用来启动训练过程。需要子类实现自己的 `Luancher`。特别需要注意的是: 因为是多进程启动训练，
+那么，会导致 `Luancher` 中的成员变量复制到其他进程中, 而这个过程会由于某些类无法复制到其他进程而引发
+一些非常难以解决的问题。所以，对于子类中的 `Luancher` 尽量不要使用任何成员变量。
+
+
+一些组件，必须遵循分布式运算规范。如下:
 
 | 组件名称  | 是否需要继承 `easytext.distributed.Distributed` 类 | 备注 |
 | ---------|-------------------|
@@ -48,16 +57,18 @@ def create_dataloader(distributed: bool, dataset: torch.data.Dataset, batch_size
     return data_loader
 ```
 
+关于 `batch_size` 表示每一个 GPU 处理的 `batch_size`, 如果有 N 个 GPU, 那么, 就能同时处理 `batch_size * N`.
 
 ##  `Model` 如何参数更新?
-Model 使用 `torch.nn.parallel.DistributedDataParallel(model)` 设置，会自动多进程进行参数的更新。
+Model, 训练矿建会自动使用 `torch.nn.parallel.DistributedDataParallel(model)` 设置，所以实际代码按照单GPU写即可。
 
 ##  `Loss` 如何计算?
 Loss 会在 Trainer 中自动进行 分布式计算，所以正常写即可。
 
 ##  `Metric` 如何计算?
 
-Metric 会自动对多 GPU 运算的结果，进行 求平均计算。所以正常写即可。
+Metric 由于会对多 GPU 运算的结果进行汇总，所以需要继承  `Synchronized`,
+实现 `to_synchronized_data` 和 `from_synchronized_data` 来设置需要同步的数据。
 
 ## 训练需要其他参数
 
@@ -82,3 +93,6 @@ Metric 会自动对多 GPU 运算的结果，进行 求平均计算。所以正�
 该类能够让某个函数，只在指定的进程中执行，这是很有用处的。比如，写文件或者日志输出，
 只需要在一个进程中输出。如果指定 `dst_rank=None`, 那么，则不会进行进程处理，这样，
 同样的代码，可以在单 GPU/CPU 下也可以运行了。
+
+
+
