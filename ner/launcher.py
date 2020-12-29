@@ -31,6 +31,7 @@ from easytext.utils import log_util
 from easytext.trainer import Launcher, Config
 from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
+from easytext.component.register import Registry
 
 from ner.models import RnnWithCrf, BertWithCrf
 
@@ -55,27 +56,29 @@ class NerLauncher(Launcher):
 
     def __init__(self, config_file_path: str, train_type: int):
         config = Config(config_file_path=config_file_path, is_training=True)
-        super().__init__(config)
+        self.config = config
+        super().__init__()
         self._train_type = train_type
 
-    def _init_devices(self) -> Union[List[torch.device]]:
-        return [torch.device(device) for device in self.config.get("devices")]
+    def _init_devices(self) -> Union[List[str], List[int]]:
+        return self.config.devices
 
-    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
+    def _init_process_group_parameter(self, rank: Optional[int]) -> Optional[ProcessGroupParameter]:
+
         if len(self._devices) > 1:
-            return self.config.get("process_group_parameter")
+            return self.config.process_group_parameter
         else:
             return None
 
     def _preprocess(self):
-        serialize_dir = self.config.get("serialize_dir")
+        serialize_dir = self.config.serialize_dir
         if self._train_type == NerLauncher.NEW_TRAIN:
             # 清理 serialize dir
             if os.path.isdir(serialize_dir):
                 shutil.rmtree(serialize_dir)
                 os.makedirs(serialize_dir)
 
-    def _start(self, rank: Optional[int], device: torch.device) -> None:
+    def _start(self, rank: Optional[int], world_size: int, device: torch.device) -> None:
 
         is_distributed = rank is not None
 
