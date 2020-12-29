@@ -33,7 +33,7 @@ from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
 from easytext.trainer.trainer_callback import BasicTrainerCallbackComposite
-from easytext.trainer import ProcessGroupParameter
+from easytext.distributed import ProcessGroupParameter
 from easytext.trainer import Launcher
 from easytext.metrics import AccMetric, ModelMetricAdapter, ModelTargetMetric
 from easytext.utils import log_util
@@ -205,10 +205,10 @@ class _CpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cpu")]
 
-    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
+    def _init_process_group_parameter(self, rank: Optional[int]) -> Optional[ProcessGroupParameter]:
         return None
 
-    def _start(self, rank: Optional[int], device: torch.device) -> None:
+    def _start(self, rank: Optional[int], world_size: int, device: torch.device) -> None:
         _run_train(device=device, is_distributed=False)
 
 
@@ -217,10 +217,10 @@ class _SingleGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0")]
 
-    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
+    def _init_process_group_parameter(self, rank: Optional[int]) -> Optional[ProcessGroupParameter]:
         return None
 
-    def _start(self, rank: Optional[int], device: torch.device) -> None:
+    def _start(self, rank: Optional[int], world_size: int, device: torch.device) -> None:
         _run_train(device=device, is_distributed=False)
 
 
@@ -229,11 +229,11 @@ class _MultiGpuLauncher(Launcher):
     def _init_devices(self) -> Union[List[torch.device]]:
         return [torch.device("cuda:0"), torch.device("cuda:1")]
 
-    def _init_process_group_parameter(self) -> Optional[ProcessGroupParameter]:
+    def _init_process_group_parameter(self, rank: Optional[int]) -> Optional[ProcessGroupParameter]:
         param = ProcessGroupParameter(backend="nccl", port=2543)
         return param
 
-    def _start(self, rank: Optional[int], device: torch.device) -> None:
+    def _start(self, rank: Optional[int], world_size: int, device: torch.device) -> None:
         _run_train(device=device, is_distributed=True)
 
 
@@ -338,7 +338,7 @@ def test_trainer_save_and_load_cpu():
     测试  trainer 保存和载入
     :return:
     """
-    cpu_launcer = _CpuLauncher(config=None)
+    cpu_launcer = _CpuLauncher()
     cpu_launcer()
 
 
