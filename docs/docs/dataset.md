@@ -1,5 +1,7 @@
 # 数据集
 
+下面下载的数据集解压到 `data/dataset` 目录下。
+
 ## MSRA
 
 链接: https://pan.baidu.com/s/1JasMCa-QRS7xfAwfykaKEA 密码: 4qb1

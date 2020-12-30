@@ -32,8 +32,17 @@ class BertModelCollate(ModelCollate):
     def __init__(self,
                  tokenizer: BertTokenizer,
                  sequence_label_vocab: LabelVocabulary,
+                 add_special_token: bool,
                  sequence_max_len: int = 508):
+        """
+        使用 Bert 的 Model Collate
+        :param tokenizer: BertTokenizer
+        :param sequence_label_vocab:
+        :param add_special_token: 是否增加 CLS 和 SEP, 如果使用 CRF, 那么这个值一定要设置为 False, 否则，会导致 crf 错误
+        :param sequence_max_len:
+        """
         self._tokenizer = tokenizer
+        self._add_special_token = add_special_token
         self._sequence_label_vocab = sequence_label_vocab
         self._max_len = sequence_max_len
 
@@ -63,6 +72,7 @@ class BertModelCollate(ModelCollate):
                                                          padding=True,
                                                          max_length=self._max_len,
                                                          return_length=True,
+                                                         add_special_tokens=self._add_special_token,
                                                          return_special_tokens_mask=True,
                                                          return_tensors="pt")
 
@@ -73,7 +83,7 @@ class BertModelCollate(ModelCollate):
 
         batch_special_tokens_mask = batch_inputs["special_tokens_mask"]
 
-        # 将speical_tokens_mask 0->1, 1->0, 就变成了 seuquence 去掉 CLS 和 SEP 的 mask 了
+        # 将speical_tokens_mask 0->1, 1->0, 就变成了 sequence 去掉 CLS 和 SEP 的 mask 了
         batch_sequence_mask: torch.Tensor = batch_special_tokens_mask == 0
 
         batch_sequence_label_indices = None

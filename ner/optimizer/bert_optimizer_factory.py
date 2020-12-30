@@ -69,7 +69,4 @@ class BertOptimizerFactory(OptimizerFactory):
 
         return optimizer
 
-@ComponentRegister.register("adm", )
-def create_adam():
-    return AdamW(params=optimizer_grouped_parameters, lr=5e-5)
 

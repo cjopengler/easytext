@@ -5,7 +5,7 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-Bert + CRF
+Bert + Rnn + CRF
 
 Authors: PanXu
 Date:    2020/09/09 14:33:00
@@ -16,7 +16,7 @@ from typing import Union, Dict
 
 import torch
 from torch import Tensor
-from torch.nn import Dropout, Linear
+from torch.nn import Dropout, Linear, LSTM, GRU
 
 from transformers import BertModel, BertConfig
 from transformers.modeling_outputs import BaseModelOutputWithPooling
@@ -24,6 +24,8 @@ from transformers.modeling_outputs import BaseModelOutputWithPooling
 from easytext.model import Model, ModelOutputs
 from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
 from easytext.modules import ConditionalRandomField
+from easytext.modules.seq2seq import RnnSeq2Seq
+from easytext.modules import DynamicRnn
 from easytext.utils import bio as BIO
 from easytext.component.register import ComponentRegister
 
@@ -32,7 +34,7 @@ from ner.models.ner_model_outputs import NerModelOutputs
 
 
 @ComponentRegister.register(name_space="ner")
-class BertWithCrf(Model):
+class BertRnnWithCrf(Model):
     """
     Bert With Crf
     """
@@ -41,12 +43,20 @@ class BertWithCrf(Model):
                  bert_dir: str,
                  vocabulary_builder: VocabularyBuilder,
                  dropout: float,
+                 rnn_type: str,
+                 hidden_size: int,
+                 num_layer: int,
+                 rnn_dropout: float,
                  is_used_crf: bool):
         """
         初始化
         :param bert_dir: 预训练好的 bert 模型所在 dir
         :param vocabulary_builder: vocabulary builder
         :param dropout: bert 最后一层输出的 dropout
+        :param rnn_type: rnn 类型, lstm 或 gru
+        :param hidden_size: rnn hidden size
+        :param num_layer: rnn 层数
+        :param rnn_dropout: rnn 的 dropout
         :param is_used_crf: 是否使用 crf, True: 使用 crf; False: 不使用 crf
         """
 
@@ -58,7 +68,35 @@ class BertWithCrf(Model):
         self.bert = BertModel.from_pretrained(bert_dir)
         bert_config: BertConfig = self.bert.config
 
-        self.classifier = Linear(bert_config.hidden_size, self.label_vocabulary.label_size)
+        if rnn_type == DynamicRnn.LSTM:
+
+            lstm = LSTM(input_size=bert_config.hidden_size,
+                        hidden_size=hidden_size,
+                        num_layers=num_layer,
+                        bidirectional=True,
+                        dropout=dropout,
+                        batch_first=True)
+            dynamic_rnn = DynamicRnn(rnn=lstm)
+
+        elif rnn_type == DynamicRnn.GRU:
+
+            gru = GRU(input_size=bert_config.hidden_size,
+                      hidden_size=hidden_size,
+                      num_layers=num_layer,
+                      bidirectional=True,
+                      dropout=dropout,
+                      batch_first=True)
+            dynamic_rnn = DynamicRnn(rnn=gru)
+
+        else:
+            raise RuntimeError(f"rnn_type: {rnn_type} 必须是 {DynamicRnn.LSTM} 或 {DynamicRnn.GRU} ")
+
+        self.rnn_seq2seq = RnnSeq2Seq(dynamic_rnn=dynamic_rnn)
+
+        self.rnn_dropout = Dropout(rnn_dropout)
+
+        self.liner = Linear(in_features=hidden_size * 2,
+                            out_features=self.label_vocabulary.label_size)
 
         if self.is_used_crf:
             constraints = BIO.allowed_transitions(label_vocabulary=self.label_vocabulary)
@@ -98,7 +136,10 @@ class BertWithCrf(Model):
 
         sequence_output = self.dropout(bert_output.last_hidden_state)
 
-        logits = self.classifier(sequence_output)
+        rnn_output = self.rnn_dropout(sequence_output)
+        rnn_output = self.rnn_dropout(rnn_output)
+
+        logits = self.liner(rnn_output)
 
         model_outputs = NerModelOutputs(logits=logits,
                                         mask=sequence_mask,
