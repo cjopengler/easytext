@@ -290,7 +290,6 @@ easytext.egg-info
 data/acsa/*
 data/easytext/*
 data/event/*
-data/ner/*
 data/dataset/*
 data/pretrained
 data/tensorboard
