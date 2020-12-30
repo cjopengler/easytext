@@ -279,7 +279,7 @@ Sessionx.vim
 
 # Temporary
 .netrwhist
-*~
+
 # Auto-generated tag files
 tags
 # Persistent undo
@@ -294,5 +294,5 @@ data/ner/*
 data/dataset/*
 data/pretrained
 data/tensorboard
-ace_english_event/
 log/
+
