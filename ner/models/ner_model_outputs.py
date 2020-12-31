@@ -20,7 +20,7 @@ class NerModelOutputs(ModelOutputs):
     Ner Model Outputs
     """
 
-    def __init__(self, logits: torch.Tensor, mask: torch.Tensor, crf: ConditionalRandomField = None):
+    def __init__(self, logits: torch.Tensor, mask: torch.Tensor, crf: ConditionalRandomField = None, bert_pool = None):
         """
         Ner 模型的输出
         :param logits: logits 输出
@@ -31,3 +31,4 @@ class NerModelOutputs(ModelOutputs):
         super().__init__(logits=logits)
         self.mask = mask
         self.crf = crf
+        self.bert_pool = bert_pool

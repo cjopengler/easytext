@@ -102,6 +102,7 @@ class BertWithCrf(Model):
 
         model_outputs = NerModelOutputs(logits=logits,
                                         mask=sequence_mask,
-                                        crf=self.crf)
+                                        crf=self.crf,
+                                        bert_pool=bert_output.pooler_output)
 
         return model_outputs

@@ -35,8 +35,7 @@ class BertRnnWithCrfOptimizerFactory(OptimizerFactory):
 
         # 增加 linear 参数
         optimizer_grouped_parameters.append({
-                "params": model.liner.parameters(),
-                "lr": 0.01
+                "params": model.liner.parameters()
             }
         )
 
@@ -67,7 +66,7 @@ class BertRnnWithCrfOptimizerFactory(OptimizerFactory):
 
             optimizer_grouped_parameters.extend(bert_params)
 
-            optimizer = AdamW(optimizer_grouped_parameters, lr=0.01)
+            optimizer = AdamW(optimizer_grouped_parameters, lr=0.005)
         else:
             bert_params = model.bert.parameters()
             for param in bert_params:

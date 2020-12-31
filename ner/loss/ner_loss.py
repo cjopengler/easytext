@@ -51,12 +51,11 @@ class NerLoss(Loss):
         mask = model_outputs.mask.long()
         assert mask.dim() == 2, f"mask.dim() != 2, 应该是 (batch_size, seq_len)"
 
-        if self.is_used_crf:
+        if model_outputs.crf is not None:
             crf: ConditionalRandomField = model_outputs.crf
-            assert crf is not None, f"is_used_crf: {self.is_used_crf}, 但是 model_outputs.crf is None"
             return -crf(inputs=logits,
                         tags=golden_label,
-                        mask=mask)
+                        mask=mask) + (model_outputs.bert_pool * 0).sum()
 
         else:
             # 将 logits 转换成二维
