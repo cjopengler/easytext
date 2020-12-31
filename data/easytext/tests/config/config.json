@@ -1,0 +1,13 @@
+{
+  "optimizer": {
+    "__type__": "Optimizer",
+    "__name_space__": "optimizer"
+  },
+
+  "model": {
+    "__type__": "MyModel",
+    "__name_space__": "model",
+    "input_size": 2,
+    "output_size": 4
+  }
+}

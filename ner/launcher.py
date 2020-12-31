@@ -33,7 +33,7 @@ from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
 from easytext.component.register import Registry
 
-from ner.models import RnnWithCrf, BertWithCrf
+from ner.models import RnnWithCrf, BertWithCrf, BertRnnWithCrf
 
 from ner.data.dataset import Conll2003Dataset, MsraDataset
 from ner.data import VocabularyCollate
@@ -41,9 +41,10 @@ from ner.data import NerModelCollate, BertModelCollate
 from ner.loss import NerLoss
 from ner.loss import NerLoss
 from ner.metrics import NerModelMetricAdapter
-from ner.optimizer import NerOptimizerFactory, BertOptimizerFactory
+from ner.optimizer import RnnWithCrfOptimizerFactory, BertRnnWithCrfOptimizerFactory, BertWithCrfOptimizerFactory
 from ner.label_decoder import NerMaxModelLabelDecoder
 from ner.label_decoder import NerCRFModelLabelDecoder
+
 from ner import ROOT_PATH
 
 
@@ -132,6 +133,7 @@ if __name__ == '__main__':
 
     config_file_path = "data/ner/rnn_with_crf/config/config.json"
     config_file_path = "data/ner/bert_with_crf/config/config.json"
+    config_file_path = "data/ner/bert_rnn_with_crf/config/config.json"
 
     config_file_path = os.path.join(ROOT_PATH, config_file_path)
     

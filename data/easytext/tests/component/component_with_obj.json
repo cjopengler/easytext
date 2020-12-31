@@ -1,0 +1,52 @@
+{
+  "my_obj": {
+    "__type__": "_CustomerObj",
+    "__name_space__": "test",
+    "value": 10
+  },
+  "my_component": {
+    "__type__": "_ModelWithObjParam",
+    "__name_space__": "model",
+    "input_size": 4,
+    "output_size": 2,
+    "customer_obj": {
+      "__object__": "my_obj"
+    }
+  },
+  "another_component": {
+    "__type__": "_ModelWithObjParam",
+    "__name_space__": "model",
+    "input_size": 3,
+    "output_size": 6,
+    "customer_obj": {
+      "__type__": "_CustomerObj",
+      "__name_space__": "test",
+      "value": 20
+    }
+  },
+  "another_obj": {
+    "__object__": "another_component.customer_obj"
+  },
+  "dict_param_component": {
+    "__type__": "_DictParamComponent",
+    "__name_space__": "test",
+    "dict_value": {
+      "a": 1,
+      "b": 2,
+      "c_obj": {
+        "__type__": "_CustomerObj",
+        "__name_space__": "test",
+        "value": 30
+      }
+    },
+    "customer_obj": {
+      "__object__": "another_component.customer_obj"
+    }
+  },
+
+  "my_object": {
+    "__type__": "my_object",
+    "__name_space__": "test",
+    "value": "test_value"
+  }
+}

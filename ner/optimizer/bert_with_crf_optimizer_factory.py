@@ -20,7 +20,7 @@ from easytext.component.register import ComponentRegister
 
 
 @ComponentRegister.register(name_space="ner")
-class BertOptimizerFactory(OptimizerFactory):
+class BertWithCrfOptimizerFactory(OptimizerFactory):
     """
     Ner Optimizer Factory 创建 Optimizer
     """

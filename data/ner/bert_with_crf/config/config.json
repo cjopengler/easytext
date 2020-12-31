@@ -46,7 +46,7 @@
       }
     },
 
-    "add_special_token": true,
+    "add_special_token": false,
     "sequence_max_len": 512
   },
 
@@ -84,7 +84,7 @@
   },
 
   "optimizer": {
-    "__type__": "BertOptimizerFactory",
+    "__type__": "BertWithCrfOptimizerFactory",
     "__name_space__": "ner",
     "fine_tuning": true
   },

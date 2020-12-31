@@ -83,7 +83,7 @@
   },
 
   "optimizer": {
-     "__type__":"NerOptimizerFactory",
+     "__type__":"RnnWithCrfOptimizerFactory",
      "__name_space__": "ner",
      "fine_tuning": true
   },

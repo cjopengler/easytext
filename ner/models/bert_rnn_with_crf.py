@@ -134,9 +134,11 @@ class BertRnnWithCrf(Model):
                                                             position_ids=None,
                                                             return_dict=True)
 
-        sequence_output = self.dropout(bert_output.last_hidden_state)
+        bert_sequence_output = self.dropout(bert_output.last_hidden_state)
 
-        rnn_output = self.rnn_dropout(sequence_output)
+        rnn_output = self.rnn_seq2seq(sequence=bert_sequence_output,
+                                      mask=sequence_mask)
+
         rnn_output = self.rnn_dropout(rnn_output)
 
         logits = self.liner(rnn_output)
@@ -144,5 +146,4 @@ class BertRnnWithCrf(Model):
         model_outputs = NerModelOutputs(logits=logits,
                                         mask=sequence_mask,
                                         crf=self.crf)
-
         return model_outputs

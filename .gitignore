@@ -287,11 +287,12 @@ tags
 
 easytext.egg-info
 .idea/
-data/acsa/*
-data/easytext/*
-data/event/*
 data/dataset/*
 data/pretrained
 data/tensorboard
 log/
+serialize/
+vocabulary/
+data/easytext/tests/trainer/
+data/easytext/tests/pretrained_vocabulary/
 

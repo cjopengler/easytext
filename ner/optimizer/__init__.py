@@ -11,7 +11,8 @@ Authors: PanXu
 Date:    2020/06/28 08:42:00
 """
 
-from .ner_optimizer_factory import NerOptimizerFactory
+from .rnn_with_crf_optimizer_factory import RnnWithCrfOptimizerFactory
+from .bert_with_crf_optimizer_factory import BertWithCrfOptimizerFactory
+from .bert_rnn_with_crf_optimizer_factory import BertRnnWithCrfOptimizerFactory
 from .ner_lr_scheduler_factory import NerLRSchedulerFactory
 
-from .bert_optimizer_factory import BertOptimizerFactory
