@@ -51,14 +51,19 @@ class NerLoss(Loss):
         mask = model_outputs.mask.long()
         assert mask.dim() == 2, f"mask.dim() != 2, 应该是 (batch_size, seq_len)"
 
+        loss = 0
+
+        if model_outputs.bert_pooler_output is not None:
+            loss = (model_outputs.bert_pool * 0).sum()
+
         if model_outputs.crf is not None:
             crf: ConditionalRandomField = model_outputs.crf
             return -crf(inputs=logits,
                         tags=golden_label,
-                        mask=mask) + (model_outputs.bert_pool * 0).sum()
+                        mask=mask) + loss
 
         else:
             # 将 logits 转换成二维
             logits = logits.view(-1, self.label_vocabulary.label_size)
             golden_label = golden_label.view(-1)
-            return self.loss(logits, golden_label)
+            return self.loss(logits, golden_label) + loss

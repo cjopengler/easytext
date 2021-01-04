@@ -123,7 +123,7 @@ class BertRnnWithCrf(Model):
         :param token_type_ids: bert token type ids
         :param sequence_mask: sequence mask, 对于 CLS, SEP, PADDING 的 mask = 0, 其他实际的 token 的 mask = 1
         :param metadata: meta data
-        :return: NerModelOutputs
+        :return: NerBertModelOutputs
         """
 
         assert input_ids.dim() == 2, f"input_ids shape: {input_ids.dim()} 与 (batch_size, seq_len) 不匹配"
@@ -143,9 +143,8 @@ class BertRnnWithCrf(Model):
 
         logits = self.liner(rnn_output)
 
-        # bert_output.pooler_output.detach()
         model_outputs = NerModelOutputs(logits=logits,
                                         mask=sequence_mask,
                                         crf=self.crf,
-                                        bert_pool=bert_output.pooler_output)
+                                        bert_pooler_output=bert_output.pooler_output)
         return model_outputs

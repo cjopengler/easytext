@@ -56,6 +56,7 @@ class BertWithCrf(Model):
         self.dropout = Dropout(dropout)
         self.is_used_crf = is_used_crf
         self.bert = BertModel.from_pretrained(bert_dir)
+
         bert_config: BertConfig = self.bert.config
 
         self.classifier = Linear(bert_config.hidden_size, self.label_vocabulary.label_size)
