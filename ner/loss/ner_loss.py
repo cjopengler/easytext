@@ -54,7 +54,7 @@ class NerLoss(Loss):
         loss = 0
 
         if model_outputs.bert_pooler_output is not None:
-            loss = (model_outputs.bert_pool * 0).sum()
+            loss = (model_outputs.bert_pooler_output * 0).sum()
 
         if model_outputs.crf is not None:
             crf: ConditionalRandomField = model_outputs.crf
