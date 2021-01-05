@@ -51,7 +51,7 @@
   },
 
   "model_label_decoder": {
-    "__type__": "NerMaxModelLabelDecoder",
+    "__type__": "NerCRFModelLabelDecoder",
     "__name_space__": "ner",
     "label_vocabulary": {
       "__object__": "model_collate.sequence_label_vocab"
@@ -115,8 +115,7 @@
   "patient": 50,
   "num_check_point_keep": 2,
   "devices": [
-    "cuda:0",
-    "cuda:1"
+    "cpu"
   ],
 
   "serialize_dir": "data/ner/bert_with_crf/serialize/train",

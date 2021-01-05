@@ -17,12 +17,14 @@
     "dataset": {
       "__object__": "training_dataset"
     },
+
     "vocabulary_collate": {
       "__type__": "VocabularyCollate",
       "__name_space__": "ner"
     },
+
     "token_vocabulary_dir": null,
-    "label_vocabulary_dir": "data/ner/bert_rnn_with_crf/serialize/vocabulary/label_vocabulary",
+    "label_vocabulary_dir": "data/ner/bert_without_crf/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": false,
     "pretrained_word_embedding_loader": null
   },
@@ -35,6 +37,7 @@
       "__name_space__": "ner",
       "bert_dir": "data/pretrained/bert/bert-base-chinese-pytorch"
     },
+
     "sequence_label_vocab": {
       "__type__": "label_vocabulary",
       "__name_space__": "ner",
@@ -42,12 +45,13 @@
         "__object__": "vocabulary_builder"
       }
     },
+
     "add_special_token": false,
     "sequence_max_len": 512
   },
 
   "model_label_decoder": {
-    "__type__": "NerCRFModelLabelDecoder",
+    "__type__": "NerMaxModelLabelDecoder",
     "__name_space__": "ner",
     "label_vocabulary": {
       "__object__": "model_collate.sequence_label_vocab"
@@ -57,31 +61,30 @@
   "metric": {
     "__type__": "NerModelMetricAdapter",
     "__name_space__": "ner",
+
     "vocabulary_builder": {
       "__object__": "vocabulary_builder"
     },
+
     "model_label_decoder": {
       "__object__": "model_label_decoder"
     }
   },
 
   "model": {
-    "__type__": "BertRnnWithCrf",
+    "__type__": "BertWithCrf",
     "__name_space__": "ner",
     "bert_dir": "data/pretrained/bert/bert-base-chinese-pytorch",
+
     "vocabulary_builder": {
       "__object__": "vocabulary_builder"
     },
     "dropout": 0.1,
-    "rnn_type": "lstm",
-    "hidden_size": 300,
-    "num_layer": 2,
-    "rnn_dropout": 0.4,
-    "is_used_crf": true
+    "is_used_crf": false
   },
 
   "optimizer": {
-    "__type__": "BertRnnWithCrfOptimizerFactory",
+    "__type__": "BertWithCrfOptimizerFactory",
     "__name_space__": "ner",
     "fine_tuning": true
   },
@@ -109,11 +112,14 @@
   },
 
   "num_epoch": 200,
-  "patient": 100,
+  "patient": 50,
   "num_check_point_keep": 2,
+  "devices": [
+    "cuda:0",
+    "cuda:1"
+  ],
 
-  "devices": ["cuda:0", "cuda:1"],
-  "serialize_dir": "data/ner/bert_rnn_with_crf/serialize/train",
+  "serialize_dir": "data/ner/bert_without_crf/serialize/train",
   "train_batch_size": 8,
   "test_batch_size": 16
 }
