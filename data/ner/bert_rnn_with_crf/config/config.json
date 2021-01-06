@@ -49,8 +49,8 @@
   "model_label_decoder": {
     "__type__": "NerCRFModelLabelDecoder",
     "__name_space__": "ner",
-    "label_vocabulary": {
-      "__object__": "model_collate.sequence_label_vocab"
+    "vocabulary_builder": {
+      "__object__": "vocabulary_builder"
     }
   },
 
