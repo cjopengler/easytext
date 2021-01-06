@@ -25,10 +25,22 @@
 
 # ner: 命名实体识别
 
-命名实体识别相关模型，包括 baseline 模型:
+## 相关模型以及对应的配置文件
 
-1. bilstm + softmax
-2. bilstm + crf
+| 序号 | 模型描述 | 配置文件/`config_file_path` |
+|-----|---------|---------|
+| 1 | rnn + crf |  `data/ner/rnn_with_crf/config/config.json` |
+| 2 | rnn + softmax | `data/ner/rnn_with_crf/config/config_without_crf.json`|
+| 3 | bert + crf | `data/ner/bert_with_crf/config/config.json` |
+| 4 | bert + softmax | `data/ner/bert_with_crf/config/config_without_crf.json` |
+| 5 | bert + rnn + crf | `data/ner/bert_rnn_with_crf/config/config.json` |
+| 6 | bert + rnn + softmax | `data/ner/bert_rnn_with_crf/config/config_without_crf.json` |
+
+## 启动命令
+
+`python -m ner.launcher --config {config_file_path}`
+
+* config_file_path - 参考 "相关模型以及对应的配置文件" 中 "配置文件/`config_file_path`" 列内容。
 
 # event: 事件识别
 

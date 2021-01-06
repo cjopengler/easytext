@@ -14,5 +14,6 @@ Date:    2020/06/27 17:06:00
 from .ner_model_outputs import NerModelOutputs
 from .rnn_with_crf import RnnWithCrf
 from .bert_with_crf import BertWithCrf
+from .bert_rnn_with_crf import BertRnnWithCrf
 
 

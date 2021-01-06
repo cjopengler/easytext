@@ -1,0 +1,14 @@
+{
+  "model": {
+    "__type__": "_NestedModel",
+    "__name_space__": "model",
+    "input_size": 2,
+    "output_size": 4,
+    "my_model": {
+      "__type__": "_MyModel",
+      "__name_space__": "model",
+      "input_size": 3,
+      "output_size": 6
+    }
+  }
+}

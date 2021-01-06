@@ -17,6 +17,7 @@ import os
 import logging
 from typing import Dict, Union
 import shutil
+from argparse import ArgumentParser
 
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
@@ -33,7 +34,7 @@ from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
 from easytext.component.register import Registry
 
-from ner.models import RnnWithCrf, BertWithCrf
+from ner.models import RnnWithCrf, BertWithCrf, BertRnnWithCrf
 
 from ner.data.dataset import Conll2003Dataset, MsraDataset
 from ner.data import VocabularyCollate
@@ -41,9 +42,10 @@ from ner.data import NerModelCollate, BertModelCollate
 from ner.loss import NerLoss
 from ner.loss import NerLoss
 from ner.metrics import NerModelMetricAdapter
-from ner.optimizer import NerOptimizerFactory, BertOptimizerFactory
+from ner.optimizer import RnnWithCrfOptimizerFactory, BertRnnWithCrfOptimizerFactory, BertWithCrfOptimizerFactory
 from ner.label_decoder import NerMaxModelLabelDecoder
 from ner.label_decoder import NerCRFModelLabelDecoder
+
 from ner import ROOT_PATH
 
 
@@ -71,6 +73,9 @@ class NerLauncher(Launcher):
             return None
 
     def _preprocess(self):
+
+        logging.info(f"config:\n{self.config}\n")
+
         serialize_dir = self.config.serialize_dir
         if self._train_type == NerLauncher.NEW_TRAIN:
             # 清理 serialize dir
@@ -130,10 +135,14 @@ class NerLauncher(Launcher):
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config_file_path = "data/ner/rnn_with_crf/config/config.json"
-    config_file_path = "data/ner/bert_with_crf/config/config.json"
+    parser = ArgumentParser()
+    parser.add_argument("--config", default="", help="训练配置文件")
 
-    config_file_path = os.path.join(ROOT_PATH, config_file_path)
-    
-    ner_launcher = NerLauncher(config_file_path=config_file_path, train_type=NerLauncher.NEW_TRAIN)
+    parsed_args = parser.parse_args()
+
+    if parsed_args.config == "":
+        logging.fatal("--config 参数为空!")
+        exit(-1)
+    logging.info(f"config file path: {parsed_args.config}")
+    ner_launcher = NerLauncher(config_file_path=parsed_args.config, train_type=NerLauncher.NEW_TRAIN)
     ner_launcher()

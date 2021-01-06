@@ -23,8 +23,8 @@
       "__name_space__": "ner"
     },
 
-    "token_vocabulary_dir": "data/ner/rnn_with_crf/serialize/vocabulary/token_vocabulary",
-    "label_vocabulary_dir": "data/ner/rnn_with_crf/serialize/vocabulary/label_vocabulary",
+    "token_vocabulary_dir": "data/ner/rnn_without_crf/serialize/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "data/ner/rnn_without_crf/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": true,
 
     "pretrained_word_embedding_loader": {
@@ -48,7 +48,7 @@
   },
 
   "model_label_decoder": {
-    "__type__": "NerCRFModelLabelDecoder",
+    "__type__": "NerMaxModelLabelDecoder",
     "__name_space__": "ner",
     "vocabulary_builder": {
       "__object__": "vocabulary_builder"
@@ -79,7 +79,7 @@
     "hidden_size": 300,
     "num_layer": 2,
     "dropout": 0.4,
-    "is_used_crf": true
+    "is_used_crf": false
   },
 
   "optimizer": {
@@ -114,7 +114,7 @@
   "patient": 50,
   "num_check_point_keep": 2,
   "devices": ["cuda:0", "cuda:1"],
-  "serialize_dir": "data/ner/rnn_with_crf/serialize/train",
+  "serialize_dir": "data/ner/rnn_without_crf/serialize/train",
   "train_batch_size": 64,
   "test_batch_size": 128
 }

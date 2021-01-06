@@ -366,14 +366,15 @@ class Trainer(TrainerCallback, Distributed):
 
         with torch.set_grad_enabled(phrase == Trainer._TRAIN):
 
-            tqdm_disable = True
-
             if self.is_distributed:
+
+                tqdm_disable = True
 
                 if self._distributed_func_wrapper is not None \
                     and self._distributed_func_wrapper.dst_rank == TorchDist.get_rank():
-                    
                     tqdm_disable = False
+            else:
+                tqdm_disable = False
 
             for model_inputs in tqdm(data_loader, disable=tqdm_disable):
                 model_inputs: ModelInputs = model_inputs

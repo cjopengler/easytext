@@ -24,7 +24,7 @@
     },
 
     "token_vocabulary_dir": null,
-    "label_vocabulary_dir": "data/ner/bert_with_crf/serialize/vocabulary/label_vocabulary",
+    "label_vocabulary_dir": "data/ner/bert_without_crf/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": false,
     "pretrained_word_embedding_loader": null
   },
@@ -51,10 +51,10 @@
   },
 
   "model_label_decoder": {
-    "__type__": "NerCRFModelLabelDecoder",
+    "__type__": "NerMaxModelLabelDecoder",
     "__name_space__": "ner",
-    "vocabulary_builder": {
-      "__object__": "vocabulary_builder"
+    "label_vocabulary": {
+      "__object__": "model_collate.sequence_label_vocab"
     }
   },
 
@@ -80,7 +80,7 @@
       "__object__": "vocabulary_builder"
     },
     "dropout": 0.1,
-    "is_used_crf": true
+    "is_used_crf": false
   },
 
   "optimizer": {
@@ -119,7 +119,7 @@
     "cuda:1"
   ],
 
-  "serialize_dir": "data/ner/bert_with_crf/serialize/train",
+  "serialize_dir": "data/ner/bert_without_crf/serialize/train",
   "train_batch_size": 8,
   "test_batch_size": 16
 }

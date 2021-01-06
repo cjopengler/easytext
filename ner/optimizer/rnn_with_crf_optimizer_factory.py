@@ -19,7 +19,7 @@ from easytext.component.register import ComponentRegister
 
 
 @ComponentRegister.register(name_space="ner")
-class NerOptimizerFactory(OptimizerFactory):
+class RnnWithCrfOptimizerFactory(OptimizerFactory):
     """
     Ner Optimizer Factory 创建 Optimizer
     """
@@ -27,7 +27,7 @@ class NerOptimizerFactory(OptimizerFactory):
     def __init__(self, fine_tuning=False):
         self.fine_tuning = fine_tuning
 
-    def create(self, model: Model) -> "NerOptimizerFactory":
+    def create(self, model: Model) -> "RnnWithCrfOptimizerFactory":
 
         optimizer = Adam(params=model.parameters(),
                          lr=0.01)
