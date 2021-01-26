@@ -16,6 +16,8 @@ docs/ner/Chinese NER Using Lattice LSTM.md
 Authors: PanXu
 Date:    2021/01/20 19:48:00
 """
+from typing import Tuple
+
 import torch
 from torch import nn
 from torch.nn import init
@@ -195,7 +197,7 @@ class MultiInputLSTMCell(nn.Module):
             init.constant(self.bias, val=0)
             init.constant(self.alpha_bias, val=0)
 
-    def forward(self, input_, c_input, hx):
+    def forward(self, input_, c_input, hx) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         注意: 当前模型仅仅支持 batch_size = 1
         :param input_: 字 embedding 输入向量
@@ -212,15 +214,20 @@ class MultiInputLSTMCell(nn.Module):
         # 注意只能处理 batch_size 为 1 的情况
         assert(batch_size == 1)
 
-        bias_batch = (self.bias.unsqueeze(0).expand(batch_size, *self.bias.size()))
+        if self.bias is not None:
+            bias_batch = (self.bias.unsqueeze(0).expand(batch_size, *self.bias.size()))
 
         # $W*[x^c_j;h^c_{j-1}] + b = (weight_hh * h^c_{j-1}) + (weight_ih * x^c_j) + b$
         # $(weight_hh * h^c_{j-1}) + b$
-        wh_b = torch.addmm(bias_batch, h_0, self.weight_hh)
+        if self.bias is not None:
+            wh_b = torch.addmm(bias_batch, h_0, self.weight_hh)
+        else:
+            wh_b = torch.mm(h_0, self.weight_hh)
+
         # weight_ih * x^c_j
         wi = torch.mm(input_, self.weight_ih)
         # 计算 i, o, g, g 就是 $\tilde{c_j}$
-        i, o, g = torch.split(wh_b + wi, split_size=self.hidden_size, dim=1)
+        i, o, g = torch.split(wh_b + wi, split_size_or_sections=self.hidden_size, dim=1)
 
         # 计算 i, o, g
         i = torch.sigmoid(i)
@@ -246,7 +253,12 @@ class MultiInputLSTMCell(nn.Module):
             # 计算 part3 中的 $i^c_{b,e}$
             # i^c_{b,e} = W*[x^c_j;c^w_{b,e}] + b = alpha_weight_ih*x^c_j + alpha_weight_hh * c^w_{b,e}
             # 其中 c^w_{b,e} 是在 WordLSTMCell 中计算的结果
-            alpha_wi = torch.addmm(self.alpha_bias, input_, self.alpha_weight_ih).expand(c_num, self.hidden_size)
+
+            if self.alpha_bias is not None:
+                alpha_wi = torch.addmm(self.alpha_bias, input_, self.alpha_weight_ih).expand(c_num, self.hidden_size)
+            else:
+                alpha_wi = torch.mm(input_, self.alpha_weight_ih).expand(c_num, self.hidden_size)
+
             alpha_wh = torch.mm(c_input_var, self.alpha_weight_hh)
 
             # alpha 就是 i^c_{b,e}
