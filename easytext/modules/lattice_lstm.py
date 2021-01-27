@@ -17,6 +17,7 @@ Authors: PanXu
 Date:    2021/01/20 19:48:00
 """
 from typing import Tuple
+import numpy as np
 
 import torch
 from torch import nn
@@ -285,8 +286,177 @@ class MultiInputLSTMCell(nn.Module):
         return s.format(name=self.__class__.__name__, **self.__dict__)
 
 
-class LatticeLstm(Module):
+class LatticeLSTM(nn.Module):
     """
-    Lattice Lstm
+    基于 MultiInputLSTMCell 的 LSTM 模型
     """
-    pass
+
+    def __init__(self,
+                 input_dim,
+                 hidden_dim,
+                 word_drop,
+                 word_alphabet_size,
+                 word_emb_dim,
+                 pretrain_word_emb=None,
+                 left2right=True,
+                 fix_word_emb=True,
+                 gpu=True, bias=True):
+        """
+        Lattice 初始出啊
+        :param input_dim: 输入的维度
+        :param hidden_dim: 隐层输出的维度
+        :param word_drop: 词向量的 dropout
+        :param word_alphabet_size: 词标的大小
+        :param word_emb_dim: 词向量的 维度
+        :param pretrain_word_emb: 预训练的词向量
+        :param left2right: 从左向右 还是 从右向左，就是语言模型的两个方向
+        :param fix_word_emb: 是否 freeze 词向量
+        :param gpu:
+        :param bias: True: 使用 bias; False 不使用 biase
+        """
+
+        super().__init__()
+
+        skip_direction = "forward" if left2right else "backward"
+
+        self.gpu = gpu
+        self.hidden_dim = hidden_dim
+        self.word_emb = nn.Embedding(word_alphabet_size, word_emb_dim)
+
+        if pretrain_word_emb is not None:
+            self.word_emb.weight.data.copy_(torch.from_numpy(pretrain_word_emb))
+
+        else:
+            self.word_emb.weight.data.copy_(torch.from_numpy(self.random_embedding(word_alphabet_size, word_emb_dim)))
+
+        if fix_word_emb:
+            self.word_emb.weight.requires_grad = False
+
+        self.word_dropout = nn.Dropout(word_drop)
+
+        self.rnn = MultiInputLSTMCell(input_dim, hidden_dim)
+        self.word_rnn = WordLSTMCell(word_emb_dim, hidden_dim)
+
+        self.left2right = left2right
+
+        if self.gpu:
+            self.rnn = self.rnn.cuda()
+            self.word_emb = self.word_emb.cuda()
+            self.word_dropout = self.word_dropout.cuda()
+            self.word_rnn = self.word_rnn.cuda()
+
+    def random_embedding(self, vocab_size, embedding_dim) -> torch.Tensor:
+        """
+        随机初始化词向量
+        :param vocab_size:
+        :param embedding_dim:
+        :return: 词向量
+        """
+        pretrain_emb = np.empty([vocab_size, embedding_dim])
+        scale = np.sqrt(3.0 / embedding_dim)
+
+        for index in range(vocab_size):
+            pretrain_emb[index, :] = np.random.uniform(-scale, scale, [1, embedding_dim])
+
+        return pretrain_emb
+
+    def forward(self, input, skip_input_list, hidden=None) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        执行模型
+        :param input: 字序列, shape: (B, seq_len), 但是 batch_size = 1， 必须是 1，也就是不支持其他 batch_size
+        :param skip_input_list: [skip_input, volatile_flag],
+                                skip_input: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
+                                每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
+                                [[], [[25,13],[2,4]], [], [[33], [2]], []], 表示在字序列中，第 2个 字，所对应的词 id 是 25 和13 , 对应的长度是 2 和 4。
+                                例如: "到 长 江 大 桥", 该序列长度是 5， 所以 skip_input 也是 5, 其中 "长" index=1,
+                                对应 "长江" 和 "长江大桥", 其中 "长江" 在词汇表中的 id 是25, 长度是 2;
+                                "长江大桥" 对应词汇表中 id 是 13， 长度是 4;
+                                同样 "大桥", 对应 词汇表 id 33, 长度是 2.
+
+
+        :param hidden: 预定义的 (h,c) 输入
+        :return: (h1, c1), ..., (hn, cn), 返回的是 sequence 隐层序列, shape: (B, seq_len, hidden_dim), 其中 B=1
+        """
+
+        volatile_flag = skip_input_list[1]
+        skip_input = skip_input_list[0]
+        if not self.left2right:
+            skip_input = convert_forward_gaz_to_backward(skip_input)
+        input = input.transpose(1, 0)
+        seq_len = input.size(0)
+        batch_size = input.size(1)
+        assert (batch_size == 1)
+        hidden_out = []
+        memory_out = []
+        if hidden:
+            (hx, cx) = hidden
+        else:
+            hx = torch.zeros(batch_size, self.hidden_dim)
+            cx = torch.zeros(batch_size, self.hidden_dim)
+            if self.gpu:
+                hx = hx.cuda()
+                cx = cx.cuda()
+
+        id_list = range(seq_len)
+        if not self.left2right:
+            id_list = list(reversed(id_list))
+
+        # 这个就是在某个位置上 word 的 ct
+        input_c_list = init_list_of_objects(seq_len)
+        for t in id_list:
+            (hx, cx) = self.rnn(input[t], input_c_list[t], (hx, cx))
+            hidden_out.append(hx)
+            memory_out.append(cx)
+            if skip_input[t]:
+                matched_num = len(skip_input[t][0])
+                word_var = torch.LongTensor(skip_input[t][0])
+                if self.gpu:
+                    word_var = word_var.cuda()
+                word_emb = self.word_emb(word_var)
+                word_emb = self.word_dropout(word_emb)
+                ct = self.word_rnn(word_emb, (hx, cx))
+                assert (ct.size(0) == len(skip_input[t][1]))
+                for idx in range(matched_num):
+                    length = skip_input[t][1][idx]
+                    if self.left2right:
+                        # if t+length <= seq_len -1:
+                        input_c_list[t + length - 1].append(ct[idx, :].unsqueeze(0))
+                    else:
+                        # if t-length >=0:
+                        input_c_list[t - length + 1].append(ct[idx, :].unsqueeze(0))
+                # print len(a)
+        if not self.left2right:
+            hidden_out = list(reversed(hidden_out))
+            memory_out = list(reversed(memory_out))
+        output_hidden, output_memory = torch.cat(hidden_out, 0), torch.cat(memory_out, 0)
+        # (batch, seq_len, hidden_dim)
+        # print output_hidden.size()
+        return output_hidden.unsqueeze(0), output_memory.unsqueeze(0)
+
+
+def init_list_of_objects(size):
+    list_of_objects = list()
+    for i in range(0, size):
+        list_of_objects.append(list())
+    return list_of_objects
+
+
+def convert_forward_gaz_to_backward(forward_gaz):
+    # print forward_gaz
+    length = len(forward_gaz)
+    backward_gaz = init_list_of_objects(length)
+    for idx in range(length):
+        if forward_gaz[idx]:
+            assert (len(forward_gaz[idx]) == 2)
+            num = len(forward_gaz[idx][0])
+            for idy in range(num):
+                the_id = forward_gaz[idx][0][idy]
+                the_length = forward_gaz[idx][1][idy]
+                new_pos = idx + the_length - 1
+                if backward_gaz[new_pos]:
+                    backward_gaz[new_pos][0].append(the_id)
+                    backward_gaz[new_pos][1].append(the_length)
+                else:
+                    backward_gaz[new_pos] = [[the_id], [the_length]]
+    return backward_gaz
+
