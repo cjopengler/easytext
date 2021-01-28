@@ -16,7 +16,8 @@ docs/ner/Chinese NER Using Lattice LSTM.md
 Authors: PanXu
 Date:    2021/01/20 19:48:00
 """
-from typing import Tuple
+from typing import Tuple, List
+
 import numpy as np
 
 import torch
@@ -360,7 +361,10 @@ class LatticeLSTM(nn.Module):
 
         return pretrain_emb
 
-    def forward(self, input, skip_input_list, hidden=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self,
+                input: torch.Tensor,
+                skip_input_list: Tuple[List[List[List]], bool],
+                hidden: Tuple[torch.Tensor, torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         执行模型
         :param input: 字序列, shape: (B, seq_len), 但是 batch_size = 1， 必须是 1，也就是不支持其他 batch_size
@@ -379,65 +383,103 @@ class LatticeLSTM(nn.Module):
         """
 
         volatile_flag = skip_input_list[1]
+
         skip_input = skip_input_list[0]
-        if not self.left2right:
+
+        if not self.left2right:  # 如果是 right2left 需要将 构成的词汇表也进行逆向
             skip_input = convert_forward_gaz_to_backward(skip_input)
+
         input = input.transpose(1, 0)
+
         seq_len = input.size(0)
         batch_size = input.size(1)
+
+        # 只能处理 batch_size 为 1
         assert (batch_size == 1)
-        hidden_out = []
-        memory_out = []
-        if hidden:
+
+        hidden_out = []  # h
+        memory_out = []  # c
+
+        if hidden:  # 如果 hidden_{t-1} 存在，则使用; 否则，使用 0
             (hx, cx) = hidden
         else:
             hx = torch.zeros(batch_size, self.hidden_dim)
             cx = torch.zeros(batch_size, self.hidden_dim)
+
             if self.gpu:
                 hx = hx.cuda()
                 cx = cx.cuda()
 
         id_list = range(seq_len)
+
         if not self.left2right:
             id_list = list(reversed(id_list))
 
-        # 这个就是在某个位置上 word 的 ct
+        # 用来存储 WordLSTMCell 计算得到的 c^w_t, 就是在某个位置上 word 的 ct
+        # 初始是空的，会通过 skip_input， 在计算的过程中逐渐填充
+        # 注意: 当 t=0 时, input_c_list[0] 一定是 空的。因为，第一个没有前面的字，所以无法组成词。
         input_c_list = init_list_of_objects(seq_len)
+
         for t in id_list:
+
             (hx, cx) = self.rnn(input[t], input_c_list[t], (hx, cx))
+
             hidden_out.append(hx)
             memory_out.append(cx)
-            if skip_input[t]:
+
+            if skip_input[t]:  # 如果当前 t 位置的字，有词构成，那么，则使用 WordLSTMCell 生成 c^w_t
+
+                # 一共匹配了 多少个 词
                 matched_num = len(skip_input[t][0])
+
+                # 获取所有 word id, 组成 word id tensor, 注意是 多个 word id, 不是一个
                 word_var = torch.LongTensor(skip_input[t][0])
+
                 if self.gpu:
                     word_var = word_var.cuda()
+
+                # 获取所有 word id 以及词向量
                 word_emb = self.word_emb(word_var)
                 word_emb = self.word_dropout(word_emb)
+
+                # 计算所有 word id 的 c^w_t, 一次性计算得到多个 word id 的 c^w
                 ct = self.word_rnn(word_emb, (hx, cx))
+
                 assert (ct.size(0) == len(skip_input[t][1]))
+
+                # 将计算得到的所有 c^w_t 全部存放到 input_c_list 对应的 字 的位置上。
                 for idx in range(matched_num):
+
                     length = skip_input[t][1][idx]
+
                     if self.left2right:
                         # if t+length <= seq_len -1:
                         input_c_list[t + length - 1].append(ct[idx, :].unsqueeze(0))
                     else:
                         # if t-length >=0:
                         input_c_list[t - length + 1].append(ct[idx, :].unsqueeze(0))
-                # print len(a)
+
         if not self.left2right:
             hidden_out = list(reversed(hidden_out))
             memory_out = list(reversed(memory_out))
+
         output_hidden, output_memory = torch.cat(hidden_out, 0), torch.cat(memory_out, 0)
-        # (batch, seq_len, hidden_dim)
-        # print output_hidden.size()
+
+        # 输出的 shape: (batch, seq_len, hidden_dim)
         return output_hidden.unsqueeze(0), output_memory.unsqueeze(0)
 
 
-def init_list_of_objects(size):
+def init_list_of_objects(size) -> List[List]:
+    """
+    构建一个 word ct 的 list
+    :param size: sequence 的 长度
+    :return: 二维 list, 因为每一个 字 的位置，可能有多个词，所以有多个 wrod ct
+    """
+
     list_of_objects = list()
     for i in range(0, size):
         list_of_objects.append(list())
+
     return list_of_objects
 
 
