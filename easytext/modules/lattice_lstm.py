@@ -16,7 +16,7 @@ docs/ner/Chinese NER Using Lattice LSTM.md
 Authors: PanXu
 Date:    2021/01/20 19:48:00
 """
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import numpy as np
 
@@ -293,73 +293,38 @@ class LatticeLSTM(nn.Module):
     """
 
     def __init__(self,
-                 input_dim,
-                 hidden_dim,
-                 word_drop,
-                 word_alphabet_size,
-                 word_emb_dim,
-                 pretrain_word_emb=None,
-                 left2right=True,
-                 fix_word_emb=True,
-                 gpu=True, bias=True):
+                 input_dim: int,
+                 hidden_dim: int,
+                 gaz_word_embedding_dim: int,
+                 gaz_word_embedding: torch.Tensor,
+                 gaz_word_embedding_dropout: float,
+                 left2right: bool):
         """
         Lattice 初始出啊
         :param input_dim: 输入的维度
         :param hidden_dim: 隐层输出的维度
-        :param word_drop: 词向量的 dropout
-        :param word_alphabet_size: 词标的大小
-        :param word_emb_dim: 词向量的 维度
-        :param pretrain_word_emb: 预训练的词向量
+        :param gaz_word_embedding_dim: gaz 词向量的维度
+        :param gaz_word_embedding: gaz 的词向量
+        :param gaz_word_embedding_dropout: gaz 词向量的 dropout
         :param left2right: 从左向右 还是 从右向左，就是语言模型的两个方向
-        :param fix_word_emb: 是否 freeze 词向量
-        :param gpu:
-        :param bias: True: 使用 bias; False 不使用 biase
         """
 
         super().__init__()
 
-        skip_direction = "forward" if left2right else "backward"
-
-        self.gpu = gpu
         self.hidden_dim = hidden_dim
-        self.word_emb = nn.Embedding(word_alphabet_size, word_emb_dim)
+        self.word_emb = gaz_word_embedding
 
-        if pretrain_word_emb is not None:
-            self.word_emb.weight.data.copy_(torch.from_numpy(pretrain_word_emb))
-
-        else:
-            self.word_emb.weight.data.copy_(torch.from_numpy(self.random_embedding(word_alphabet_size, word_emb_dim)))
-
-        if fix_word_emb:
-            self.word_emb.weight.requires_grad = False
-
-        self.word_dropout = nn.Dropout(word_drop)
+        self.word_dropout = nn.Dropout(gaz_word_embedding_dropout)
 
         self.rnn = MultiInputLSTMCell(input_dim, hidden_dim)
-        self.word_rnn = WordLSTMCell(word_emb_dim, hidden_dim)
+        self.word_rnn = WordLSTMCell(gaz_word_embedding_dim, hidden_dim)
 
         self.left2right = left2right
 
-        if self.gpu:
-            self.rnn = self.rnn.cuda()
-            self.word_emb = self.word_emb.cuda()
-            self.word_dropout = self.word_dropout.cuda()
-            self.word_rnn = self.word_rnn.cuda()
+        self.reset_parameters()
 
-    def random_embedding(self, vocab_size, embedding_dim) -> torch.Tensor:
-        """
-        随机初始化词向量
-        :param vocab_size:
-        :param embedding_dim:
-        :return: 词向量
-        """
-        pretrain_emb = np.empty([vocab_size, embedding_dim])
-        scale = np.sqrt(3.0 / embedding_dim)
-
-        for index in range(vocab_size):
-            pretrain_emb[index, :] = np.random.uniform(-scale, scale, [1, embedding_dim])
-
-        return pretrain_emb
+    def reset_parameters(self):
+        pass
 
     def forward(self,
                 input: torch.Tensor,
@@ -367,7 +332,8 @@ class LatticeLSTM(nn.Module):
                 hidden: Tuple[torch.Tensor, torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         执行模型
-        :param input: 字序列, shape: (B, seq_len), 但是 batch_size = 1， 必须是 1，也就是不支持其他 batch_size
+        :param input: 字序列向量, shape: (B, seq_len, embedding_size),
+                      但是 batch_size = 1， 必须是 1，也就是不支持其他 batch_size
         :param skip_input_list: [skip_input, volatile_flag],
                                 skip_input: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
                                 每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
@@ -379,7 +345,7 @@ class LatticeLSTM(nn.Module):
 
 
         :param hidden: 预定义的 (h,c) 输入
-        :return: (h1, c1), ..., (hn, cn), 返回的是 sequence 隐层序列, shape: (B, seq_len, hidden_dim), 其中 B=1
+        :return: (h1, c1), ..., (hn, cn), 返回的是 sequence 隐层序列, hj 或 cj 的 shape: (B, seq_len, hidden_dim), 其中 B=1
         """
 
         volatile_flag = skip_input_list[1]
