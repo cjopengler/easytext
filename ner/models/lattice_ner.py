@@ -10,7 +10,7 @@
 Authors: PanXu
 Date:    2021/01/30 10:39:00
 """
-
+from typing import List
 import torch
 from torch.nn import Module, Dropout, Embedding, Linear
 
@@ -36,6 +36,19 @@ class LatticeNer(Module):
                  hidden_size: int,
                  num_layer: int,
                  lstm_dropout: float):
+        """
+
+        :param token_vocabulary:
+        :param token_embedding_dim:
+        :param token_embedding_dropout:
+        :param gaz_vocabulary:
+        :param gaz_word_embedding_dim:
+        :param gaz_word_embedding_dropout:
+        :param label_vocabulary:
+        :param hidden_size:
+        :param num_layer:
+        :param lstm_dropout:
+        """
 
         super().__init__()
 
@@ -90,21 +103,33 @@ class LatticeNer(Module):
     def reset_parameters(self):
         pass
 
-    def forward(self, tokens, gaz_list, ):
+    def forward(self, tokens: torch.Tensor, gaz_list: List) -> torch.Tensor:
+        """
+        :param tokens: 输入的序列的 index, shape: (B, seq_len)
+        :param gaz_list: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
+                         每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
+                         [[], [[25,13],[2,4]], [], [[33], [2]], []], 表示在字序列中，第 2个 字，所对应的词 id 是 25 和13 , 对应的长度是 2 和 4。
+                         例如: "到 长 江 大 桥", 该序列长度是 5， 所以 skip_input 也是 5, 其中 "长" index=1,
+                         对应 "长江" 和 "长江大桥", 其中 "长江" 在词汇表中的 id 是25, 长度是 2;
+                         "长江大桥" 对应词汇表中 id 是 13， 长度是 4;
+                         同样 "大桥", 对应 词汇表 id 33, 长度是 2.
+        :return: 最后一层的隐层向量, shape: (B, seq_len, label_size)
+        """
 
-        # 计算词向量
+        # tokens: shape: (B, seq_len) -> token_embeddings: shape: (B, seq_len, token_embedding_dim)
         token_embeddings = self.token_embedding(tokens)
 
         token_embeddings = self.token_embedding_dropout(token_embeddings)
 
-        # 前向计算
+        # 前向计算, 得到最后一层的隐层向量, forward_lattice_hidden, shape: (B, seq_len, hidden_size)
         forward_lattice_hidden, _ = self.forward_lattice_lstm(token_embeddings, gaz_list, None)
 
-        # 反向计算
+        # 反向计算, 得到最后一层的隐层向量,
         backward_lattice_hidden, _ = self.backward_lattice_lstm(token_embeddings, gaz_list, None)
 
-        # 将前向计算和反向计算拼接
+        # 将前向计算和反向计算拼接, lattice_hidden shape: (B, seq_len, 2*hidden_size)
         lattice_hidden = torch.cat([forward_lattice_hidden, backward_lattice_hidden], 2)
 
-        lattice_hidden = self.droplstm(lattice_hidden)
+        lattice_hidden = self.lstm_dropout(lattice_hidden)
+
         return lattice_hidden

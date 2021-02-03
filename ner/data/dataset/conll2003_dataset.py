@@ -19,7 +19,7 @@ from torch.utils.data import Dataset
 from easytext.data import Instance
 from easytext.data.tokenizer import Token
 from easytext.data.tokenizer import EnTokenizer
-from easytext.utils import bio as BIO
+from easytext.utils import bio_schema
 from easytext.component.register import ComponentRegister
 
 
@@ -65,7 +65,7 @@ class Conll2003Dataset(Dataset):
                     assert len(tokens) == len(ibo1_labels), \
                         f"token 长度: {len(tokens)} 与 标签长度: {len(ibo1_labels)} 不匹配"
 
-                    bio_labels = BIO.ibo1_to_bio(ibo1_labels)
+                    bio_labels = bio_schema.ibo1_to_bio(ibo1_labels)
 
                     instance = Instance()
                     instance["metadata"] = {"text": text,

@@ -328,29 +328,22 @@ class LatticeLSTM(nn.Module):
 
     def forward(self,
                 input: torch.Tensor,
-                skip_input_list: Tuple[List[List[List]], bool],
+                skip_input: List[List[List]],
                 hidden: Tuple[torch.Tensor, torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         执行模型
         :param input: 字序列向量, shape: (B, seq_len, embedding_size),
                       但是 batch_size = 1， 必须是 1，也就是不支持其他 batch_size
-        :param skip_input_list: [skip_input, volatile_flag],
-                                skip_input: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
-                                每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
-                                [[], [[25,13],[2,4]], [], [[33], [2]], []], 表示在字序列中，第 2个 字，所对应的词 id 是 25 和13 , 对应的长度是 2 和 4。
-                                例如: "到 长 江 大 桥", 该序列长度是 5， 所以 skip_input 也是 5, 其中 "长" index=1,
-                                对应 "长江" 和 "长江大桥", 其中 "长江" 在词汇表中的 id 是25, 长度是 2;
-                                "长江大桥" 对应词汇表中 id 是 13， 长度是 4;
-                                同样 "大桥", 对应 词汇表 id 33, 长度是 2.
-
-
+        :param skip_input: skip_input: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
+                           每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
+                           [[], [[25,13],[2,4]], [], [[33], [2]], []], 表示在字序列中，第 2个 字，所对应的词 id 是 25 和13 , 对应的长度是 2 和 4。
+                           例如: "到 长 江 大 桥", 该序列长度是 5， 所以 skip_input 也是 5, 其中 "长" index=1,
+                           对应 "长江" 和 "长江大桥", 其中 "长江" 在词汇表中的 id 是25, 长度是 2;
+                           "长江大桥" 对应词汇表中 id 是 13， 长度是 4;
+                            同样 "大桥", 对应 词汇表 id 33, 长度是 2.
         :param hidden: 预定义的 (h,c) 输入
         :return: (h1, c1), ..., (hn, cn), 返回的是 sequence 隐层序列, hj 或 cj 的 shape: (B, seq_len, hidden_dim), 其中 B=1
         """
-
-        volatile_flag = skip_input_list[1]
-
-        skip_input = skip_input_list[0]
 
         if not self.left2right:  # 如果是 right2left 需要将 构成的词汇表也进行逆向
             skip_input = convert_forward_gaz_to_backward(skip_input)
