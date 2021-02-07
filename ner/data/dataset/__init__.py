@@ -13,3 +13,4 @@ Date:    2020/06/26 12:16:00
 
 from .conll2003_dataset import Conll2003Dataset
 from .msra_dataset import MsraDataset
+from .lattice_ner_demo_dataset import LatticeNerDemoDataset

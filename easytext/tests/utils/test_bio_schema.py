@@ -37,6 +37,10 @@ def test_ibo1_to_bio():
 
 
 def test_bmes_to_bio():
+    """
+    测试 BMES schema 转换成 bio
+    :return:
+    """
     bmes = ["B-T", "M-T", "E-T", "O", "S-T", "B-T", "E-T"]
     expect_bio = ["B-T", "I-T", "I-T", "O", "B-T", "B-T", "I-T"]
 
