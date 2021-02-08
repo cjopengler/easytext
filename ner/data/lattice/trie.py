@@ -72,7 +72,7 @@ class Trie:
         返回的结果就是 ["长_江_大_桥", "长_江"], ("长江大" 没有命中)
         :param word: 要搜索的词
         :param space: 命中的序列中的字的分隔符
-        :return:
+        :return: 匹配上的子序列
         """
         matched = []
 

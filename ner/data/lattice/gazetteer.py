@@ -41,7 +41,7 @@ class Gazetteer:
         for word, _ in gaz_pretrained_word_embedding.embedding_table.items():
             self.trie.insert(word)
 
-    def enumerate_match_list(self, word: str) -> List[str]:
+    def enumerate_match_list(self, word: str) -> List[List[str]]:
         """
         枚举word中每一个字以及以该字为开始的所有匹配的词。
         例如: word = "中国长江大桥"
@@ -51,13 +51,15 @@ class Gazetteer:
         针对每一个子句，获取匹配的词。
         例如: "长江大桥", 要查找的全集是["长江大桥", "长江大", "长江"],
         将命中的词是 ["长江大桥", "长江"]，("长江大" 没有命中)
+        最终返回的结果是每一个字对应的子序列:
+        [[中国], [], [长江, 长江大桥], [江大桥], [大桥], []]
         :param word: 词 或者 称之为 字的列表, 或者称之为句子
-        :return: 所有命中的字序列词列表
+        :return: 命中每一个位置的字的所有子序列,
         """
 
         match_list = list()
         for i in range(len(word)):
             matched_sub_words = self.trie.enumerate_match(word[i:], self.space)
-            match_list.extend(matched_sub_words)
+            match_list.append(matched_sub_words)
 
         return match_list

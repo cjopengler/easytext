@@ -41,8 +41,35 @@ def test_gaz_vocabulary_collate(lattice_ner_demo_dataset):
 
     result = gaz_vocabulary_collate(lattice_ner_demo_dataset)
 
+    logging.info(json2str(result))
+
     # 相应的句子是: "陈元呼吁加强国际合作推动世界经济发展", 得到的 gaz words 是
-    expect = ["陈元", "呼吁", "吁加", "加强", "强国", "国际", "合作", "推动", "世界", "经济", "发展"]
-    gaz_words = result["gaz_words"][0]
-    ASSERT.assertListEqual(expect, gaz_words)
-    
+    expect_0 = [["陈元"], [], ["呼吁"], ["吁加"], ["加强"], ["强国"], ["国际"], [],
+                ["合作"], [], ["推动"], [], ["世界"], [], ["经济"], [], ["发展"], []]
+    gaz_words_0 = result["gaz_words"][0]
+    ASSERT.assertListEqual(expect_0, gaz_words_0)
+
+    # 新华社华盛顿４月2８日电（记者翟景升）
+    expect_1 = [["新华社", "新华"],  # 新
+                ["华社"],           # 华
+                ["社华"],           # 社
+                ["华盛顿", "华盛"],  # 华
+                ["盛顿"],           # 盛
+                [],                # 顿
+                [],                # 4
+                [],                # 月
+                [],                # 2
+                [],                # 8
+                [],                # 日
+                [],                # 电
+                [],                # （
+                ["记者"],           # 记
+                [],                # 者
+                ["翟景升", "翟景"],  # 翟
+                ["景升"],           # 景
+                [],                # 升
+                []]                # ）
+    gaz_words_1 = result["gaz_words"][1]
+    ASSERT.assertListEqual(expect_1, gaz_words_1)
+
+
