@@ -14,3 +14,4 @@ Date:    2021/01/30 18:13:00
 from .trie import Trie
 from .gazetteer import Gazetteer
 from .gaz_vocabulary_collate import GazVocabularyCollate
+from .lattice_model_collate import LatticeModelCollate

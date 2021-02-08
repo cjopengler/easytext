@@ -54,7 +54,7 @@ class LatticeNerDemoDataset(Dataset):
 
                     text = "".join(tokens_)
 
-                    logging.debug(f"text: {text}")
+                    # logging.debug(f"text: {text}")
                     tokens = tokenizer.tokenize(text)
 
                     assert len(tokens) == len(bmes_labels), \

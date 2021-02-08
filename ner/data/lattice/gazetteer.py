@@ -33,12 +33,12 @@ class Gazetteer:
 
     def __init_trie(self, gaz_pretrained_word_embedding: GeneralPretrainedWordEmbeddingLoader):
 
-        if gaz_pretrained_word_embedding.embedding_table is None:
+        if gaz_pretrained_word_embedding.embedding_dict is None:
             logging.info(f"Begin: gaz pretrained word embedding load...")
             gaz_pretrained_word_embedding.load()
             logging.info(f"End: gaz pretrained word embedding load.")
 
-        for word, _ in gaz_pretrained_word_embedding.embedding_table.items():
+        for word, _ in gaz_pretrained_word_embedding.embedding_dict.items():
             self.trie.insert(word)
 
     def enumerate_match_list(self, word: str) -> List[List[str]]:

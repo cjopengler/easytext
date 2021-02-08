@@ -33,13 +33,11 @@ class LatticeModelCollate(ModelCollate):
                  token_vocabulary: Vocabulary,
                  gazetter: Gazetteer,
                  gaz_vocabulary: Vocabulary,
-                 label_vocabulary: LabelVocabulary,
-                 sequence_max_len: int = 510):
+                 label_vocabulary: LabelVocabulary):
         self._token_vocabulary = token_vocabulary
-        self._gazetter = gazetter
+        self._gazetteer = gazetter
         self._gaz_vocabulary = gaz_vocabulary
         self._label_vocabulary = label_vocabulary
-        self._max_len = sequence_max_len
 
     def __call__(self, instances: List[Instance]) -> ModelInputs:
         batch_max_len = 0
@@ -56,14 +54,16 @@ class LatticeModelCollate(ModelCollate):
             if len(tokens) > batch_max_len:
                 batch_max_len = len(tokens)
 
-        batch_max_len = batch_max_len if batch_max_len < self._max_len else self._max_len
-
         for instance in instances:
             metadata = dict()
+            batch_metadatas.append(metadata)
 
             batch_size += 1
             # 对 token 进行 index
-            token_indices = [self._token_vocabulary.index(t.text) for t in instance["tokens"][:batch_max_len]]
+            token_indices = [self._token_vocabulary.padding_index] * batch_max_len
+
+            for i, token in enumerate(instance["tokens"][0: batch_max_len]):
+                token_indices[i] = self._token_vocabulary.index(token.text)
 
             batch_token_indices.append(token_indices)
 
@@ -78,26 +78,32 @@ class LatticeModelCollate(ModelCollate):
             metadata["gaz_words"] = gaz_words_list
 
             for gaz_words in gaz_words_list:
-                gaz_word_indices = list()
-                for gaz_word in gaz_words:
-                    gaz_word_indices.append(self._gaz_vocabulary.index(gaz_word))
 
-                gaz_words_index_list.append(gaz_words_index_list)
+                if len(gaz_words) > 0:
+                    # 这种情况将 word index 以及 长度添加进去
+                    # :
+                    word_indices = [self._gaz_vocabulary.index(gaz_word) for gaz_word in gaz_words]
+                    word_lengths = [len(gaz_word) for gaz_word in gaz_words]
+                    gaz_words_index_list.append([word_indices, word_lengths])
+                else:
+                    # 这种情况填充空的
+                    gaz_words_index_list.append([])
 
-            batch_gaz_word_indices.append(gaz_words_list)
+            batch_gaz_word_indices.append(gaz_words_index_list)
 
             if "sequence_label" in instance:
                 sequence_label = list()
-                sequence_label_indices = [self._sequence_label_vocab.padding_index] * batch_max_len
+                sequence_label_indices = [self._label_vocabulary.padding_index] * batch_max_len
 
                 for i, sl in enumerate(instance["sequence_label"][0: batch_max_len]):
-                    sequence_label_indices[i] = self._sequence_label_vocab.index(sl)
+                    sequence_label_indices[i] = self._label_vocabulary.index(sl)
                     sequence_label.append(sl)
-                metadata["sequence_label"] = "".join(sequence_label)
+                metadata["sequence_label"] = " ".join(sequence_label)
 
                 if batch_sequence_label_indices is None:
                     batch_sequence_label_indices = list()
-                batch_sequence_label_indices.append(sequence_label)
+
+                batch_sequence_label_indices.append(sequence_label_indices)
 
         batch_token_indices = torch.tensor(batch_token_indices, dtype=torch.long)
 

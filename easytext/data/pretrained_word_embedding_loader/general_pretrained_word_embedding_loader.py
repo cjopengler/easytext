@@ -49,7 +49,7 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         self._encoding = encoding
         self._skip_num_line = skip_num_line
         self._max_size = max_size
-        self._embedding_table = None
+        self._embedding_dict = None
 
     def load(self) -> Dict[str, List[float]]:
         """
@@ -57,11 +57,11 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         return: embedding dict, key 是 token, value: List[float] 向量，例如:
         {"the": [1.0, 2.0, ...]}
         """
-        if self._embedding_table is not None:
+        if self._embedding_dict is not None:
             logging.warning(f"embedding_table 已经由 {self._pretrained_file_path} 通过 load 构建过了, "
                             f"现在正在再次执行 load, 先前构建的会被新的取代.")
 
-        self._embedding_table = dict()
+        self._embedding_dict = dict()
         logging.info(f"Begin load pretrained embedding from {self._pretrained_file_path} ...")
 
         with open(self._pretrained_file_path, encoding=self._encoding) as f:
@@ -84,9 +84,9 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
 
                 assert len(vec) == self._embedding_dim, f"读取的向量维度: {len(vec)} != 设置的维度: {self._embedding_dim}"
 
-                self._embedding_table[token] = vec
+                self._embedding_dict[token] = vec
         logging.info(f"End load pretrained embedding from {self._pretrained_file_path}.")
-        return self._embedding_table
+        return self._embedding_dict
 
     @property
     def embedding_dim(self) -> int:
@@ -97,9 +97,9 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         return self._embedding_dim
 
     @property
-    def embedding_table(self) -> Dict[str, List[float]]:
+    def embedding_dict(self) -> Dict[str, List[float]]:
 
-        if self._embedding_table is None:
+        if self._embedding_dict is None:
             logging.warning(f"embedding_table 没有构建，请先调用 load")
-        return self._embedding_table
+        return self._embedding_dict
 

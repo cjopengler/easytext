@@ -106,7 +106,7 @@ class LatticeNer(Module):
     def forward(self, tokens: torch.Tensor, gaz_list: List) -> torch.Tensor:
         """
         :param tokens: 输入的序列的 index, shape: (B, seq_len)
-        :param gaz_list: 是3维 list, 总长度是 seq_len(与字符序列是一样长度的).
+        :param gaz_list: 是4维 list, 因为 B=1, 所以内部是一个 3维list, 该 3维 list 总长度是 seq_len(与字符序列是一样长度的)..
                          每一个元素，是对应到词汇表中词的 id 和 对应的长度。例如:
                          [[], [[25,13],[2,4]], [], [[33], [2]], []], 表示在字序列中，第 2个 字，所对应的词 id 是 25 和13 , 对应的长度是 2 和 4。
                          例如: "到 长 江 大 桥", 该序列长度是 5， 所以 skip_input 也是 5, 其中 "长" index=1,

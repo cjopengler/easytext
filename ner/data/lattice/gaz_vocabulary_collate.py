@@ -28,9 +28,16 @@ class GazVocabularyCollate:
         self._gazetteer = gazetteer
 
     def __call__(self, instances: List[Instance]) -> Dict[str, List[List[str]]]:
-        sentences = ["".join([t.text for t in instance["tokens"]]) for instance in instances]
 
-        words = [self._gazetteer.enumerate_match_list(sentence) for sentence in sentences]
+        words = list()
+        for instance in instances:
+            flat_gaz_words = list()
+            sentence = "".join([t.text for t in instance["tokens"]])
 
-        return {"gaz_words": words}
+            for gaz_words in self._gazetteer.enumerate_match_list(sentence):
+                for gaz_word in gaz_words:
+                    flat_gaz_words.append(gaz_word)
+            words.append(flat_gaz_words)
+
+        return words
 
