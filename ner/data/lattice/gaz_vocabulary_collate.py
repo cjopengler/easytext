@@ -19,7 +19,6 @@ from easytext.component.register import ComponentRegister
 from ner.data.lattice import Gazetteer
 
 
-@ComponentRegister.register("lattice")
 class GazVocabularyCollate:
     """
     Gaz 词汇表构建的 Collate
