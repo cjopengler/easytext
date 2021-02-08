@@ -17,4 +17,4 @@ from easytext.utils import log_util
 # 设置 root, 用作数据路径访问，包括测试数据，训练数据等
 ROOT_PATH = os.path.join(os.path.dirname(__file__), "../")
 
-log_util.config(level=logging.INFO)
+log_util.config(level=logging.DEBUG)

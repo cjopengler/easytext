@@ -4,7 +4,7 @@
 #
 # Copyright (c) 2021 PanXu, Inc. All Rights Reserved
 #
-
+import logging
 from typing import List, Optional
 
 from easytext.data.pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
@@ -33,19 +33,31 @@ class Gazetteer:
 
     def __init_trie(self, gaz_pretrained_word_embedding: GeneralPretrainedWordEmbeddingLoader):
 
-        for word, _ in gaz_pretrained_word_embedding.embedding_table:
+        if gaz_pretrained_word_embedding.embedding_table is None:
+            logging.info(f"Begin: gaz pretrained word embedding load...")
+            gaz_pretrained_word_embedding.load()
+            logging.info(f"End: gaz pretrained word embedding load.")
+
+        for word, _ in gaz_pretrained_word_embedding.embedding_table.items():
             self.trie.insert(word)
 
     def enumerate_match_list(self, word: str) -> List[str]:
         """
-        枚举所有匹配的 词 以及 字序列。
-        例如: word = "长江大桥", 相应的所有开始位置不变，结束位置逐渐推进的子序列是
-        ["长江大", "长江"], 要查找的全集是["长江大桥", "长江大", "长江"], 将命中的序列，用 space 分隔开表示，
-        返回的结果就是 ["长江大桥", "长江"], ("长江大" 没有命中)
-        :param word: 词 或者 称之为 字的列表
+        枚举word中每一个字以及以该字为开始的所有匹配的词。
+        例如: word = "中国长江大桥"
+        步骤1:
+        分割成子句，"中国长江大桥", "国长江大桥", "长江大桥", "江大桥", "大桥", "桥"
+        步骤2:
+        针对每一个子句，获取匹配的词。
+        例如: "长江大桥", 要查找的全集是["长江大桥", "长江大", "长江"],
+        将命中的词是 ["长江大桥", "长江"]，("长江大" 没有命中)
+        :param word: 词 或者 称之为 字的列表, 或者称之为句子
         :return: 所有命中的字序列词列表
         """
 
-        match_list = self.trie.enumerate_match(word, self.space)
+        match_list = list()
+        for i in range(len(word)):
+            matched_sub_words = self.trie.enumerate_match(word[i:], self.space)
+            match_list.extend(matched_sub_words)
 
         return match_list

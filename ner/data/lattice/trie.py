@@ -76,9 +76,12 @@ class Trie:
         """
         matched = []
 
-        while len(word) > 1:
-            if self.search(word):
-                matched.append(space.join(word[:]))
-            del word[-1]
+        # 获取 word 子序列，要求 word 至少两个字，才能作为词
+        for i in range(len(word), 1, -1):
+            search_word = word[0:i]
+            assert len(search_word) > 1, f"search word 至少 2 个字"
+            if self.search(search_word):
+                matched.append(space.join(search_word))
+
         return matched
 

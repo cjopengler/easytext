@@ -32,5 +32,5 @@ class GazVocabularyCollate:
         sentences = ["".join([t.text for t in instance["tokens"]]) for instance in instances]
         words = [self._gazetteer.enumerate_match_list(sentence) for sentence in sentences]
 
-        return {"words": words}
+        return {"gaz_words": words}
 
