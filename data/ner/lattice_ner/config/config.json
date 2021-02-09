@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "LatticeNerDemoDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/lattice_ner/demo.train.char"
+    "dataset_file_path": "data/dataset/lattice_ner/demo.train.char"
   },
 
   "validation_dataset": {
     "__type__": "LatticeNerDemoDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/lattice_ner/demo.train.char"
+    "dataset_file_path": "data/dataset/lattice_ner/demo.train.char"
   },
 
   "vocabulary_builder": {
@@ -23,15 +23,15 @@
       "__name_space__": "ner"
     },
 
-    "token_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/lattice_ner/serialize/vocabulary/token_vocabulary",
-    "label_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/lattice_ner/serialize/vocabulary/label_vocabulary",
+    "token_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/label_vocabulary",
     "is_build_token_vocabulary": true,
 
     "pretrained_word_embedding_loader": {
       "__type__": "GeneralPretrainedWordEmbeddingLoader",
       "__name_space__": "__easytext__",
       "embedding_dim": 50,
-      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/lattice/gigaword_chn.all.a2b.uni.ite50.vec",
+      "pretrained_file_path": "data/pretrained/lattice/gigaword_chn.all.a2b.uni.ite50.vec",
       "max_size": null
     }
   },
@@ -42,12 +42,12 @@
     "dataset": {
       "__object__": "training_dataset"
     },
-    "gaz_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/lattice_ner/serialize/vocabulary/gaz_vocabulary",
+    "gaz_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/gaz_vocabulary",
     "gaz_pretrained_word_embedding_loader": {
        "__type__": "GeneralPretrainedWordEmbeddingLoader",
       "__name_space__": "__easytext__",
       "embedding_dim": 50,
-      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/lattice/ctb.50d.vec",
+      "pretrained_file_path": "data/pretrained/lattice/ctb.50d.vec",
       "max_size": null
     }
   },
@@ -143,7 +143,7 @@
     "__name_space__": "lattice",
     "gamma": 0.95
   },
-  "lr_scheduler": null,
+
   "grad_scaled": null,
 
   "loss": {
@@ -154,25 +154,16 @@
     }
   },
 
-  "process_group_parameter": {
-    "__type__": "ProcessGroupParameter",
-    "__name_space__": "__easytext__",
-    "host": "127.0.0.1",
-    "port": "3001",
-    "backend": "nccl"
-  },
+  "process_group_parameter": null,
 
-  "distributed_data_parallel_parameter": {
-    "__type__": "DistributedDataParallelParameter",
-    "__name_space__": "__easytext__",
-    "find_unused_parameters": false
-  },
+  "distributed_data_parallel_parameter": null,
 
-  "num_epoch": 200,
+  "num_epoch": 2,
   "patient": 10,
   "num_check_point_keep": 2,
-  "devices": ["cpu"],
-  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/lattice_ner/serialize/train",
+  "devices": ["cuda:0"],
+  "#devices": "由于 lattice 本身实现的问题，所以目前也不支持，多 GPU 训练!",
+  "serialize_dir": "data/ner/lattice_ner/serialize/train",
   "train_batch_size": 1,
   "test_batch_size": 1
 }

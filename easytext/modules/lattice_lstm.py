@@ -16,6 +16,7 @@ docs/ner/Chinese NER Using Lattice LSTM.md
 Authors: PanXu
 Date:    2021/01/20 19:48:00
 """
+import logging
 from typing import Tuple, List, Dict
 
 import numpy as np
@@ -366,8 +367,8 @@ class LatticeLSTM(nn.Module):
         if hidden:  # 如果 hidden_{t-1} 存在，则使用; 否则，使用 0
             (hx, cx) = hidden
         else:
-            hx = torch.zeros(batch_size, self.hidden_dim)
-            cx = torch.zeros(batch_size, self.hidden_dim)
+            hx = torch.zeros(batch_size, self.hidden_dim, device=input.device)
+            cx = torch.zeros(batch_size, self.hidden_dim, device=input.device)
 
         id_list = range(seq_len)
 
@@ -392,7 +393,7 @@ class LatticeLSTM(nn.Module):
                 matched_num = len(skip_input[t][0])
 
                 # 获取所有 word id, 组成 word id tensor, 注意是 多个 word id, 不是一个
-                word_var = torch.LongTensor(skip_input[t][0])
+                word_var = torch.tensor(skip_input[t][0], device=input.device, dtype=torch.long)
 
                 # 获取所有 word id 以及词向量
                 word_emb = self.word_emb(word_var)

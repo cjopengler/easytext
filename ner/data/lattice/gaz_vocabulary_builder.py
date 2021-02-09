@@ -61,16 +61,16 @@ class GazVocabularyBuilder(Component):
             for batch_gaz_words in data_loader:
                 gaz_words.extend(batch_gaz_words)
 
-                gaz_vocabulary = Vocabulary(tokens=gaz_words,
-                                            padding=Vocabulary.PADDING,
-                                            unk=Vocabulary.UNK,
-                                            special_first=True)
+            gaz_vocabulary = Vocabulary(tokens=gaz_words,
+                                        padding=Vocabulary.PADDING,
+                                        unk=Vocabulary.UNK,
+                                        special_first=True)
 
-                gaz_vocabulary = PretrainedVocabulary(
-                    vocabulary=gaz_vocabulary,
-                    pretrained_word_embedding_loader=gaz_pretrained_word_embedding_loader)
+            gaz_vocabulary = PretrainedVocabulary(
+                vocabulary=gaz_vocabulary,
+                pretrained_word_embedding_loader=gaz_pretrained_word_embedding_loader)
 
-                gaz_vocabulary.save_to_file(gaz_vocabulary_dir)
+            gaz_vocabulary.save_to_file(gaz_vocabulary_dir)
         else:
 
             gaz_vocabulary = Vocabulary.from_file(gaz_vocabulary_dir)
