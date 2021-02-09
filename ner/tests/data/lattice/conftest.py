@@ -33,7 +33,7 @@ def lattice_ner_demo_dataset() -> LatticeNerDemoDataset:
 
 @pytest.fixture(scope="session")
 def gaz_pretrained_embedding_loader() -> GeneralPretrainedWordEmbeddingLoader:
-    pretrained_file_path = "data/ner/lattice_ner/ctb.50d.vec"
+    pretrained_file_path = "data/pretrained/lattice/ctb.50d.vec"
     pretrained_file_path = os.path.join(ROOT_PATH, pretrained_file_path)
 
     pretrained_embedding_loader = GeneralPretrainedWordEmbeddingLoader(embedding_dim=50,
