@@ -19,8 +19,10 @@ from torch.utils.data import Dataset
 from easytext.data import Instance
 from easytext.data.tokenizer import ZhTokenizer
 from easytext.utils.bio_schema import bmes_to_bio
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="ner")
 class LatticeNerDemoDataset(Dataset):
     """
     Lattice Demo Dataset

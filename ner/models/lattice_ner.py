@@ -10,15 +10,19 @@
 Authors: PanXu
 Date:    2021/01/30 10:39:00
 """
-from typing import List
+from typing import List, Dict
 import torch
 from torch.nn import Module, Dropout, Embedding, Linear
 
 from easytext.utils import bio as BIO
 from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
 from easytext.modules import LatticeLSTM, ConditionalRandomField
+from easytext.component.register import ComponentRegister
+
+from ner.models import NerModelOutputs
 
 
+@ComponentRegister.register(name_space="lattice")
 class LatticeNer(Module):
     """
     基于 LatticeLstm 的 ner 识别模型
@@ -34,28 +38,24 @@ class LatticeNer(Module):
                  gaz_word_embedding_dropout: float,
                  label_vocabulary: LabelVocabulary,
                  hidden_size: int,
-                 num_layer: int,
                  lstm_dropout: float):
         """
 
-        :param token_vocabulary:
-        :param token_embedding_dim:
-        :param token_embedding_dropout:
-        :param gaz_vocabulary:
-        :param gaz_word_embedding_dim:
-        :param gaz_word_embedding_dropout:
-        :param label_vocabulary:
-        :param hidden_size:
-        :param num_layer:
-        :param lstm_dropout:
+        :param token_vocabulary: token vocabulary
+        :param token_embedding_dim: token embedding 维度
+        :param token_embedding_dropout: token embedding dropout
+        :param gaz_vocabulary: gaz vocabualry
+        :param gaz_word_embedding_dim: gaz word embedding 维度
+        :param gaz_word_embedding_dropout: gaz word embedding droupout
+        :param label_vocabulary: labe vocabulary
+        :param hidden_size: lattice lstm 隐层输出
+        :param lstm_dropout: lstm dropout
         """
 
         super().__init__()
 
         self.token_vocabulary = token_vocabulary
         self.label_vocabulary = label_vocabulary
-
-        self.num_layer = num_layer
 
         self.token_embedding_dropout = Dropout(token_embedding_dropout)
         self.lstm_dropout = Dropout(lstm_dropout)
@@ -103,7 +103,7 @@ class LatticeNer(Module):
     def reset_parameters(self):
         pass
 
-    def forward(self, tokens: torch.Tensor, gaz_list: List) -> torch.Tensor:
+    def forward(self, tokens: torch.Tensor, gaz_list: List, metadata: Dict) -> NerModelOutputs:
         """
         :param tokens: 输入的序列的 index, shape: (B, seq_len)
         :param gaz_list: 是4维 list, 因为 B=1, 所以内部是一个 3维list, 该 3维 list 总长度是 seq_len(与字符序列是一样长度的)..
@@ -115,6 +115,8 @@ class LatticeNer(Module):
                          同样 "大桥", 对应 词汇表 id 33, 长度是 2.
         :return: 最后一层的隐层向量, shape: (B, seq_len, label_size)
         """
+
+        mask = (tokens != self.token_vocabulary.padding_index)
 
         # tokens: shape: (B, seq_len) -> token_embeddings: shape: (B, seq_len, token_embedding_dim)
         token_embeddings = self.token_embedding(tokens)
@@ -132,4 +134,6 @@ class LatticeNer(Module):
 
         lattice_hidden = self.lstm_dropout(lattice_hidden)
 
-        return lattice_hidden
+        logits = self.linear(lattice_hidden)
+
+        return NerModelOutputs(logits=logits, mask=mask, crf=self.crf)

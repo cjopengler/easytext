@@ -33,6 +33,18 @@ class VocabularyBuilder(Component):
                  label_vocabulary_dir: str,
                  is_build_token_vocabulary: bool,
                  pretrained_word_embedding_loader: PretrainedWordEmbeddingLoader):
+        """
+        词汇表构建器
+        :param is_training: 因为在 train 和 非 train, 词汇表的构建行为有所不同;
+                            如果是 train, 则一般需要重新构建; 而对于 非train, 使用先前构建好的即可。
+        :param dataset: 数据集
+        :param vocabulary_collate: 词汇表 collate
+        :param token_vocabulary_dir: token vocabulary 存放目录
+        :param label_vocabulary_dir: label vocabulary 存放目录
+        :param is_build_token_vocabulary: 是否构建 token vocabulary, 因为在使用 Bert 或者 其他模型作为预训练的 embedding,
+                                          则没有必要构建 token vocabulary.
+        :param pretrained_word_embedding_loader: 预训练词汇表
+        """
 
         super().__init__(is_training=is_training)
 

@@ -20,10 +20,12 @@ from easytext.data import Vocabulary
 from easytext.data import LabelVocabulary
 from easytext.data import Instance
 from easytext.data import ModelInputs
+from easytext.component.register import ComponentRegister
 
 from ner.data.lattice import Gazetteer
 
 
+@ComponentRegister.register(name_space="lattice")
 class LatticeModelCollate(ModelCollate):
     """
     Lattice Model Collate

@@ -46,6 +46,10 @@ from ner.optimizer import RnnWithCrfOptimizerFactory, BertRnnWithCrfOptimizerFac
 from ner.label_decoder import NerMaxModelLabelDecoder
 from ner.label_decoder import NerCRFModelLabelDecoder
 
+from ner.data.lattice import Gazetteer, GazVocabularyCollate, GazVocabularyBuilder, LatticeModelCollate
+from ner.models import LatticeNer
+from ner.optimizer import LatticeOptimizerFactory, LatticeLRSchedulerFactory
+
 from ner import ROOT_PATH
 
 
@@ -93,7 +97,8 @@ class NerLauncher(Launcher):
                           loss=self.config.loss,
                           metrics=self.config.metric,
                           optimizer_factory=self.config.optimizer,
-                          lr_scheduler_factory=None,
+                          lr_scheduler_factory=self.config.lr_scheduler,
+                          grad_scaled=None,
                           patient=self.config.patient,
                           num_check_point_keep=self.config.num_check_point_keep,
                           device=device,

@@ -369,10 +369,6 @@ class LatticeLSTM(nn.Module):
             hx = torch.zeros(batch_size, self.hidden_dim)
             cx = torch.zeros(batch_size, self.hidden_dim)
 
-            if self.gpu:
-                hx = hx.cuda()
-                cx = cx.cuda()
-
         id_list = range(seq_len)
 
         if not self.left2right:
@@ -397,9 +393,6 @@ class LatticeLSTM(nn.Module):
 
                 # 获取所有 word id, 组成 word id tensor, 注意是 多个 word id, 不是一个
                 word_var = torch.LongTensor(skip_input[t][0])
-
-                if self.gpu:
-                    word_var = word_var.cuda()
 
                 # 获取所有 word id 以及词向量
                 word_emb = self.word_emb(word_var)

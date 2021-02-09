@@ -26,7 +26,7 @@ from ner.tests import ASSERT
 
 def test_gaz_vocabulary_collate(lattice_ner_demo_dataset, gaz_pretrained_embedding_loader):
 
-    gazetter = Gazetteer(gaz_pretrained_word_embedding=gaz_pretrained_embedding_loader)
+    gazetter = Gazetteer(gaz_pretrained_word_embedding_loader=gaz_pretrained_embedding_loader)
 
     gaz_vocabulary_collate = GazVocabularyCollate(gazetteer=gazetter)
 

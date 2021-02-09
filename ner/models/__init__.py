@@ -15,5 +15,6 @@ from .ner_model_outputs import NerModelOutputs
 from .rnn_with_crf import RnnWithCrf
 from .bert_with_crf import BertWithCrf
 from .bert_rnn_with_crf import BertRnnWithCrf
+from .lattice_ner import LatticeNer
 
 

@@ -15,3 +15,4 @@ from .trie import Trie
 from .gazetteer import Gazetteer
 from .gaz_vocabulary_collate import GazVocabularyCollate
 from .lattice_model_collate import LatticeModelCollate
+from .gaz_vocabulary_builder import GazVocabularyBuilder

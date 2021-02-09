@@ -14,9 +14,11 @@ import logging
 from tqdm import tqdm
 from typing import Dict, List
 
-from .pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
+from easytext.data.pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
+from easytext.component.register import EasytextRegister
 
 
+@EasytextRegister.register()
 class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
     """
     一般的通用预训练好的词向量载入器。试用范围: 词向量是一个文本文件，每一行是一个词向量。格式是:

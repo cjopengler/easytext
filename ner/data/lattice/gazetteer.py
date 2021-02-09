@@ -8,19 +8,21 @@ import logging
 from typing import List, Optional
 
 from easytext.data.pretrained_word_embedding_loader import GeneralPretrainedWordEmbeddingLoader
+from easytext.component.register import ComponentRegister
 
 from ner.data.lattice import Trie
 
 
+@ComponentRegister.register(name_space="lattice")
 class Gazetteer:
     """
     构建 gaz 的对应词汇表, 提供根据当前词获得词序列的能力
     """
 
-    def __init__(self, gaz_pretrained_word_embedding: GeneralPretrainedWordEmbeddingLoader):
+    def __init__(self, gaz_pretrained_word_embedding_loader: GeneralPretrainedWordEmbeddingLoader):
         """
         初始化
-        :param gaz_pretrained_word_embedding: gaz pretrained word embedding
+        :param gaz_pretrained_word_embedding_loader: gaz pretrained word embedding
         """
 
         # 树状存储
@@ -29,16 +31,16 @@ class Gazetteer:
         # 分隔符是 空 的，那么在 trie 中匹配的就是词了
         self.space = ""
 
-        self.__init_trie(gaz_pretrained_word_embedding=gaz_pretrained_word_embedding)
+        self.__init_trie(gaz_pretrained_word_embedding_loader=gaz_pretrained_word_embedding_loader)
 
-    def __init_trie(self, gaz_pretrained_word_embedding: GeneralPretrainedWordEmbeddingLoader):
+    def __init_trie(self, gaz_pretrained_word_embedding_loader: GeneralPretrainedWordEmbeddingLoader):
 
-        if gaz_pretrained_word_embedding.embedding_dict is None:
+        if gaz_pretrained_word_embedding_loader.embedding_dict is None:
             logging.info(f"Begin: gaz pretrained word embedding load...")
-            gaz_pretrained_word_embedding.load()
+            gaz_pretrained_word_embedding_loader.load()
             logging.info(f"End: gaz pretrained word embedding load.")
 
-        for word, _ in gaz_pretrained_word_embedding.embedding_dict.items():
+        for word, _ in gaz_pretrained_word_embedding_loader.embedding_dict.items():
             self.trie.insert(word)
 
     def enumerate_match_list(self, word: str) -> List[List[str]]:
