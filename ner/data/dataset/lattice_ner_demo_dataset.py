@@ -2,34 +2,31 @@
 # -*- coding: utf-8 -*-
 
 #
-# Copyright (c) 2020 PanXu, Inc. All Rights Reserved
+# Copyright (c) 2021 PanXu, Inc. All Rights Reserved
 #
 """
-conll2003 dataset
+lattice demo 数据的 dataset
 
-Authors: panxu(panxu@baidu.com)
-Date:    2020/06/26 12:16:00
+Authors: PanXu
+Date:    2021/02/07 08:53:00
 """
-import logging
-
 from typing import List
+import logging
 import itertools
+
 from torch.utils.data import Dataset
 
 from easytext.data import Instance
-from easytext.data.tokenizer import Token
-from easytext.data.tokenizer import EnTokenizer
-from easytext.utils import bio_schema
+from easytext.data.tokenizer import ZhTokenizer
+from easytext.utils.bio_schema import bmes_to_bio
 from easytext.component.register import ComponentRegister
 
 
 @ComponentRegister.register(name_space="ner")
-class Conll2003Dataset(Dataset):
+class LatticeNerDemoDataset(Dataset):
     """
-    conll2003 数据集
+    Lattice Demo Dataset
     """
-
-    NAME = "conll2003"
 
     def __init__(self, dataset_file_path: str):
         """
@@ -40,14 +37,14 @@ class Conll2003Dataset(Dataset):
 
         self._instances: List[Instance] = list()
 
-        tokenizer = EnTokenizer(is_remove_invalidate_char=False)
+        tokenizer = ZhTokenizer(is_remove_invalidate_char=False)
 
-        logging.info(f"Begin read conll2003 dataset: {dataset_file_path}")
+        logging.info(f"Begin read lattice ner demo dataset: {dataset_file_path}")
 
         with open(dataset_file_path, encoding="utf-8") as data_file:
 
             # 两个 分隔行 之间的是一个样本
-            for is_divider, lines in itertools.groupby(data_file, Conll2003Dataset._is_divider):
+            for is_divider, lines in itertools.groupby(data_file, LatticeNerDemoDataset._is_divider):
 
                 if not is_divider:
 
@@ -55,17 +52,17 @@ class Conll2003Dataset(Dataset):
                     fields = [line.strip().split() for line in lines]
 
                     fields = [list(field) for field in zip(*fields)]
-                    tokens_, pos_tags, chunk_tags, ibo1_labels = fields
+                    tokens_, bmes_labels = fields
 
-                    text = " ".join(tokens_)
+                    text = "".join(tokens_)
 
-                    logging.debug(f"text: {text}")
+                    # logging.debug(f"text: {text}")
                     tokens = tokenizer.tokenize(text)
 
-                    assert len(tokens) == len(ibo1_labels), \
-                        f"token 长度: {len(tokens)} 与 标签长度: {len(ibo1_labels)} 不匹配"
+                    assert len(tokens) == len(bmes_labels), \
+                        f"token 长度: {len(tokens)} 与 标签长度: {len(bmes_labels)} 不匹配"
 
-                    bio_labels = bio_schema.ibo1_to_bio(ibo1_labels)
+                    bio_labels = bmes_to_bio(bmes_labels)
 
                     instance = Instance()
                     instance["metadata"] = {"text": text,
@@ -78,17 +75,12 @@ class Conll2003Dataset(Dataset):
     @staticmethod
     def _is_divider(line: str) -> bool:
         """
-        判断该行是否是 分隔行。包括两种情况: 1. 空行 2. "-DOCSTART-" 这两种否是分隔行
+        判断该行是否是 分隔行。空行，就是分隔符。
         :param line: 行的内容
         :return: True: 是分隔行; False: 不是分隔行
         """
 
-        if line.strip() != "":
-            first_token = line.split()[0]
-            if first_token != "-DOCSTART-":
-                return False
-
-        return True
+        return line.strip() == ""
 
     def __getitem__(self, index: int) -> Instance:
         return self._instances[index]

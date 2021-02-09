@@ -87,6 +87,8 @@
      "__name_space__": "ner",
      "fine_tuning": true
   },
+  "lr_scheduler": null,
+  "grad_scaled": null,
 
   "loss": {
     "__type__":"NerLoss",

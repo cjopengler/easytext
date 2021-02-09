@@ -11,11 +11,10 @@ Authors: panxu(panxu@baidu.com)
 Date:    2020/05/15 10:50:00
 """
 import torch
-from unittest import TestCase
 from easytext.data import LabelVocabulary
 from easytext.utils import bio as BIO
 
-ASSERT = TestCase()
+from easytext.tests import ASSERT
 
 
 def test_fill():
@@ -253,26 +252,6 @@ def test_span_intersection():
 
     expect = []
     ASSERT.assertListEqual(expect, intersetction)
-
-
-def test_ibo1_to_bio():
-    """
-    测试 ibo1 转换到 bio
-    :return:
-    """
-    ibo1 = ["I-L1", "I-L1", "O",
-            "I-L1", "I-L2", "O",
-            "I-L1", "I-L1", "I-L1", "B-L1", "I-L1", "O",
-            "B-L1", "I-L1", "O"]
-
-    expect_bio = ["B-L1", "I-L1", "O",
-                  "B-L1", "B-L2", "O",
-                  "B-L1", "I-L1", "I-L1", "B-L1", "I-L1", "O",
-                  "B-L1", "I-L1", "O"]
-
-    bio_sequnce = BIO.ibo1_to_bio(ibo1)
-
-    ASSERT.assertListEqual(expect_bio, bio_sequnce)
 
 
 def test_allowed_transitions():

@@ -14,9 +14,11 @@ import logging
 from tqdm import tqdm
 from typing import Dict, List
 
-from .pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
+from easytext.data.pretrained_word_embedding_loader import PretrainedWordEmbeddingLoader
+from easytext.component.register import EasytextRegister
 
 
+@EasytextRegister.register()
 class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
     """
     一般的通用预训练好的词向量载入器。试用范围: 词向量是一个文本文件，每一行是一个词向量。格式是:
@@ -34,7 +36,7 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
                  skip_num_line: int = 0,
                  max_size: int = None):
         """
-        初始化
+        初始化,
         :param embedding_dim: embedding dim 大小
         :param pretrained_file_path: 预训练好的词向量文件路径
         :param encoding: 文件编码格式，默认是 "utf-8"
@@ -49,6 +51,7 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         self._encoding = encoding
         self._skip_num_line = skip_num_line
         self._max_size = max_size
+        self._embedding_dict = None
 
     def load(self) -> Dict[str, List[float]]:
         """
@@ -56,7 +59,11 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         return: embedding dict, key 是 token, value: List[float] 向量，例如:
         {"the": [1.0, 2.0, ...]}
         """
-        embedding_dict = dict()
+        if self._embedding_dict is not None:
+            logging.warning(f"embedding_table 已经由 {self._pretrained_file_path} 通过 load 构建过了, "
+                            f"现在正在再次执行 load, 先前构建的会被新的取代.")
+
+        self._embedding_dict = dict()
         logging.info(f"Begin load pretrained embedding from {self._pretrained_file_path} ...")
 
         with open(self._pretrained_file_path, encoding=self._encoding) as f:
@@ -79,9 +86,9 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
 
                 assert len(vec) == self._embedding_dim, f"读取的向量维度: {len(vec)} != 设置的维度: {self._embedding_dim}"
 
-                embedding_dict[token] = vec
+                self._embedding_dict[token] = vec
         logging.info(f"End load pretrained embedding from {self._pretrained_file_path}.")
-        return embedding_dict
+        return self._embedding_dict
 
     @property
     def embedding_dim(self) -> int:
@@ -90,4 +97,11 @@ class GeneralPretrainedWordEmbeddingLoader(PretrainedWordEmbeddingLoader):
         return: 词向量维度
         """
         return self._embedding_dim
+
+    @property
+    def embedding_dict(self) -> Dict[str, List[float]]:
+
+        if self._embedding_dict is None:
+            logging.warning(f"embedding_table 没有构建，请先调用 load")
+        return self._embedding_dict
 

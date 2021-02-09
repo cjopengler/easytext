@@ -38,7 +38,11 @@ class PretrainedVocabulary(IVocabulary):
         self._vocabulary = vocabulary
 
         if pretrained_word_embedding_loader is not None:
-            embedding_dict = pretrained_word_embedding_loader.load()
+
+            if pretrained_word_embedding_loader.embedding_dict is None:
+                pretrained_word_embedding_loader.load()
+
+            embedding_dict = pretrained_word_embedding_loader.embedding_dict
 
             embeddings = list()
 
