@@ -35,6 +35,7 @@
 | 4 | bert + softmax | `data/ner/bert_with_crf/config/config_without_crf.json` |
 | 5 | bert + rnn + crf | `data/ner/bert_rnn_with_crf/config/config.json` |
 | 6 | bert + rnn + softmax | `data/ner/bert_rnn_with_crf/config/config_without_crf.json` |
+| 7 | Chinese NER Using Lattice LSTM | `data/ner/lattice_ner/config/config.json` |
 
 ## 启动命令
 

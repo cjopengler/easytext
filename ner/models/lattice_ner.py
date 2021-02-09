@@ -7,6 +7,10 @@
 """
 基于 Lattice LSTM 的 ner 模型
 
+ACL 2018 论文: <<Chinese NER Using Lattice LSTM>>
+论文地址: https://www.aclweb.org/anthology/P18-1144
+
+
 Authors: PanXu
 Date:    2021/01/30 10:39:00
 """
@@ -25,6 +29,8 @@ from ner.models import NerModelOutputs
 @ComponentRegister.register(name_space="lattice")
 class LatticeNer(Module):
     """
+    ACL 2018 论文: <<Chinese NER Using Lattice LSTM>>
+    论文地址: https://www.aclweb.org/anthology/P18-1144
     基于 LatticeLstm 的 ner 识别模型
     默认使用双向的 Lattice LSTM 模型
     """
