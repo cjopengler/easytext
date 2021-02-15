@@ -14,6 +14,7 @@ Date:    2021/02/14 10:00:00
 import torch
 from torch import nn
 from torch.nn import Dropout, Parameter, Linear, LeakyReLU, ModuleList
+from torch.nn import ELU, LogSoftmax
 import torch.nn.functional as F
 
 
@@ -99,36 +100,67 @@ class GraphAttentionLayer(nn.Module):
 
 class GAT(nn.Module):
     """
-    图注意力模型，应用了多个 GraphAttentionLayer
+    图注意力模型，当前模型，最多支持两层
     """
 
-    def __init__(self, nfeat, nclass, dropout, alpha, nheads, layer, nhid=None):
+    def __init__(self,
+                 in_features: int,
+                 out_features: int,
+                 dropout: float,
+                 alpha: float,
+                 head_num: int,
+                 hidden_size: int = None):
+        """
+        初始化
+        :param in_features: 输入的 node 维度
+        :param out_features: 输出的 node 维度
+        :param dropout: dropout
+        :param alpha: 在 GraphAttentionLayer 中 LeakyRelu 用到的 alpha
+        :param head_num: 头的数量
+        :param hidden_size: 隐层 size，如果是 None 表示没有隐层; 否则，只有一个隐层
+        """
+
         super().__init__()
         self.dropout = Dropout(dropout)
-        self.layer = layer
-        self.nhid = nhid
-        if nhid is None:
-            self.attentions = ModuleList([GraphAttentionLayer(nfeat, nclass, dropout=dropout, alpha=alpha) for _ in
-                               range(nheads)])
+        self.hidden_size = hidden_size
+        self.activation = ELU()
+        self.log_softmax = LogSoftmax(dim=2)
+        if hidden_size is None:
+            self.layers = ModuleList([GraphAttentionLayer(in_features=in_features,
+                                                          out_features=out_features,
+                                                          dropout=dropout,
+                                                          alpha=alpha)
+                                      for _ in range(head_num)])
         else:
-            self.attentions = ModuleList([GraphAttentionLayer(nfeat, nhid, dropout=dropout, alpha=alpha, concat=True) for _ in
-                               range(nheads)])
-            self.out_att = GraphAttentionLayer(nhid * nheads, nclass, dropout=dropout, alpha=alpha, concat=False)
+            self.layers = ModuleList([GraphAttentionLayer(in_features=in_features,
+                                                          out_features=hidden_size,
+                                                          dropout=dropout,
+                                                          alpha=alpha)
+                                      for _ in range(head_num)])
+            self.final_layer = GraphAttentionLayer(in_features=hidden_size * head_num,
+                                                   out_features=out_features,
+                                                   dropout=dropout,
+                                                   alpha=alpha)
 
-    def forward(self, x, adj):
-        x = F.dropout(x, self.dropout, training=self.training)
+    def forward(self, nodes: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
+        """
+        GAT 运算
+        :param nodes: 图的节点，shape: (B, node_num, in_features)
+        :param adj: 图的邻接矩阵，不包含 self loop
+        :return: 计算后的结果, shape: (B, node_num, output_features)
+        """
 
-        if self.nhid is None:
-            x = torch.stack([F.elu(att(x, adj)) for att in self.attentions], dim=2)
-            x = x.sum(2)
-            x = F.dropout(x, self.dropout, training=self.training)
-            return F.log_softmax(x, dim=2)
+        assert nodes.dim() == 3, f"nodes 的维度: {nodes.dim()}, 与 (B, node_num, in_features) 不匹配"
+
+        nodes = self.dropout(nodes)
+
+        if self.hidden_size is None:
+            nodes = torch.stack([self.activation(layer(nodes, adj)) for layer in self.layers], dim=2)
+            nodes = nodes.sum(2)
+            nodes = self.dropout(nodes)
         else:
-            x = torch.cat([F.elu(att(x, adj)) for att in self.attentions], dim=2)
-            x = F.dropout(x, self.dropout, training=self.training)
-            x = F.elu(self.out_att(x, adj))
-            return F.log_softmax(x, dim=2)
-
-
-
+            nodes = torch.cat([self.activation(layer(nodes, adj)) for layer in self.layers], dim=2)
+            nodes = self.dropout(nodes)
+            nodes = self.activation(self.final_layer(nodes, adj))
+        return self.log_softmax(nodes)
 
