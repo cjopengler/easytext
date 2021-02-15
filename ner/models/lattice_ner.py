@@ -54,7 +54,7 @@ class LatticeNer(Module):
         :param gaz_word_embedding_dim: gaz word embedding 维度
         :param gaz_word_embedding_dropout: gaz word embedding droupout
         :param label_vocabulary: labe vocabulary
-        :param hidden_size: lattice lstm 隐层输出
+        :param hidden_size: lattice lstm 隐层输出, 2*hidden_size, 因为使用了双向的
         :param lstm_dropout: lstm dropout
         """
 

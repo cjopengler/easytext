@@ -73,7 +73,7 @@ def test_gat_without_hidden():
               out_features=out_features,
               dropout=0.,
               alpha=0.1,
-              head_num=3,
+              num_heads=3,
               hidden_size=None)
 
     nodes = torch.tensor([[[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
@@ -120,7 +120,7 @@ def test_gat_with_hidden():
               out_features=out_features,
               dropout=0.,
               alpha=0.1,
-              head_num=3,
+              num_heads=3,
               hidden_size=3)
 
     nodes = torch.tensor([[[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
@@ -149,3 +149,4 @@ def test_gat_with_hidden():
                             [-1.4320, -1.4422, -1.6465, -1.1025]]])
 
     ASSERT.assertTrue(tensor_util.is_tensor_equal(expect, output_nodes, epsilon=1e-4))
+

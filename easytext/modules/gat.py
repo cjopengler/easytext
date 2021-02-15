@@ -63,8 +63,8 @@ class GraphAttentionLayer(nn.Module):
     def forward(self, input: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
         """
         模型运算
-        :param input: (B, node_len, in_features)
-        :param adj: 邻接矩阵 (B, node_num, node_num)
+        :param input: (B, num_nodes, in_features)
+        :param adj: 邻接矩阵 (B, num_nodes, num_nodes)
         :return: (B, node_len, out_features)
         """
 
@@ -72,12 +72,12 @@ class GraphAttentionLayer(nn.Module):
         h = self.feed_forward(input)
 
         # [batch_size, N, out_features]
-        batch_size, node_num, _ = h.size()
+        batch_size, num_nodes, _ = h.size()
 
         # 这里是将 a \cdot [Wf_i || W_fj] 这样的运算拆开来做了, 这就与 GAT 实际算法描述是一致的了
         #  a \cdot [Wf_i || W_fj] = a_1 * Wf_i + a_2 * Wf_j
-        middle_result1 = torch.matmul(h, self.a1).expand(-1, -1, node_num)
-        middle_result2 = torch.matmul(h, self.a2).expand(-1, -1, node_num).transpose(1, 2)
+        middle_result1 = torch.matmul(h, self.a1).expand(-1, -1, num_nodes)
+        middle_result2 = torch.matmul(h, self.a2).expand(-1, -1, num_nodes).transpose(1, 2)
 
         # 计算 leaky_relu
         e = self.leaky_relu(middle_result1 + middle_result2)
@@ -108,7 +108,7 @@ class GAT(nn.Module):
                  out_features: int,
                  dropout: float,
                  alpha: float,
-                 head_num: int,
+                 num_heads: int,
                  hidden_size: int = None):
         """
         初始化
@@ -116,7 +116,7 @@ class GAT(nn.Module):
         :param out_features: 输出的 node 维度
         :param dropout: dropout
         :param alpha: 在 GraphAttentionLayer 中 LeakyRelu 用到的 alpha
-        :param head_num: 头的数量
+        :param num_heads: 头的数量
         :param hidden_size: 隐层 size，如果是 None 表示没有隐层; 否则，只有一个隐层
         """
 
@@ -130,14 +130,14 @@ class GAT(nn.Module):
                                                           out_features=out_features,
                                                           dropout=dropout,
                                                           alpha=alpha)
-                                      for _ in range(head_num)])
+                                      for _ in range(num_heads)])
         else:
             self.layers = ModuleList([GraphAttentionLayer(in_features=in_features,
                                                           out_features=hidden_size,
                                                           dropout=dropout,
                                                           alpha=alpha)
-                                      for _ in range(head_num)])
-            self.final_layer = GraphAttentionLayer(in_features=hidden_size * head_num,
+                                      for _ in range(num_heads)])
+            self.final_layer = GraphAttentionLayer(in_features=hidden_size * num_heads,
                                                    out_features=out_features,
                                                    dropout=dropout,
                                                    alpha=alpha)
@@ -145,12 +145,12 @@ class GAT(nn.Module):
     def forward(self, nodes: torch.Tensor, adj: torch.Tensor) -> torch.Tensor:
         """
         GAT 运算
-        :param nodes: 图的节点，shape: (B, node_num, in_features)
+        :param nodes: 图的节点，shape: (B, num_nodes, in_features)
         :param adj: 图的邻接矩阵，不包含 self loop
-        :return: 计算后的结果, shape: (B, node_num, output_features)
+        :return: 计算后的结果, shape: (B, num_nodes, output_features)
         """
 
-        assert nodes.dim() == 3, f"nodes 的维度: {nodes.dim()}, 与 (B, node_num, in_features) 不匹配"
+        assert nodes.dim() == 3, f"nodes 的维度: {nodes.dim()}, 与 (B, num_nodes, in_features) 不匹配"
 
         nodes = self.dropout(nodes)
 

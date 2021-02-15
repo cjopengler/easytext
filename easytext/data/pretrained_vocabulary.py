@@ -55,6 +55,7 @@ class PretrainedVocabulary(IVocabulary):
                     empty_vec = [0.] * pretrained_word_embedding_loader.embedding_dim
                     embeddings.append(empty_vec)
 
+            self._embedding_dim = pretrained_word_embedding_loader.embedding_dim
             self._embedding_matrix = torch.tensor(embeddings, dtype=torch.float)
         else:
             self._embedding_matrix = None
@@ -65,6 +66,13 @@ class PretrainedVocabulary(IVocabulary):
         词向量 matrix
         """
         return self._embedding_matrix
+
+    @property
+    def embedding_dim(self) -> int:
+        """
+        词向量的 维度
+        """
+        return self._embedding_dim
 
     def save_to_file(self, directory: str) -> "PretrainedVocabulary":
         self._vocabulary.save_to_file(directory)
