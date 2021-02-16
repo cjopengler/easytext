@@ -60,7 +60,7 @@ $$
 
 #### Word-Character Containing graph （C-Graph)
 
-![图2](../images/ner/collaborative_graph_network/figure1.png)
+![图2](../images/ner/collaborative_graph_network/figure2.png)
 
 对于 C-graph 来说，在句子中的字能够捕获 self-matched 词的边界和语义信息。如图2所示. 如果一个词 $i$ 包含一个字 $j$, 那么, $(i,j)$ 作为 C-graph 中的一条边，对应到邻接矩阵 $A^C$ 中的值被赋予 $1$.
 

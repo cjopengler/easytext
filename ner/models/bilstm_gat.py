@@ -188,30 +188,30 @@ class BiLstmGAT(Module):
 
         # bilstm
         bilstm = DynamicRnn(rnn=LSTM(input_size=token_embedding_dim,
-                                          hidden_size=lstm_hidden_size,
-                                          num_layers=num_lstm_layer,
-                                          batch_first=True,
-                                          bidirectional=True))
+                                     hidden_size=lstm_hidden_size,
+                                     num_layers=num_lstm_layer,
+                                     batch_first=True,
+                                     bidirectional=True))
         self.bilstm_seq2seq = RnnSeq2Seq(bilstm)
         self.lstm_dropout = Dropout(lstm_dropout)
         self.lstm_encoding_feed_forward = Linear(in_features=lstm_hidden_size * 2,
                                                  out_features=self.label_vocabulary.label_size)
         # C-Graph
-        self.c_gat = GAT(in_features=2*lstm_hidden_size,
+        self.c_gat = GAT(in_features=2 * lstm_hidden_size,
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
                          hidden_size=gat_hidden_size)
 
         # T-Graph
-        self.t_gat = GAT(in_features=2*lstm_hidden_size,
+        self.t_gat = GAT(in_features=2 * lstm_hidden_size,
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
                          hidden_size=gat_hidden_size)
 
         # L-Graph
-        self.l_gat = GAT(in_features=2*lstm_hidden_size,
+        self.l_gat = GAT(in_features=2 * lstm_hidden_size,
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
