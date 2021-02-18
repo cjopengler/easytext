@@ -35,20 +35,25 @@ from easytext.utils.json_util import json2str
 from easytext.component.register import Registry
 
 from ner.models import RnnWithCrf, BertWithCrf, BertRnnWithCrf
+from ner.models import LatticeNer
+from ner.models import BiLstmGAT
 
 from ner.data.dataset import Conll2003Dataset, MsraDataset
 from ner.data import VocabularyCollate
 from ner.data import NerModelCollate, BertModelCollate
+from ner.data.lattice import Gazetteer, GazVocabularyCollate, GazVocabularyBuilder, LatticeModelCollate
+from ner.data import BiLstmGATModelCollate
+
 from ner.loss import NerLoss
-from ner.loss import NerLoss
-from ner.metrics import NerModelMetricAdapter
-from ner.optimizer import RnnWithCrfOptimizerFactory, BertRnnWithCrfOptimizerFactory, BertWithCrfOptimizerFactory
+
 from ner.label_decoder import NerMaxModelLabelDecoder
 from ner.label_decoder import NerCRFModelLabelDecoder
 
-from ner.data.lattice import Gazetteer, GazVocabularyCollate, GazVocabularyBuilder, LatticeModelCollate
-from ner.models import LatticeNer
+from ner.metrics import NerModelMetricAdapter
+
+from ner.optimizer import RnnWithCrfOptimizerFactory, BertRnnWithCrfOptimizerFactory, BertWithCrfOptimizerFactory
 from ner.optimizer import LatticeOptimizerFactory, LatticeLRSchedulerFactory
+from ner.optimizer import BilstmGATOptimizerFactory
 
 from ner import ROOT_PATH
 

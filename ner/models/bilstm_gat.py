@@ -149,6 +149,7 @@ class BiLstmGAT(Module):
                  token_embedding_dropout: float,
                  gaz_vocabulary: PretrainedVocabulary,
                  gaz_word_embedding_dropout: float,
+                 gaz_word_embedding_dim: int,
                  num_lstm_layer: int,
                  lstm_hidden_size: int,
                  gat_hidden_size: int,
@@ -161,7 +162,7 @@ class BiLstmGAT(Module):
 
         super().__init__()
 
-        assert gaz_vocabulary.embedding_dim == lstm_hidden_size * 2, \
+        assert gaz_word_embedding_dim == lstm_hidden_size * 2, \
             f"gaz_vocabulary.embedding_dim: {gaz_vocabulary.embedding_dim} " \
             f"与 lstm_hidden_size * 2: {lstm_hidden_size * 2} 不相等, 因为二者都会作为图的节点，所以 size 必须一致"
 
@@ -249,9 +250,9 @@ class BiLstmGAT(Module):
         token_embeddings = self.token_embedding(tokens)
         token_embeddings = self.token_embedding_dropout(token_embeddings)
 
+        # bilstm_seq_encoding shape: (B, seq_len, 2*lstm_hidden_size)
         bilstm_seq_encoding = self.bilstm_seq2seq(sequence=token_embeddings, mask=bool_mask)
         bilstm_seq_encoding = self.lstm_dropout(bilstm_seq_encoding)
-        bilstm_seq_encoding = self.lstm_encoding_feed_forward(bilstm_seq_encoding)
 
         seq_len = bilstm_seq_encoding.size(1)
 
@@ -260,18 +261,26 @@ class BiLstmGAT(Module):
         gaz_word_embeddings = self.gaz_word_embedding_dropout(gaz_word_embeddings)
 
         # 将 bilstm_seq_encoding 与 gaz_word_embeddings 组成 nodes
+        # nodes shape: (B, max_seq_len+max_gaz_words_len, 2*lstm_hidden_size)
         nodes = torch.cat([bilstm_seq_encoding, gaz_word_embeddings], dim=1)
 
         # 计算图注意力
         c_graph_encoding = self.c_gat(nodes=nodes, adj=c_graph)
+        # c_graph_encoding shape: (B, seq_len, label_size)
         c_graph_encoding = c_graph_encoding[:, :seq_len, :]
+
         t_graph_encoding = self.t_gat(nodes=nodes, adj=t_graph)
         t_graph_encoding = t_graph_encoding[:, :seq_len, :]
+
         l_graph_encoding = self.l_gat(nodes=nodes, adj=l_graph)
         l_graph_encoding = l_graph_encoding[:, :seq_len, :]
 
+        # bilstm_seq_feed_forward_encoding shape: (B, seq_len, label_size)
+        bilstm_seq_feed_forward_encoding = self.lstm_encoding_feed_forward(bilstm_seq_encoding)
+
         # fusion, 融合
-        logits = self.fusion_layer(lstm_encoding=bilstm_seq_encoding,
+        # logits shape: (B, seq_len, label_size)
+        logits = self.fusion_layer(lstm_encoding=bilstm_seq_feed_forward_encoding,
                                    c_graph_encoding=c_graph_encoding,
                                    t_graph_encoding=t_graph_encoding,
                                    l_graph_encoding=l_graph_encoding)
