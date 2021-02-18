@@ -26,7 +26,7 @@ from easytext.component.register import ComponentRegister
 from ner.data.lattice import Gazetteer
 
 
-@ComponentRegister.register(name_space="bilstm_gat")
+@ComponentRegister.register(name_space="ner")
 class BiLstmGATModelCollate(ModelCollate):
     """
     Lattice Model Collate

@@ -18,7 +18,7 @@ from easytext.model import Model
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register(name_space="lattice")
+@ComponentRegister.register(name_space="ner")
 class LatticeOptimizerFactory(OptimizerFactory):
     """
     Lattice Optimizer Factory

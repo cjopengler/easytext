@@ -26,7 +26,7 @@ from easytext.component.register import ComponentRegister
 from ner.models import NerModelOutputs
 
 
-@ComponentRegister.register(name_space="lattice")
+@ComponentRegister.register(name_space="ner")
 class LatticeNer(Module):
     """
     ACL 2018 论文: <<Chinese NER Using Lattice LSTM>>

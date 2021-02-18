@@ -19,7 +19,7 @@ from easytext.optimizer.lr_scheduler_factory import LRSchedulerFactory
 from easytext.component.register import ComponentRegister
 
 
-@ComponentRegister.register(name_space="lattice")
+@ComponentRegister.register(name_space="ner")
 class LatticeLRSchedulerFactory(LRSchedulerFactory):
     """
     Lattice 模型的 LR scheduler

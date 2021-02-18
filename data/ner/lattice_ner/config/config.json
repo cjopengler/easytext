@@ -113,7 +113,7 @@
 
   "model": {
      "__type__": "LatticeNer",
-     "__name_space__": "lattice",
+     "__name_space__": "ner",
      "token_vocabulary": {
        "__object__": "model_collate.token_vocabulary"
      },
@@ -133,14 +133,14 @@
 
   "optimizer": {
     "__type__": "LatticeOptimizerFactory",
-    "__name_space__": "lattice",
+    "__name_space__": "ner",
     "lr": 0.015,
     "momentum": 0.0
   },
 
   "lr_scheduler": {
      "__type__": "LatticeLRSchedulerFactory",
-    "__name_space__": "lattice",
+    "__name_space__": "ner",
     "gamma": 0.95
   },
 

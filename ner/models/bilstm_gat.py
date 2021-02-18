@@ -17,7 +17,7 @@ Authors: PanXu
 Date:    2021/02/15 15:37:00
 """
 
-from typing import List, Dict
+from typing import Dict
 import torch
 from torch.nn import Module, Dropout, Embedding, Linear, LSTM, Parameter
 
@@ -57,7 +57,7 @@ class MFunsionLayer(Module):
         :param l_graph_encoding: l graph encoding 结果
         :return: 融合后的结果, shape: (B, seq_len, label_size)
         """
-        encoding = torch.cat(lstm_encoding, c_graph_encoding, t_graph_encoding, l_graph_encoding, dim=-1)
+        encoding = torch.cat([lstm_encoding, c_graph_encoding, t_graph_encoding, l_graph_encoding], dim=-1)
         return self.weight(encoding)
 
 
@@ -133,6 +133,7 @@ class NFusionLayer(Module):
         pass
 
 
+@ComponentRegister.register(name_space="ner")
 class BiLstmGAT(Module):
     """
     BiLstm GAT 模型
@@ -147,13 +148,13 @@ class BiLstmGAT(Module):
                  token_embedding_dim: int,
                  token_embedding_dropout: float,
                  gaz_vocabulary: PretrainedVocabulary,
-                 gaz_dropout: float,
+                 gaz_word_embedding_dropout: float,
                  num_lstm_layer: int,
                  lstm_hidden_size: int,
                  gat_hidden_size: int,
+                 gat_num_heads: int,
                  gat_dropout: float,
                  lstm_dropout: float,
-                 dropout: float,
                  alpha: float,
                  fusion_strategy: str,
                  label_vocabulary: LabelVocabulary):
@@ -182,9 +183,7 @@ class BiLstmGAT(Module):
         self.gaz_word_embedding = Embedding.from_pretrained(gaz_vocabulary.embedding_matrix,
                                                             freeze=True,
                                                             padding_idx=gaz_vocabulary.padding_index)
-        self.gaz_dropout = Dropout(gaz_dropout)
-
-        self.dropout = Dropout(dropout)
+        self.gaz_word_embedding_dropout = Dropout(gaz_word_embedding_dropout)
 
         # bilstm
         bilstm = DynamicRnn(rnn=LSTM(input_size=token_embedding_dim,
@@ -201,6 +200,7 @@ class BiLstmGAT(Module):
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
+                         num_heads=gat_num_heads,
                          hidden_size=gat_hidden_size)
 
         # T-Graph
@@ -208,6 +208,7 @@ class BiLstmGAT(Module):
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
+                         num_heads=gat_num_heads,
                          hidden_size=gat_hidden_size)
 
         # L-Graph
@@ -215,6 +216,7 @@ class BiLstmGAT(Module):
                          out_features=label_vocabulary.label_size,
                          dropout=gat_dropout,
                          alpha=alpha,
+                         num_heads=gat_num_heads,
                          hidden_size=gat_hidden_size)
 
         if fusion_strategy == "m":
@@ -245,7 +247,7 @@ class BiLstmGAT(Module):
         mask = (tokens != self.token_vocabulary.padding_index)
         bool_mask = mask.bool()
         token_embeddings = self.token_embedding(tokens)
-        token_embeddings = self.dropout(token_embeddings)
+        token_embeddings = self.token_embedding_dropout(token_embeddings)
 
         bilstm_seq_encoding = self.bilstm_seq2seq(sequence=token_embeddings, mask=bool_mask)
         bilstm_seq_encoding = self.lstm_dropout(bilstm_seq_encoding)
@@ -255,7 +257,7 @@ class BiLstmGAT(Module):
 
         # gaz word embedding
         gaz_word_embeddings = self.gaz_word_embedding(gaz_words)
-        gaz_word_embeddings = self.gaz_dropout(gaz_word_embeddings)
+        gaz_word_embeddings = self.gaz_word_embedding_dropout(gaz_word_embeddings)
 
         # 将 bilstm_seq_encoding 与 gaz_word_embeddings 组成 nodes
         nodes = torch.cat([bilstm_seq_encoding, gaz_word_embeddings], dim=1)
