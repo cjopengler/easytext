@@ -103,7 +103,7 @@ class NerLauncher(Launcher):
                           metrics=self.config.metric,
                           optimizer_factory=self.config.optimizer,
                           lr_scheduler_factory=self.config.lr_scheduler,
-                          grad_scaled=None,
+                          grad_rescaled=self.config.grad_rescaled,
                           patient=self.config.patient,
                           num_check_point_keep=self.config.num_check_point_keep,
                           device=device,

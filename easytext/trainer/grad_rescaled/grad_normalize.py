@@ -14,9 +14,11 @@ Date:    2020/08/21 09:34:00
 from torch.nn import Module
 from torch.nn.utils import clip_grad_norm_
 
-from .grad_rescaled import GradRescaled
+from easytext.trainer.grad_rescaled import GradRescaled
+from easytext.component.register import EasytextRegister
 
 
+@EasytextRegister.register()
 class GradNormalize(GradRescaled):
     """
     对梯度 进行 normalize

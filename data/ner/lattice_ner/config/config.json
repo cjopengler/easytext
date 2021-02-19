@@ -144,7 +144,7 @@
     "gamma": 0.95
   },
 
-  "grad_scaled": null,
+  "grad_rescaled": null,
 
   "loss": {
     "__type__":"NerLoss",

@@ -154,7 +154,11 @@
     "gamma": 0.99
   },
 
-  "grad_scaled": null,
+  "grad_rescaled": {
+    "__type__": "GradNormalize",
+    "__name_space__": "__easytext__",
+    "max_normalize": 5.0
+  },
 
   "loss": {
     "__type__":"NerLoss",

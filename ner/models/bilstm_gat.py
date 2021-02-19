@@ -16,7 +16,7 @@ Leverage Lexical Knowledge for Chinese Named Entity Recognition via Collaborativ
 Authors: PanXu
 Date:    2021/02/15 15:37:00
 """
-
+import logging
 from typing import Dict
 import torch
 from torch.nn import Module, Dropout, Embedding, Linear, LSTM, Parameter
