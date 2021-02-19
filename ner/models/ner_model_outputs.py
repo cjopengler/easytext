@@ -10,7 +10,10 @@
 Authors: PanXu
 Date:    2020/06/27 17:42:00
 """
+from typing import Dict
+
 import torch
+
 from easytext.model import ModelOutputs
 from easytext.modules import ConditionalRandomField
 
@@ -24,7 +27,8 @@ class NerModelOutputs(ModelOutputs):
                  logits: torch.Tensor,
                  mask: torch.Tensor,
                  crf: ConditionalRandomField = None,
-                 bert_pooler_output: torch.Tensor = None):
+                 bert_pooler_output: torch.Tensor = None,
+                 metadata: Dict = None):
         """
         Ner 模型的输出
         :param logits: logits 输出
@@ -37,5 +41,6 @@ class NerModelOutputs(ModelOutputs):
         self.mask = mask
         self.crf = crf
         self.bert_pooler_output = bert_pooler_output
+        self.metadata = metadata
 
 

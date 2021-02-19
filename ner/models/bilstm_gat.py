@@ -285,4 +285,4 @@ class BiLstmGAT(Module):
                                    t_graph_encoding=t_graph_encoding,
                                    l_graph_encoding=l_graph_encoding)
 
-        return NerModelOutputs(logits=logits, mask=mask, crf=self.crf)
+        return NerModelOutputs(logits=logits, mask=mask, crf=self.crf, metadata=metadata)

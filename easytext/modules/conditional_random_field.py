@@ -1,11 +1,11 @@
 """
 Conditional random field
 """
-from typing import List, Tuple, Dict
+from typing import List, Tuple
+import math
 
 import torch
 
-from easytext.data import LabelVocabulary
 from easytext.utils.nn.nn_util import logsumexp
 from easytext.utils.nn.nn_util import viterbi_decode
 
@@ -199,28 +199,28 @@ class ConditionalRandomField(torch.nn.Module):
         # Augment transitions matrix with start and end transitions
         start_tag = num_tags
         end_tag = num_tags + 1
-        transitions = torch.Tensor(num_tags + 2, num_tags + 2).fill_(-10000.)
+        transitions = torch.Tensor(num_tags + 2, num_tags + 2).fill_(-math.inf)
 
         # Apply transition constraints
         constrained_transitions = (
                 self.transitions * self._constraint_mask[:num_tags, :num_tags] +
-                -10000.0 * (1 - self._constraint_mask[:num_tags, :num_tags])
+                -math.inf * (1 - self._constraint_mask[:num_tags, :num_tags])
         )
         transitions[:num_tags, :num_tags] = constrained_transitions.data
 
         if self.include_start_end_transitions:
             transitions[start_tag, :num_tags] = (
                     self.start_transitions.detach() * self._constraint_mask[start_tag, :num_tags].data +
-                    -10000.0 * (1 - self._constraint_mask[start_tag, :num_tags].detach())
+                    -math.inf * (1 - self._constraint_mask[start_tag, :num_tags].detach())
             )
             transitions[:num_tags, end_tag] = (
                     self.end_transitions.detach() * self._constraint_mask[:num_tags, end_tag].data +
-                    -10000.0 * (1 - self._constraint_mask[:num_tags, end_tag].detach())
+                    -math.inf * (1 - self._constraint_mask[:num_tags, end_tag].detach())
             )
         else:
-            transitions[start_tag, :num_tags] = (-10000.0 *
+            transitions[start_tag, :num_tags] = (-math.inf *
                                                  (1 - self._constraint_mask[start_tag, :num_tags].detach()))
-            transitions[:num_tags, end_tag] = -10000.0 * (1 - self._constraint_mask[:num_tags, end_tag].detach())
+            transitions[:num_tags, end_tag] = -math.inf * (1 - self._constraint_mask[:num_tags, end_tag].detach())
 
         best_paths = []
         # Pad the max sequence length by 2 to account for start_tag + end_tag.
@@ -230,7 +230,7 @@ class ConditionalRandomField(torch.nn.Module):
             sequence_length = torch.sum(prediction_mask)
 
             # Start with everything totally unlikely
-            tag_sequence.fill_(-10000.)
+            tag_sequence.fill_(-math.inf)
             # At timestep 0 we must have the START_TAG
             tag_sequence[0, start_tag] = 0.
             # At steps 1, ..., sequence_length we just use the incoming prediction
