@@ -18,8 +18,10 @@ from bs4 import BeautifulSoup
 from torch.utils.data import Dataset
 
 from easytext.data import Instance
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="acsa")
 class SemEvalDataset(Dataset):
     """
     sem eval dataset, 包括:

@@ -15,8 +15,10 @@ from typing import List, Dict
 from easytext.data import Instance
 
 from easytext.data.tokenizer import EnTokenizer
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="acsa")
 class VocabularyCollate:
     """
     Vocabulary Collate

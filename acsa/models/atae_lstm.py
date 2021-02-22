@@ -19,14 +19,16 @@ from torch.nn import Embedding, LSTM, Linear
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 
 from easytext.model import Model
-from easytext.model import ModelOutputs
-from easytext.data import Vocabulary, PretrainedVocabulary, LabelVocabulary
+from easytext.data import Vocabulary, PretrainedVocabulary
 from easytext.utils.nn.nn_util import sequence_mask
 from easytext.modules.seq2vec import AttentionSeq2Vec
+from easytext.component.register import ComponentRegister
 
-from .acsa_model_outputs import ACSAModelOutputs
+from acsa.models.acsa_model_outputs import ACSAModelOutputs
+from acsa.data.vocabulary_builder import VocabularyBuilder
 
 
+@ComponentRegister.register(name_space="acsa")
 class ATAELstm(Model):
     """
     基于 ATAE-LSTM 模型
@@ -35,15 +37,13 @@ class ATAELstm(Model):
     """
 
     def __init__(self,
-                 token_vocabulary: Union[Vocabulary, PretrainedVocabulary],
+                 vocabulary_builder: VocabularyBuilder,
                  token_embedding_dim: int,
-                 category_vocabulary: LabelVocabulary,
-                 category_embedding_dim: int,
-                 label_vocabulary: LabelVocabulary
+                 category_embedding_dim: int
                  ):
         super().__init__()
 
-        self._token_vocabulary = token_vocabulary
+        self._token_vocabulary = vocabulary_builder.token_vocabulary
 
         if isinstance(self._token_vocabulary, Vocabulary):
             self.token_embedding = Embedding(num_embeddings=self._token_vocabulary.size,
@@ -57,9 +57,9 @@ class ATAELstm(Model):
             )
         else:
             raise RuntimeError(
-                f"token_vocabulary type: {type(token_vocabulary)} 不是 Vocabulary 或 PretrainedVocabulary")
+                f"token_vocabulary type: {type(self._token_vocabulary)} 不是 Vocabulary 或 PretrainedVocabulary")
 
-        self._category_vocabulary = category_vocabulary
+        self._category_vocabulary = vocabulary_builder.category_vocabulary
         self.category_embedding = Embedding(num_embeddings=self._category_vocabulary.label_size,
                                             embedding_dim=category_embedding_dim,
                                             padding_idx=self._category_vocabulary.padding_index)
@@ -84,7 +84,7 @@ class ATAELstm(Model):
 
         fc_input_size = attention_output_size + lstm_hidden_size
         self.fc = Linear(in_features=fc_input_size,
-                         out_features=label_vocabulary.label_size)
+                         out_features=vocabulary_builder.label_vocabulary.label_size)
 
         self.reset_parameters()
 

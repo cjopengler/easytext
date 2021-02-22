@@ -13,3 +13,4 @@ Date:    2020/07/12 12:31:00
 
 from .vocabulary_collate import VocabularyCollate
 from .model_collate import ACSAModelCollate
+from .vocabulary_builder import VocabularyBuilder

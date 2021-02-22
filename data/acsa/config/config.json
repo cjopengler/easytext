@@ -1,0 +1,110 @@
+{
+  "training_dataset": {
+    "__type__": "ACSASemEvalDataset",
+    "__name_space__": "acsa",
+    "dataset_file_path": "data/dataset/SemEval-2014-Task-4-REST/sample.xml"
+  },
+
+  "validation_dataset": {
+    "__type__": "ACSASemEvalDataset",
+    "__name_space__": "acsa",
+    "dataset_file_path": "data/dataset/SemEval-2014-Task-4-REST/sample.xml"
+  },
+
+  "vocabulary_builder": {
+    "__type__": "VocabularyBuilder",
+    "__name_space__": "acsa",
+
+    "dataset": {
+      "__object__": "training_dataset"
+    },
+    "vocabulary_collate": {
+      "__type__": "VocabularyCollate",
+      "__name_space__": "acsa"
+    },
+
+    "token_vocabulary_dir": "data/acsa/serialize/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "data/acsa/serialize/vocabulary/label_vocabulary",
+    "category_vocabulary_dir": "data/acsa/serialize/vocabulary/label_vocabulary",
+    "is_build_token_vocabulary": true,
+
+    "pretrained_word_embedding_loader": {
+      "__type__": "GloveLoader",
+      "__name_space__": "__easytext__",
+      "embedding_dim": 300,
+      "pretrained_file_path": "data/pretrained/glove/glove.6B.300d.txt",
+      "max_size": 10
+    }
+  },
+
+  "model_collate": {
+     "__type__": "ACSAModelCollate",
+     "__name_space__": "acsa",
+
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+
+     "sentence_max_len": 512
+  },
+
+  "model_label_decoder": {
+    "__type__": "ACSALabelDecoder",
+    "__name_space__": "acsa",
+    "vocabulary_builder": {
+      "__object__": "vocabulary_builder"
+    }
+  },
+
+  "metric": {
+     "__type__": "ACSAModelMetric",
+     "__name_space__": "acsa",
+
+    "label_decoder": {
+      "__object__": "model_label_decoder"
+    }
+  },
+
+  "process_group_parameter": {
+    "__type__": "ProcessGroupParameter",
+    "__name_space__": "__easytext__",
+    "host": "127.0.0.1",
+    "port": "3001",
+    "backend": "nccl"
+  },
+
+  "model": {
+     "__type__": "ATAELstm",
+     "__name_space__": "acsa",
+     "vocabulary_builder": {
+       "__object__": "vocabulary_builder"
+     },
+
+    "token_embedding_dim": 300,
+    "category_embedding_dim": 300
+  },
+
+  "optimizer": {
+     "__type__":"ACSAOptimizerFactory",
+     "__name_space__": "acsa",
+     "fine_tuning": true
+  },
+
+  "loss": {
+    "__type__":"ACSALoss",
+     "__name_space__": "acsa"
+  },
+
+  "distributed_data_parallel_parameter": {
+    "__type__": "DistributedDataParallelParameter",
+    "__name_space__": "__easytext__",
+    "find_unused_parameters": false
+  },
+
+  "num_epoch": 100,
+  "patient": 20,
+  "num_check_point_keep": 5,
+  "devices": ["cpu"],
+  "serialize_dir": "data/acsa/serialize/train",
+  "batch_size": 32
+}

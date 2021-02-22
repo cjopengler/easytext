@@ -14,10 +14,11 @@ import torch
 from torch.nn import CrossEntropyLoss
 
 from easytext.loss import Loss
-
+from easytext.component.register import ComponentRegister
 from acsa.models import ACSAModelOutputs
 
 
+@ComponentRegister.register(name_space="acsa")
 class ACSALoss(Loss):
     """
     ACSA Loss

@@ -12,10 +12,11 @@ Date:    2020/07/18 16:00:00
 """
 
 import torch
-
+from easytext.component.register import ComponentRegister
 from easytext.model import ModelOutputs
 
 
+@ComponentRegister.register(name_space="acsa")
 class ACSAModelOutputs(ModelOutputs):
     """
     ACSA Model Outputs

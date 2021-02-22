@@ -20,18 +20,15 @@ from acsa.data import ACSAModelCollate
 
 from acsa.tests import ASSERT
 
-
 log_util.config()
 
 
-def test_model_collate(acsa_sem_eval_dataset, vocabulary):
-    token_vocabulary = vocabulary["token_vocabulary"]
-    category_vocabulary = vocabulary["category_vocabulary"]
-    label_vocabulary = vocabulary["label_vocabulary"]
+def test_model_collate(acsa_sem_eval_dataset, vocabulary_builder):
+    token_vocabulary = vocabulary_builder.token_vocabulary
+    category_vocabulary = vocabulary_builder.category_vocabulary
+    label_vocabulary = vocabulary_builder.label_vocabulary
 
-    model_collate_fn = ACSAModelCollate(token_vocabulary=token_vocabulary,
-                                  category_vocabulary=category_vocabulary,
-                                  label_vocabulary=label_vocabulary)
+    model_collate_fn = ACSAModelCollate(vocabulary_builder=vocabulary_builder)
     data_loader = DataLoader(dataset=acsa_sem_eval_dataset,
                              batch_size=10,
                              num_workers=0,
@@ -58,4 +55,3 @@ def test_model_collate(acsa_sem_eval_dataset, vocabulary):
 
         ASSERT.assertListEqual(expect_sentence, sentence_0)
         ASSERT.assertEqual(0, sentence_index_0[len(expect_sentence):].sum())
-

@@ -10,31 +10,32 @@ model collate 产生 模型输入
 Authors: PanXu
 Date:    2020/07/12 16:54:00
 """
-from typing import Dict, List
+from typing import List
 
 import torch
 
 from easytext.data import ModelCollate, Instance
 from easytext.data.tokenizer import EnTokenizer
-from easytext.data import Vocabulary, LabelVocabulary
 from easytext.model import ModelInputs
+from easytext.component.register import ComponentRegister
+
+from acsa.data.vocabulary_builder import VocabularyBuilder
 
 
+@ComponentRegister.register(name_space="acsa")
 class ACSAModelCollate(ModelCollate):
     """
     ACSA Model Collate
     """
 
     def __init__(self,
-                 token_vocabulary: Vocabulary,
-                 category_vocabulary: LabelVocabulary,
-                 label_vocabulary: LabelVocabulary,
+                 vocabulary_builder: VocabularyBuilder,
                  sentence_max_len=500):
 
         self._tokenizer = EnTokenizer(is_remove_invalidate_char=True)
-        self._token_vocabulary = token_vocabulary
-        self._category_vocabulary = category_vocabulary
-        self._label_vocabulary = label_vocabulary
+        self._token_vocabulary = vocabulary_builder.token_vocabulary
+        self._category_vocabulary = vocabulary_builder.category_vocabulary
+        self._label_vocabulary = vocabulary_builder.label_vocabulary
 
         self._sentence_max_len = sentence_max_len
 
@@ -76,10 +77,10 @@ class ACSAModelCollate(ModelCollate):
                 label = instance["label"]
                 batch_label_index.append(self._label_vocabulary.index(label))
 
-        sentence_tensor = torch.LongTensor(batch_sentence_indices)
-        category_tensor = torch.LongTensor(batch_category_index)
+        sentence_tensor = torch.tensor(batch_sentence_indices, dtype=torch.long)
+        category_tensor = torch.tensor(batch_category_index, dtype=torch.long)
 
-        label_tensor = torch.LongTensor(batch_label_index)
+        label_tensor = torch.tensor(batch_label_index, dtype=torch.long)
 
         model_inputs = ModelInputs(batch_size=batch_size,
                                    model_inputs={

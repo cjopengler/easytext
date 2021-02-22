@@ -17,11 +17,15 @@ from torch import Tensor
 from easytext.metrics import ModelMetricAdapter, ModelTargetMetric
 from easytext.metrics import AccMetric
 from easytext.label_decoder import ModelLabelDecoder
-
+from easytext.component.register import ComponentRegister
 from acsa.models import ACSAModelOutputs
 
 
+@ComponentRegister.register(name_space="acsa")
 class ACSAModelMetric(ModelMetricAdapter):
+    """
+    ACSA model Metric
+    """
 
     def __init__(self, label_decoder: ModelLabelDecoder):
         self._metric = AccMetric()

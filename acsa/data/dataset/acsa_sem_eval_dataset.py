@@ -14,10 +14,11 @@ from typing import List
 from torch.utils.data import Dataset
 
 from easytext.data import Instance
-
+from easytext.component.register import ComponentRegister
 from .sem_eval_dataset import SemEvalDataset
 
 
+@ComponentRegister.register(name_space="acsa")
 class ACSASemEvalDataset(Dataset):
     """
     将 SemEval 数据集 构造成 ACSA 用的格式。在 SemEval 中, 格式:
