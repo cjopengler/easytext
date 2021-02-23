@@ -277,11 +277,3 @@ class BiLstmGATModelCollate(ModelCollate):
                                          "metadata": batch_metadatas},
                            labels=batch_sequence_label_indices)
 
-
-
-
-
-
-
-
-
