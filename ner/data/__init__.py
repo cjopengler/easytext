@@ -16,3 +16,4 @@ from .ner_model_collate import NerModelCollate
 from .bert_model_collate import BertModelCollate
 from .bert_tokenizer import bert_tokenizer
 from .bilstm_gat_model_collate import BiLstmGATModelCollate
+from ner.data.flat.flat_model_collate import FLATModelCollate
