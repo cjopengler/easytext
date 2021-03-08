@@ -35,9 +35,14 @@ class FlatPretrainedVocabulary(PretrainedVocabulary):
         gaz_word_embedding_dict = self.__token_embedding_dict(gaz_word_pretrained_vocabulary)
 
         tokens = [char_embedding_dict.keys(), gaz_word_embedding_dict.keys()]
-        embedding_dict = char_embedding_dict.update(gaz_word_embedding_dict)
+        char_embedding_dict.update(gaz_word_embedding_dict)
 
-        vocabulary = Vocabulary(tokens=tokens, padding=Vocabulary.PADDING, unk=Vocabulary.UNK)
+        embedding_dict = char_embedding_dict
+
+        vocabulary = Vocabulary(tokens=tokens,
+                                padding=Vocabulary.PADDING,
+                                unk=Vocabulary.UNK,
+                                special_first=True)
 
         super().__init__(vocabulary=vocabulary, pretrained_word_embedding_loader=None)
 
