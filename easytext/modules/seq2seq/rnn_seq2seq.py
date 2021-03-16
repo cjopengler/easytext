@@ -28,7 +28,13 @@ class RnnSeq2Seq(Module):
         super().__init__()
         self.rnn = dynamic_rnn
 
-    def forward(self, sequence: Tensor, mask: BoolTensor) -> Dict[str, Tensor]:
+    def forward(self, sequence: Tensor, mask: BoolTensor) -> Tensor:
+        """
+        基于 rnn 的 seq2seq encoder
+        :param sequence: sequence embedding, shape: (B, seq_len, embedding_size)
+        :param mask: bool mask, shape: (B, seq_len)
+        :return: seq2seq 解码结果, shape: (B, seq_len, hidden_size)
+        """
         rnn_output: DynamicRnnOutput = self.rnn(sequence=sequence, mask=mask)
 
         return rnn_output.output

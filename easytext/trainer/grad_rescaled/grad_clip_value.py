@@ -13,11 +13,12 @@ Date:    2020/08/21 09:34:00
 
 from torch.nn import Module
 from torch.nn.utils import clip_grad_value_
-from easytext.model import Model
 
-from .grad_rescaled import GradRescaled
+from easytext.component.register import EasytextRegister
+from easytext.trainer.grad_rescaled import GradRescaled
 
 
+@EasytextRegister.register()
 class GradClipValue(GradRescaled):
     """
     对梯度进行 clip

@@ -78,7 +78,7 @@ class Trainer(TrainerCallback, Distributed):
                  device: torch.device,
                  is_distributed: bool,
                  lr_scheduler_factory: LRSchedulerFactory = None,
-                 grad_scaled: GradRescaled = None,
+                 grad_rescaled: GradRescaled = None,
                  patient: int = None,
                  num_check_point_keep: int = None,
                  trainer_callback: Union[TrainerCallback, List[TrainerCallback], None] = None,
@@ -110,7 +110,7 @@ class Trainer(TrainerCallback, Distributed):
         self._metrics = metrics
         self._optimizer_factory = optimizer_factory
 
-        self._grad_scaled = grad_scaled
+        self._grad_rescaled = grad_rescaled
 
         self._serialize_dir = serialize_dir
         self._metric_tracker = MetricTracker(patient=patient)
@@ -396,8 +396,8 @@ class Trainer(TrainerCallback, Distributed):
                     batch_loss.backward()
 
                     # 反向传播之后修订梯度
-                    if self._grad_scaled is not None:
-                        self._grad_scaled(self._model)
+                    if self._grad_rescaled is not None:
+                        self._grad_rescaled(self._model)
 
                     self._optimizer.step()
 

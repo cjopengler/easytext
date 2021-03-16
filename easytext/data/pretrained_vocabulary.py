@@ -42,22 +42,40 @@ class PretrainedVocabulary(IVocabulary):
             if pretrained_word_embedding_loader.embedding_dict is None:
                 pretrained_word_embedding_loader.load()
 
+            self._embedding_dim = pretrained_word_embedding_loader.embedding_dim
             embedding_dict = pretrained_word_embedding_loader.embedding_dict
 
-            embeddings = list()
-
-            for index in range(self._vocabulary.size):
-                token = self._vocabulary.token(index)
-
-                if token in embedding_dict:
-                    embeddings.append(embedding_dict[token])
-                else:
-                    empty_vec = [0.] * pretrained_word_embedding_loader.embedding_dim
-                    embeddings.append(empty_vec)
+            embeddings = self._init_embedding_matrix(vocabulary=self._vocabulary,
+                                                     embedding_dict=embedding_dict,
+                                                     embedding_dim=self._embedding_dim)
 
             self._embedding_matrix = torch.tensor(embeddings, dtype=torch.float)
         else:
             self._embedding_matrix = None
+
+    def _init_embedding_matrix(self,
+                               vocabulary: Vocabulary,
+                               embedding_dict: Dict[str, List[float]],
+                               embedding_dim: int) -> List[List[float]]:
+        """
+        初始化 embedding matrix
+        :param vocabulary: vocabulary
+        :param embedding_dict: token embedding dict
+        :param embedding_dim: embedding 维度
+        :return: embedding 二维数组
+        """
+        embeddings = list()
+
+        for index in range(vocabulary.size):
+            token = vocabulary.token(index)
+
+            if token in embedding_dict:
+                embeddings.append(embedding_dict[token])
+            else:
+                empty_vec = [0.] * embedding_dim
+                embeddings.append(empty_vec)
+        return embeddings
+
 
     @property
     def embedding_matrix(self) -> torch.Tensor:
@@ -65,6 +83,13 @@ class PretrainedVocabulary(IVocabulary):
         词向量 matrix
         """
         return self._embedding_matrix
+
+    @property
+    def embedding_dim(self) -> int:
+        """
+        词向量的 维度
+        """
+        return self._embedding_dim
 
     def save_to_file(self, directory: str) -> "PretrainedVocabulary":
         self._vocabulary.save_to_file(directory)

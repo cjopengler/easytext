@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "LatticeNerDemoDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "data/dataset/lattice_ner/demo.train.char"
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/lattice_ner/demo.train.char"
   },
 
   "validation_dataset": {
     "__type__": "LatticeNerDemoDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "data/dataset/lattice_ner/demo.train.char"
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/lattice_ner/demo.train.char"
   },
 
   "vocabulary_builder": {
@@ -23,15 +23,16 @@
       "__name_space__": "ner"
     },
 
-    "token_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/token_vocabulary",
-    "label_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/label_vocabulary",
+    "token_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bilstm_gat/serialize/vocabulary/token_vocabulary",
+    "label_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bilstm_gat/serialize/vocabulary/label_vocabulary",
+
     "is_build_token_vocabulary": true,
 
     "pretrained_word_embedding_loader": {
       "__type__": "GeneralPretrainedWordEmbeddingLoader",
       "__name_space__": "__easytext__",
       "embedding_dim": 50,
-      "pretrained_file_path": "data/pretrained/lattice/gigaword_chn.all.a2b.uni.ite50.vec",
+      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/lattice/gigaword_chn.all.a2b.uni.ite50.vec",
       "max_size": null
     }
   },
@@ -42,19 +43,19 @@
     "dataset": {
       "__object__": "training_dataset"
     },
-    "gaz_vocabulary_dir": "data/ner/lattice_ner/serialize/vocabulary/gaz_vocabulary",
+    "gaz_vocabulary_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bilstm_gat/serialize/vocabulary/gaz_vocabulary",
     "gaz_pretrained_word_embedding_loader": {
        "__type__": "GeneralPretrainedWordEmbeddingLoader",
       "__name_space__": "__easytext__",
       "embedding_dim": 50,
-      "pretrained_file_path": "data/pretrained/lattice/ctb.50d.vec",
+      "pretrained_file_path": "/Users/panxu/MyProjects/github/easytext/data/pretrained/lattice/ctb.50d.vec",
       "max_size": null
     }
   },
 
   "model_collate": {
-     "__type__": "LatticeModelCollate",
-     "__name_space__": "lattice",
+     "__type__": "BiLstmGATModelCollate",
+     "__name_space__": "ner",
 
      "token_vocabulary": {
         "__type__": "token_vocabulary",
@@ -112,7 +113,7 @@
   },
 
   "model": {
-     "__type__": "LatticeNer",
+     "__type__": "BiLstmGAT",
      "__name_space__": "ner",
      "token_vocabulary": {
        "__object__": "model_collate.token_vocabulary"
@@ -124,27 +125,40 @@
     },
     "gaz_word_embedding_dim": 50,
     "gaz_word_embedding_dropout": 0.5,
+    "num_lstm_layer": 1,
+    "lstm_hidden_size": 25,
+    "gat_hidden_size": 30,
+    "gat_num_heads": 3,
+    "gat_dropout": 0.5,
+    "lstm_dropout": 0.5,
+    "alpha": 0.1,
+    "fusion_strategy": "m",
+
     "label_vocabulary": {
       "__object__": "model_collate.label_vocabulary"
-    },
-    "hidden_size": 100,
-    "lstm_dropout": 0.5
+    }
+
   },
 
   "optimizer": {
-    "__type__": "LatticeOptimizerFactory",
+    "__type__": "BilstmGATOptimizerFactory",
     "__name_space__": "ner",
-    "lr": 0.015,
-    "momentum": 0.0
+    "optimizer_name": "Adam",
+    "lr": 0.001,
+    "weight_decay": 0.00000005
   },
 
   "lr_scheduler": {
      "__type__": "LatticeLRSchedulerFactory",
     "__name_space__": "ner",
-    "gamma": 0.95
+    "gamma": 0.99
   },
 
-  "grad_rescaled": null,
+  "grad_rescaled": {
+    "__type__": "GradNormalize",
+    "__name_space__": "__easytext__",
+    "max_normalize": 5.0
+  },
 
   "loss": {
     "__type__":"NerLoss",
@@ -158,12 +172,11 @@
 
   "distributed_data_parallel_parameter": null,
 
-  "num_epoch": 2,
+  "num_epoch": 200,
   "patient": 10,
   "num_check_point_keep": 2,
-  "devices": ["cuda:0"],
-  "#devices": "由于 lattice 本身实现的问题，所以目前也不支持，多 GPU 训练!",
-  "serialize_dir": "data/ner/lattice_ner/serialize/train",
-  "train_batch_size": 1,
-  "test_batch_size": 1
+  "devices": ["cpu"],
+  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/ner/bilstm_gat/serialize/train",
+  "train_batch_size": 20,
+  "test_batch_size": 32
 }

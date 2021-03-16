@@ -131,7 +131,6 @@ def viterbi_decode(tag_sequence: torch.Tensor,
     else:
         tag_observations = [-1 for _ in range(sequence_length)]
 
-
     if has_start_end_restrictions:
         tag_observations = [num_tags - 2] + tag_observations + [num_tags - 1]
         zero_sentinel = torch.zeros(1, num_tags)

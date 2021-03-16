@@ -87,7 +87,7 @@
   },
 
   "lr_scheduler": null,
-  "grad_scaled": null,
+  "grad_rescaled": null,
 
   "loss": {
     "__type__": "NerLoss",
