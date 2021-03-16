@@ -17,6 +17,7 @@ import torch
 import pytest
 
 from easytext.utils.json_util import json2str
+from easytext.utils.nn import tensor_util
 from easytext.data import PretrainedWordEmbeddingLoader, GeneralPretrainedWordEmbeddingLoader
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.utils.nn.tensor_util import is_tensor_equal
@@ -94,22 +95,64 @@ def test_flat_model_collate(lattice_ner_demo_dataset,
 
     logging.debug(json2str(model_inputs.model_inputs["metadata"]))
 
-    gaz_words_indices = model_inputs.model_inputs["gaz_words"]
-
-    ASSERT.assertEqual((2, 11), gaz_words_indices.size())
-
     metadata_0 = model_inputs.model_inputs["metadata"][0]
+
+    sentence = "陈元呼吁加强国际合作推动世界经济发展"
 
     # 陈元呼吁加强国际合作推动世界经济发展
     expect_squeeze_gaz_words_0 = ["陈元", "呼吁", "吁加", "加强", "强国", "国际", "合作", "推动", "世界", "经济", "发展"]
 
-    sequeeze_gaz_words_0 = metadata_0["sequeeze_gaz_words"]
+    squeeze_gaz_words_0 = metadata_0["squeeze_gaz_words"]
 
-    ASSERT.assertListEqual(expect_squeeze_gaz_words_0, sequeeze_gaz_words_0)
+    ASSERT.assertListEqual(expect_squeeze_gaz_words_0, squeeze_gaz_words_0)
 
-    expect_squeeze_gaz_words_indices_0 = torch.tensor(
-        [gaz_vocabulary.index(word) for word in expect_squeeze_gaz_words_0],
-        dtype=torch.long)
+    expect_tokens = [character for character in sentence] + expect_squeeze_gaz_words_0
 
-    ASSERT.assertTrue(is_tensor_equal(expect_squeeze_gaz_words_indices_0,
-                                      gaz_words_indices[0]))
+    tokens = metadata_0["tokens"]
+
+    ASSERT.assertListEqual(expect_tokens, tokens)
+
+    character_pos_begin = [index for index in range(len(sentence))]
+    character_pos_end = [index for index in range(len(sentence))]
+
+    squeeze_gaz_words_begin = list()
+    squeeze_gaz_words_end = list()
+
+    for squeeze_gaz_word in squeeze_gaz_words_0:
+        index = sentence.find(squeeze_gaz_word)
+
+        squeeze_gaz_words_begin.append(index)
+        squeeze_gaz_words_end.append(index + len(squeeze_gaz_word) - 1)
+
+    pos_begin = model_inputs.model_inputs["pos_begin"][0]
+    pos_end = model_inputs.model_inputs["pos_end"][0]
+
+    expect_pos_begin = character_pos_begin + squeeze_gaz_words_begin
+    expect_pos_begin += [0] * (pos_begin.size(0) - len(expect_pos_begin))
+    expect_pos_begin = torch.tensor(expect_pos_begin)
+
+    expect_pos_end = character_pos_end + squeeze_gaz_words_end
+    expect_pos_end += [0] * (pos_end.size(0) - len(expect_pos_end))
+    expect_pos_end = torch.tensor(expect_pos_end)
+
+    ASSERT.assertTrue(tensor_util.is_tensor_equal(expect_pos_begin, pos_begin))
+    ASSERT.assertTrue(tensor_util.is_tensor_equal(expect_pos_end, pos_end))
+
+    expect_character_length = len(sentence)
+    expect_squeeze_gaz_word_length = len(expect_squeeze_gaz_words_0)
+
+    character_length = model_inputs.model_inputs["sequence_length"][0]
+    squeeze_word_length = model_inputs.model_inputs["squeeze_gaz_word_length"][0]
+
+    ASSERT.assertEqual(expect_character_length, character_length.item())
+    ASSERT.assertEqual(expect_squeeze_gaz_word_length, squeeze_word_length.item())
+
+
+
+
+
+
+
+
+
+
