@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MsraDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "data/dataset/MSRA/sample.txt"
+    "dataset_file_path": "data/dataset/MSRA/train.txt"
   },
 
   "validation_dataset": {
     "__type__": "MsraDataset",
     "__name_space__": "ner",
-    "dataset_file_path": "data/dataset/MSRA/sample.txt"
+    "dataset_file_path": "data/dataset/MSRA/test.txt"
   },
 
   "vocabulary_builder": {
@@ -112,10 +112,10 @@
     "find_unused_parameters": false
   },
 
-  "num_epoch": 200,
-  "patient": 50,
+  "num_epoch": 500,
+  "patient": 100,
   "num_check_point_keep": 2,
-  "devices": ["cuda:0", "cuda:1"],
+  "devices": ["cuda:2"],
   "serialize_dir": "data/ner/rnn_with_crf/serialize/train",
   "train_batch_size": 64,
   "test_batch_size": 128
