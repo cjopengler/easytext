@@ -17,7 +17,7 @@ from setuptools import find_packages
 
 setup(
     name="easytext-nlp",
-    version="0.2.0",
+    version="0.3.0",
     author="Pan Xu",
     author_email="cjopengler@163.com",
     description="Make it easy to train and metric NLP model.",
@@ -25,7 +25,7 @@ setup(
     license="MIT",
     packages=find_packages(include=("easytext","easytext.*")),   # 指定需要安装的模块
 
-    install_requires=["torch>=1.2.0", "transformers>=3.1.0", "tqdm>=4.32.1"],
+    install_requires=["torch>=1.2.0", "transformers>=3.1.0", "tqdm>=4.32.1", "tensorboard>=2.2.0"],
     python_requires='>=3.6',
 
     classifiers=[

@@ -295,4 +295,5 @@ serialize/
 vocabulary/
 data/easytext/tests/trainer/
 data/easytext/tests/pretrained_vocabulary/
+docs/site/
 
