@@ -116,7 +116,7 @@ class DynamicRnn(Module):
                                                             padding_value=0.0,
                                                             total_length=sequence_length)
 
-        if self.rnn_type == DynamicRnn.LSTM or self.rnn_type == DynamicRnn.GRU:
+        if self.rnn_type == DynamicRnn.LSTM:
             h_n, c_n = last_state
         else:
             h_n = last_state
