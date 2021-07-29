@@ -354,6 +354,7 @@ class Trainer(TrainerCallback, Distributed):
                            data_loader: DataLoader) -> float:
 
         total_loss = 0.
+        total_num = 0
 
         self._metrics.reset()
 
@@ -402,6 +403,7 @@ class Trainer(TrainerCallback, Distributed):
                     self._optimizer.step()
 
                 total_loss += batch_loss.detach().item() * batch_size
+                total_num += batch_size
 
                 batch_metrics, target_metric = self._metrics(model_outputs=outputs, golden_labels=labels)
 
@@ -418,7 +420,7 @@ class Trainer(TrainerCallback, Distributed):
                                  f"target metric: {json2str(target_metric)}")
 
         # total_loss = total_loss / total_num 这是合理的 loss, 因为所有的 total_num 是一样的所以，没有必要再除以一次了
-        return total_loss
+        return total_loss / total_num
 
     def recovery_train(self,
                        train_data_loader: DataLoader,
