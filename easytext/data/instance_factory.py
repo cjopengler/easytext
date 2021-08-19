@@ -27,3 +27,4 @@ class InstanceFactory:
         :param kwargs:
         :return:
         """
+        raise NotImplementedError()
