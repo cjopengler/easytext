@@ -11,6 +11,10 @@ Authors: PanXu
 Date:    2021/08/19 08:54:00
 """
 
+from typing import Dict, Union, List
+
+from easytext.data import Instance
+
 
 class InstanceFactory:
     """
@@ -20,11 +24,11 @@ class InstanceFactory:
     这样做的收益在于，保证了训练和预测时候使用了同样的数据处理方式。
     """
 
-    def create_instance(self, *args, **kwargs):
+    def create_instance(self, input_data: Dict) -> Union[Instance, List[Instance]]:
+        """
+        创建 instance
+        :param input_data: 输入的字典, 有用户自行定义
+        :return: Instance 实例，或者 Instance 列表，具体情况由用户自行定义
         """
 
-        :param args:
-        :param kwargs:
-        :return:
-        """
         raise NotImplementedError()
