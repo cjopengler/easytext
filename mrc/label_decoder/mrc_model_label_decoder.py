@@ -38,15 +38,10 @@ class MRCModelLabelDecoder(ModelLabelDecoder):
 
     def decode_label_index(self, model_outputs: MRCNerOutput) -> torch.LongTensor:
         """
-        解码出 label index, 使用 crf 解码
+        解码 label index
         :param model_outputs: 模型输出结果
         :return: label indices， 注意 device 是 cpu 的。
         """
-
-        # 不转换成 cpu, 因为在 CRFLabelIndexDecoder 用到了 viterbi
-        # 而 viterbi 用到了 crf 的 transition matrix 参数
-        # transition matrix 参数，是模型的一部分。所以如果模型是 gpu，那么
-        # transition matrix 就是 GPU. 这样保证 logits, mask 与 transition matrix 的 device 一致。
         start_logits = model_outputs.start_logits.detach()
         end_logits = model_outputs.end_logits.detach()
         match_logits = model_outputs.match_logits.detach()

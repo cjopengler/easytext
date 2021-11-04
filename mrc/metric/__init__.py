@@ -10,3 +10,6 @@ brief
 Authors: PanXu
 Date:    2021/10/27 15:58:00
 """
+
+from .mrc_f1_metric import MRCF1Metric
+from .mrc_metric import MrcModelMetricAdapter
