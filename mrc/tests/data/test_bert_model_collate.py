@@ -21,7 +21,7 @@ from mrc import ROOT_PATH
 from mrc.tests import ASSERT
 
 
-from mrc.tests.data.paper_src.collate_functions import collate_to_max_length
+from mrc.tests.paper.collate_functions import collate_to_max_length
 
 
 def test_bert_model_collate(mrc_msra_ner_dataset, paper_mrc_msra_ner_dataset):

@@ -12,26 +12,17 @@ Date:    2020/06/27 00:12:00
 """
 
 import os
-from typing import Dict, Union
 
 import pytest
 
-import torch
-from torch.utils.data import DataLoader
 from transformers import BertTokenizer
 from tokenizers import BertWordPieceTokenizer
-
-from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
-
-from ner.data import VocabularyCollate
-
-from easytext.data import Vocabulary
 
 from mrc import ROOT_PATH
 from mrc.data import MSRAFlatNerDataset
 
 
-from mrc.tests.data.paper_src.mrc_ner_dataset import MRCNERDataset
+from mrc.tests.paper.mrc_ner_dataset import MRCNERDataset
 
 
 @pytest.fixture(scope="session")

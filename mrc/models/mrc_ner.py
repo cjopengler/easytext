@@ -16,9 +16,13 @@ import torch
 from torch.nn import Module
 from torch.nn import Linear
 from torch.nn import Dropout, GELU
+from torch.nn import Embedding, LayerNorm
 
-from transformers import BertModel, BertConfig
+from transformers import BertModel, BertConfig, BertPreTrainedModel
 from transformers.modeling_outputs import BaseModelOutputWithPooling
+
+from easytext.utils.nn.bert_init_weights import BertInitWeights
+from easytext.utils.seed_util import set_seed
 
 from mrc.models import MRCNerOutput
 
@@ -47,20 +51,22 @@ class MRCNer(Module):
     """
 
     def __init__(self, bert_dir: str, dropout: float):
+
         super().__init__()
-
         self.bert = BertModel.from_pretrained(bert_dir)
-
-        bert_config: BertConfig = self.bert.config
+        bert_config = self.bert.config
 
         self.start_classifier = Linear(bert_config.hidden_size, 1)
         self.end_classifier = Linear(bert_config.hidden_size, 1)
-        self.match_classifier = MultiNonLinearClassifier(bert_config.hidden_size * 1, 1, dropout)
+        self.match_classifier = MultiNonLinearClassifier(bert_config.hidden_size * 2, 1, dropout)
 
+        self.init_weights = BertInitWeights(bert_config=bert_config)
         self.reset_parameters()
 
     def reset_parameters(self):
-        pass
+        self.start_classifier.apply(self.init_weights)
+        self.end_classifier.apply(self.init_weights)
+        self.match_classifier.apply(self.init_weights)
 
     def forward(self,
                 input_ids: torch.Tensor,
@@ -86,8 +92,11 @@ class MRCNer(Module):
         sequence_length = sequence_output.size(1)
 
         start_logits = self.start_classifier(sequence_output)
+        # 最后一个维度去掉
+        start_logits = start_logits.squeeze(-1)
 
         end_logits = self.end_classifier(sequence_output)
+        end_logits = end_logits.squeeze(-1)
 
         # 将每一个 i 与 j 连接在一起， 所以是 N*N的拼接，使用了 expand, 进行 两个方向的扩展
         # 产生一个 match matrix

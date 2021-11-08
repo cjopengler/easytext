@@ -131,5 +131,5 @@ if __name__ == '__main__':
         logging.fatal("--config 参数为空!")
         exit(-1)
     logging.info(f"config file path: {parsed_args.config}")
-    ner_launcher = MrcLauncher(config_file_path=parsed_args.config, train_type=NerLauncher.NEW_TRAIN)
+    ner_launcher = MrcLauncher(config_file_path=parsed_args.config, train_type=MrcLauncher.NEW_TRAIN)
     ner_launcher()
