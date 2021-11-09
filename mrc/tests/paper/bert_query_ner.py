@@ -52,10 +52,10 @@ class BertQueryNER(BertPreTrainedModel):
         batch_size, seq_len, hid_size = sequence_heatmap.size()
 
         # 得到 start logits
-        start_logits = self.start_outputs(sequence_heatmap).squeeze(-1)  # [batch, seq_len, 1]
+        start_logits = self.start_outputs(sequence_heatmap).squeeze(-1)  # [batch, seq_len]
 
         # 得到 end logits
-        end_logits = self.end_outputs(sequence_heatmap).squeeze(-1)  # [batch, seq_len, 1]
+        end_logits = self.end_outputs(sequence_heatmap).squeeze(-1)  # [batch, seq_len]
 
         # 将每一个 i 与 j 连接在一起， 所以是 N*N的拼接，使用了 expand, 进行 两个方向的扩展
         # start 和 end 的 logits 有必要存在吗？??? 还是说，增加了一些约束？

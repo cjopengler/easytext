@@ -56,13 +56,16 @@ class MRCF1Metric(F1Metric):
         prediction_match_labels = prediction_match_labels & match_label_mask
         gold_match_labels = gold_match_labels & match_label_mask
 
-        true_positives = (gold_match_labels & prediction_match_labels).long().sum()
-        false_positives = (~gold_match_labels & prediction_match_labels).long().sum()
-        false_negatives = (gold_match_labels & ~prediction_match_labels).long().sum()
+        true_positive_value = (gold_match_labels & prediction_match_labels).long().sum()
+        true_positives = {MRCF1Metric.All: true_positive_value}
+        false_positive_value = (~gold_match_labels & prediction_match_labels).long().sum()
+        false_positives = {MRCF1Metric.All: false_positive_value}
+        false_negative_value = (gold_match_labels & ~prediction_match_labels).long().sum()
+        false_negatives = {MRCF1Metric.All: false_negative_value}
 
-        self._true_positives[MRCF1Metric.All] += true_positives
-        self._false_positives[MRCF1Metric.All] += false_positives
-        self._false_negatives[MRCF1Metric.All] += false_negatives
+        self._true_positives[MRCF1Metric.All] += true_positive_value
+        self._false_positives[MRCF1Metric.All] += false_positive_value
+        self._false_negatives[MRCF1Metric.All] += false_negative_value
 
         return self._metric(true_positives=true_positives,
                             false_positives=false_positives,

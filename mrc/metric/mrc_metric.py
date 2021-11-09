@@ -34,7 +34,7 @@ class MrcModelMetricAdapter(ModelMetricAdapter):
 
     def __init__(self):
         self.model_label_decoder = MRCModelLabelDecoder()
-        self.mrc_f1_metric = MRCF1Metric()
+        self.mrc_f1_metric = MRCF1Metric(labels=list())
 
     def __call__(self, model_outputs: MRCNerOutput, golden_label_dict: Dict[str, Tensor]) -> Tuple[Dict, ModelTargetMetric]:
         """
@@ -47,13 +47,13 @@ class MrcModelMetricAdapter(ModelMetricAdapter):
 
         match_prediction_labels = self.model_label_decoder.decode_label_index(model_outputs=model_outputs)
 
-        match_golend_labels = golden_label_dict["match_position_labels"]
+        match_golden_labels = golden_label_dict["match_position_labels"]
 
         # 计算 overall f1
         mask = model_outputs.mask.detach()
 
         metric_dict = self.mrc_f1_metric(prediction_match_labels=match_prediction_labels,
-                                         gold_match_labels=match_golend_labels,
+                                         gold_match_labels=match_golden_labels,
                                          mask=mask)
 
         target_metric = ModelTargetMetric(metric_name=MRCF1Metric.F1_OVERALL,

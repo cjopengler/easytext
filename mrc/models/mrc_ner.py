@@ -92,25 +92,34 @@ class MRCNer(Module):
         sequence_length = sequence_output.size(1)
 
         start_logits = self.start_classifier(sequence_output)
-        # 最后一个维度去掉
+        # 最后一个维度去掉 (B, seq_len)
         start_logits = start_logits.squeeze(-1)
 
+        assert len(start_logits.size()) == 2
+
         end_logits = self.end_classifier(sequence_output)
+
+        # (B, seq_len)
         end_logits = end_logits.squeeze(-1)
+
+        assert len(end_logits.size()) == 2
 
         # 将每一个 i 与 j 连接在一起， 所以是 N*N的拼接，使用了 expand, 进行 两个方向的扩展
         # 产生一个 match matrix
         # 对于每一个 i 都与 j concat 在一起
-        # [batch, seq_len, seq_len, hidden]
+        # [B, seq_len, seq_len, hidden]
         start_extend = sequence_output.unsqueeze(2).expand(-1, -1, sequence_length, -1)
 
-        # [batch, seq_len, seq_len, hidden]
+        # [B, seq_len, seq_len, hidden]
         end_extend = sequence_output.unsqueeze(1).expand(-1, sequence_length, -1, -1)
 
-        # [batch, seq_len, seq_len, hidden*2]
+        # [B, seq_len, seq_len, hidden*2]
         match_matrix = torch.cat([start_extend, end_extend], 3)
 
+        # (B, seq_len, seq_len)
         match_logits = self.match_classifier(match_matrix).squeeze(-1)
+
+        assert len(match_logits.size()) == 3
 
         return MRCNerOutput(start_logits=start_logits,
                             end_logits=end_logits,
