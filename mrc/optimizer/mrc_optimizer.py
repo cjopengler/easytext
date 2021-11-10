@@ -12,10 +12,12 @@ Date:    2021/11/05 08:53:00
 """
 from easytext.model import Model
 from easytext.optimizer import OptimizerFactory
+from easytext.component.register import ComponentRegister
 
 from transformers import AdamW
 
 
+@ComponentRegister.register(name_space="mrc_ner")
 class MRCOptimizer(OptimizerFactory):
 
     def __init__(self, lr: float, eps: float, weight_decay: float):

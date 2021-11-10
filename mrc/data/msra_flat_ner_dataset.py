@@ -15,9 +15,10 @@ from typing import Dict, Union, List
 
 from easytext.data import Instance
 from easytext.data.dataset import Dataset
-from easytext.data.tokenizer import ZhTokenizer
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="mrc_ner")
 class MSRAFlatNerDataset(Dataset):
     """
     MSRA flat ner dataset

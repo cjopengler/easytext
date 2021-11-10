@@ -18,7 +18,10 @@ from torch.nn import BCEWithLogitsLoss
 
 from mrc.models import MRCNerOutput
 
+from easytext.component.register import ComponentRegister
 
+
+@ComponentRegister.register(name_space="mrc_ner")
 class MRCBCELoss:
     """
     基于 bce 的 los

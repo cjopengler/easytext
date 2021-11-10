@@ -33,11 +33,20 @@ from easytext.trainer import Launcher, Config
 from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
 from easytext.component.register import Registry
+from easytext.utils.bert_tokenizer import bert_tokenizer
+
+from mrc.data import MSRAFlatNerDataset
+from mrc.data import BertModelCollate
+from mrc.models import MRCNer
+from mrc.loss import MRCBCELoss
+from mrc.metric import MrcModelMetricAdapter
+from mrc.optimizer import MRCOptimizer
+from mrc.optimizer import MRCLrScheduler
 
 
-class MrcLauncher(Launcher):
+class MrcNerLauncher(Launcher):
     """
-    ner 训练的启动器
+    mrc ner 训练的启动器
     """
 
     NEW_TRAIN = 0
@@ -63,7 +72,7 @@ class MrcLauncher(Launcher):
         logging.info(f"config:\n{self.config}\n")
 
         serialize_dir = self.config.serialize_dir
-        if self._train_type == MrcLauncher.NEW_TRAIN:
+        if self._train_type == MrcNerLauncher.NEW_TRAIN:
             # 清理 serialize dir
             if os.path.isdir(serialize_dir):
                 shutil.rmtree(serialize_dir)
@@ -131,5 +140,5 @@ if __name__ == '__main__':
         logging.fatal("--config 参数为空!")
         exit(-1)
     logging.info(f"config file path: {parsed_args.config}")
-    ner_launcher = MrcLauncher(config_file_path=parsed_args.config, train_type=MrcLauncher.NEW_TRAIN)
+    ner_launcher = MrcNerLauncher(config_file_path=parsed_args.config, train_type=MrcNerLauncher.NEW_TRAIN)
     ner_launcher()

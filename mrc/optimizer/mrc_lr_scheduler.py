@@ -15,8 +15,10 @@ from torch.optim import Optimizer
 
 from easytext.model import Model
 from easytext.optimizer import LRSchedulerFactory
+from easytext.component.register import ComponentRegister
 
 
+@ComponentRegister.register(name_space="mrc_ner")
 class MRCLrScheduler(LRSchedulerFactory):
 
     def __init__(self, max_lr: float, final_div_factor: float, total_steps: int = None, pct_start: float = 0):

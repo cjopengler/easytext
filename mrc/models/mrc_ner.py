@@ -25,6 +25,7 @@ from easytext.utils.nn.bert_init_weights import BertInitWeights
 from easytext.utils.seed_util import set_seed
 
 from mrc.models import MRCNerOutput
+from easytext.component.register import ComponentRegister
 
 
 class MultiNonLinearClassifier(Module):
@@ -45,6 +46,7 @@ class MultiNonLinearClassifier(Module):
         return features_output2
 
 
+@ComponentRegister.register(name_space="mrc_ner")
 class MRCNer(Module):
     """
     基于 MRC 的 ner 模型

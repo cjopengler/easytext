@@ -19,7 +19,10 @@ from easytext.data import Instance
 
 from mrc.data import MRCModelInputs
 
+from easytext.component.register import ComponentRegister
 
+
+@ComponentRegister.register(name_space="mrc_ner")
 class BertModelCollate:
     """
     Bert Model Collate

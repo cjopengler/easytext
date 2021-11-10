@@ -10,3 +10,5 @@ brief
 Authors: PanXu
 Date:    2021/10/27 14:11:00
 """
+
+from .mrc_bce_loss import MRCBCELoss

@@ -12,3 +12,4 @@ Date:    2021/11/05 08:49:00
 """
 
 from .mrc_optimizer import MRCOptimizer
+from .mrc_lr_scheduler import MRCLrScheduler

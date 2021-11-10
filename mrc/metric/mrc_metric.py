@@ -25,7 +25,7 @@ from mrc.models import MRCNerOutput
 from mrc.metric import MRCF1Metric
 
 
-@ComponentRegister.register(name_space="mrc")
+@ComponentRegister.register(name_space="mrc_ner")
 class MrcModelMetricAdapter(ModelMetricAdapter):
     """
     Ner Model Metric Adapter
