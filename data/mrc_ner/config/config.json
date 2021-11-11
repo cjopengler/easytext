@@ -16,6 +16,7 @@
     "__name_space__": "mrc_ner",
     "tokenizer": {
       "__type__": "BertTokenizer",
+      "__name_space__": "__easytext__",
       "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch"
     },
 
@@ -25,7 +26,7 @@
 
 
   "model": {
-    "__type__": "BertRnnWithCrf",
+    "__type__": "MRCNer",
     "__name_space__": "mrc_ner",
     "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch",
     "dropout": 0.1
@@ -52,13 +53,15 @@
     "weight_decay": 0.01
   },
 
-  "lr_scheduler": {
+  "#lr_scheduler": {
     "__type__": "MRCLrScheduler",
     "__name_space__": "mrc_ner",
     "max_lr": 0.00002,
     "final_div_factor": 10000,
-    "total_steps": null,
+    "total_steps": null
   },
+
+  "lr_scheduler": null,
   "grad_rescaled": null,
 
   "process_group_parameter": {

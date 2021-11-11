@@ -43,7 +43,7 @@ class MRCF1Metric(F1Metric):
         :param mask: mask
         :return: metric dict
         """
-
+        mask = mask.bool()
         batch_size, seq_length = mask.size()
 
         match_label_mask = (mask.unsqueeze(-1).expand(-1, -1, seq_length)

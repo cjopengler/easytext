@@ -28,6 +28,7 @@ class MRCLabelIndexDecoder(LabelIndexDecoder):
                  match_logits: torch.Tensor,
                  mask: torch.BoolTensor) -> torch.LongTensor:
 
+        mask = mask.bool()
         batch_size, seq_len = start_logits.size()
 
         # match label pred, [batch_size, seq_len, seq_len]

@@ -40,15 +40,15 @@ class MRCBCELoss:
 
         batch_size, sequence_length = model_outputs.start_logits.size()
 
-        start_loss = self.loss(model_outputs.start_logits, golden_label["start_position_labels"])
+        start_loss = self.loss(model_outputs.start_logits, golden_label["start_position_labels"].float())
         # 计算得到 mean
         start_loss = (start_loss * mask).sum() / mask.sum()
 
-        end_loss = self.loss(model_outputs.end_logits, golden_label["end_position_labels"])
+        end_loss = self.loss(model_outputs.end_logits, golden_label["end_position_labels"].float())
         end_loss = (end_loss * mask).sum() / mask.sum()
 
         match_loss = self.loss(model_outputs.match_logits.view(batch_size, -1),
-                               golden_label["match_position_labels"].view(batch_size, -1))
+                               golden_label["match_position_labels"].float().view(batch_size, -1))
 
         match_label_row_mask = mask.bool().unsqueeze(-1).expand(-1, -1, sequence_length)
         match_label_col_mask = mask.bool().unsqueeze(-2).expand(-1, sequence_length, -1)

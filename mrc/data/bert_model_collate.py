@@ -89,7 +89,7 @@ class BertModelCollate:
                 metadata["positions"] = zip(start_positions, end_positions)
 
                 start_positions = [(query_offset + start_position) for start_position in start_positions]
-                start_position_labels = torch.zeros(batch_max_length)
+                start_position_labels = torch.zeros(batch_max_length, dtype=torch.long)
 
                 for start_position in start_positions:
                     if start_position < batch_max_length - 1:
@@ -98,17 +98,17 @@ class BertModelCollate:
                 batch_start_position_labels.append(start_position_labels)
 
                 end_positions = [(query_offset + end_position) for end_position in end_positions]
-                end_position_labels = torch.zeros(batch_max_length)
+                end_position_labels = torch.zeros(batch_max_length, dtype=torch.long)
 
                 for end_position in end_positions:
 
                     if end_position < batch_max_length - 1:
                         end_position_labels[end_position] = 1
 
-                batch_end_position_labels.append(torch.tensor(end_position_labels, dtype=torch.long))
+                batch_end_position_labels.append(end_position_labels)
 
                 # match position
-                match_positions = torch.zeros(size=(batch_max_length, batch_max_length))
+                match_positions = torch.zeros(size=(batch_max_length, batch_max_length), dtype=torch.long)
 
                 for start_position, end_position in zip(start_positions, end_positions):
 
