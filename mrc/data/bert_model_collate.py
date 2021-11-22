@@ -39,24 +39,25 @@ class BertModelCollate:
     def __call__(self, instances: List[Instance]) -> MRCModelInputs:
 
         batch_size = len(instances)
-        # 获取当前 batch 最大长度
-        # 3 表示: CLS, SEP, SEP 3个 special token
-        batch_max_length = max(len(instance["context"] + instance["query"]) + 3 for instance in instances)
 
-        batch_max_length = min(batch_max_length, self._max_length)
-
-        batch_text_pairs = [[instance["query"], instance["context"]] for instance in instances]
+        batch_text_pairs = [(instance["query"], instance["context"]) for instance in instances]
 
         batch_inputs = self._tokenizer.batch_encode_plus(batch_text_or_text_pairs=batch_text_pairs,
                                                          truncation=True,
                                                          padding=True,
-                                                         max_length=batch_max_length,
+                                                         max_length=self._max_length,
                                                          return_length=True,
                                                          add_special_tokens=True,
                                                          return_special_tokens_mask=True,
+                                                         return_offsets_mapping=True,
                                                          # return_token_type_ids=True,
                                                          return_tensors="pt")
 
+        batch_token_ids = batch_inputs["input_ids"]
+        batch_token_type_ids = batch_inputs["token_type_ids"]
+        batch_max_len = max(batch_inputs["length"])
+
+        batch_offset_mapping = batch_inputs["offset_mapping"]
         batch_special_tokens_mask = batch_inputs["special_tokens_mask"]
 
         # 将special_tokens_mask 0->1, 1->0, 就变成了 sequence 去掉 CLS 和 SEP 的 mask 了
@@ -74,9 +75,11 @@ class BertModelCollate:
         batch_metadata = list()
 
         # start, end position 处理偏移
-        for instance in instances:
+        for instance, token_ids, token_type_ids, offset_mapping in zip(instances,
+                                                                       batch_token_ids,
+                                                                       batch_token_type_ids,
+                                                                       batch_offset_mapping):
 
-            query_offset = 1 + len(instance["query"]) + 1  # CLS + query + SEP
             start_positions = instance.get("start_positions", None)
             end_positions = instance.get("end_positions", None)
 
@@ -86,33 +89,63 @@ class BertModelCollate:
             batch_metadata.append(metadata)
 
             if start_positions is not None and end_positions is not None:
+
+                # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
+                end_positions = [end_pos + 1 for end_pos in end_positions]
+                instance["end_positions"] = end_positions
+
+                # 因为 query 和 context 拼接在一起了，所以 start_position 和 end_position 的位置要重新映射
+                origin_offset2token_idx_start = {}
+                origin_offset2token_idx_end = {}
+
+                for token_idx in range(len(token_ids)):
+                    # query 的需要过滤
+                    if token_type_ids[token_idx] == 0:
+                        continue
+
+                    # 获取每一个 token_start 和 end
+                    token_start, token_end = offset_mapping[token_idx]
+                    token_start = token_start.item()
+                    token_end = token_end.item()
+
+                    # skip [CLS] or [SEP], offset 中 (0, 0) 表示的就是 CLS 或者 SEP
+                    if token_start == token_end == 0:
+                        continue
+
+                    # token_start 对应的就是 context 中的实际位置，与 start_position 与 end_position 是对应的
+                    # token_idx 是 query 和 context 拼接在一起后的 index，所以 这就是 start_position 映射后的位置
+                    origin_offset2token_idx_start[token_start] = token_idx
+                    origin_offset2token_idx_end[token_end] = token_idx
+
+                # 将原始数据中的  start_positions 映射到 拼接 query context 之后的位置
+                new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions]
+                new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions]
+
                 metadata["positions"] = zip(start_positions, end_positions)
 
-                start_positions = [(query_offset + start_position) for start_position in start_positions]
-                start_position_labels = torch.zeros(batch_max_length, dtype=torch.long)
+                start_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
 
-                for start_position in start_positions:
-                    if start_position < batch_max_length - 1:
+                for start_position in new_start_positions:
+                    if start_position < batch_max_len - 1:
                         start_position_labels[start_position] = 1
 
                 batch_start_position_labels.append(start_position_labels)
 
-                end_positions = [(query_offset + end_position) for end_position in end_positions]
-                end_position_labels = torch.zeros(batch_max_length, dtype=torch.long)
+                end_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
 
-                for end_position in end_positions:
+                for end_position in new_end_positions:
 
-                    if end_position < batch_max_length - 1:
+                    if end_position < batch_max_len - 1:
                         end_position_labels[end_position] = 1
 
                 batch_end_position_labels.append(end_position_labels)
 
                 # match position
-                match_positions = torch.zeros(size=(batch_max_length, batch_max_length), dtype=torch.long)
+                match_positions = torch.zeros(size=(batch_max_len, batch_max_len), dtype=torch.long)
 
-                for start_position, end_position in zip(start_positions, end_positions):
+                for start_position, end_position in zip(new_start_positions, new_end_positions):
 
-                    if start_position < batch_max_length - 1 and end_position < batch_max_length - 1:
+                    if start_position < batch_max_len - 1 and end_position < batch_max_len - 1:
                         match_positions[start_position, end_position] = 1
 
                 batch_match_positions.append(match_positions)

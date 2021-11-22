@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/sample.json"
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/mrc-ner.train"
   },
 
   "validation_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/sample.json"
+    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/mrc-ner.dev"
   },
 
   "model_collate": {
@@ -84,6 +84,6 @@
 
   "devices": ["cpu"],
   "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/mrc_ner/serialize",
-  "train_batch_size": 4,
+  "train_batch_size": 1,
   "test_batch_size": 8
 }

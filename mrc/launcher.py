@@ -29,6 +29,7 @@ from easytext.trainer import Trainer
 from easytext.data import Vocabulary, LabelVocabulary, PretrainedVocabulary
 from easytext.data import GloveLoader, SGNSLoader
 from easytext.utils import log_util
+from easytext.utils.seed_util import set_seed
 from easytext.trainer import Launcher, Config
 from easytext.distributed import ProcessGroupParameter
 from easytext.utils.json_util import json2str
@@ -129,6 +130,7 @@ class MrcNerLauncher(Launcher):
 
 
 if __name__ == '__main__':
+    set_seed()
     log_util.config(level=logging.INFO)
 
     parser = ArgumentParser()

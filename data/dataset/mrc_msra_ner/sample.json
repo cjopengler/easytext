@@ -1,14 +1,5 @@
 [
-  {
-    "context": "藏 书 本 来 就 是 所 有 传 统 收 藏 门 类 中 的 第 一 大 户 ， 只 是 我 们 结 束 温 饱 的 时 间 太 短 而 已 。",
-    "end_position": [],
-    "entity_label": "NT",
-    "impossible": true,
-    "qas_id": "1.3",
-    "query": "组织包括公司,政府党派,学校,政府,新闻机构",
-    "span_position": [],
-    "start_position": []
-  },
+
   {
     "context": "因 有 关 日 寇 在 京 掠 夺 文 物 详 情 ， 藏 界 较 为 重 视 ， 也 是 我 们 收 藏 北 京 史 料 中 的 要 件 之 一 。",
     "end_position": [

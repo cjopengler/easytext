@@ -97,7 +97,7 @@ def test_mrc_metric():
     golden_label_dict = {"match_position_labels": golden_match_logits}
     mrc_metric = MrcModelMetricAdapter()
 
-    metric_dict, target_metric = mrc_metric(model_outputs=model_outputs, golden_label_dict=golden_label_dict)
+    metric_dict, target_metric = mrc_metric(model_outputs=model_outputs, golden_labels=golden_label_dict)
 
     logging.info(f"metric dict: {json2str(metric_dict)}\ntarget metric: {json2str(target_metric)}")
 

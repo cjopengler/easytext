@@ -106,8 +106,6 @@ def test_mrc_ner(mrc_msra_ner_dataset, paper_mrc_msra_ner_dataset):
 
     ASSERT.assertTrue(is_tensor_equal(paper_match_labels, match_labels, epsilon=0))
 
-
-
     logging.info(f"begin mrc ner")
     set_seed()
 
