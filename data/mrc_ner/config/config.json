@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/mrc-ner.train"
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.train"
   },
 
   "validation_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/dataset/mrc_msra_ner/mrc-ner.dev"
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.dev"
   },
 
   "model_collate": {
@@ -17,18 +17,17 @@
     "tokenizer": {
       "__type__": "BertTokenizer",
       "__name_space__": "__easytext__",
-      "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch"
+      "bert_dir": "data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch"
     },
 
     "max_length": 128
   },
 
 
-
   "model": {
     "__type__": "MRCNer",
     "__name_space__": "mrc_ner",
-    "bert_dir": "/Users/panxu/MyProjects/github/easytext/data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch",
+    "bert_dir": "data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch",
     "dropout": 0.1
   },
 
@@ -78,12 +77,12 @@
     "find_unused_parameters": false
   },
 
-  "num_epoch": 500,
-  "patient": 100,
+  "num_epoch": 100,
+  "patient": 10,
   "num_check_point_keep": 1,
 
-  "devices": ["cpu"],
-  "serialize_dir": "/Users/panxu/MyProjects/github/easytext/data/mrc_ner/serialize",
-  "train_batch_size": 1,
-  "test_batch_size": 8
+  "devices": ["cuda:0"],
+  "serialize_dir": "data/mrc_ner/serialize",
+  "train_batch_size": 4,
+  "test_batch_size": 24
 }

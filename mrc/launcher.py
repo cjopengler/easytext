@@ -131,6 +131,7 @@ class MrcNerLauncher(Launcher):
 
 if __name__ == '__main__':
     set_seed()
+    
     log_util.config(level=logging.INFO)
 
     parser = ArgumentParser()
