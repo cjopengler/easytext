@@ -54,6 +54,16 @@ class BertModelCollate:
                                                          return_tensors="pt")
 
         batch_token_ids = batch_inputs["input_ids"]
+
+        batch_tokens = list()
+        for batch_token_id in batch_token_ids.tolist():
+            tmp_tokens = list()
+            batch_tokens.append(tmp_tokens)
+            for token_id in batch_token_id:
+                token = self._tokenizer.decode(token_id)
+                tmp_tokens.append(token)
+
+
         batch_token_type_ids = batch_inputs["token_type_ids"]
         batch_max_len = max(batch_inputs["length"])
 
@@ -98,6 +108,9 @@ class BertModelCollate:
                 origin_offset2token_idx_start = {}
                 origin_offset2token_idx_end = {}
 
+                last_token_start = 0
+                last_token_end = 0
+
                 for token_idx in range(len(token_ids)):
                     # query 的需要过滤
                     if token_type_ids[token_idx] == 0:
@@ -112,14 +125,20 @@ class BertModelCollate:
                     if token_start == token_end == 0:
                         continue
 
+                    # 保存下最后的 start 和 end
+                    last_token_start = token_start
+                    last_token_end = token_end
+
                     # token_start 对应的就是 context 中的实际位置，与 start_position 与 end_position 是对应的
                     # token_idx 是 query 和 context 拼接在一起后的 index，所以 这就是 start_position 映射后的位置
                     origin_offset2token_idx_start[token_start] = token_idx
                     origin_offset2token_idx_end[token_end] = token_idx
 
                 # 将原始数据中的  start_positions 映射到 拼接 query context 之后的位置
-                new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions]
-                new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions]
+                new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions
+                                       if start <= last_token_start]
+                new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions
+                                     if end <= last_token_end]
 
                 metadata["positions"] = zip(start_positions, end_positions)
 
