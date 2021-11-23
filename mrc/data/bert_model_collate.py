@@ -10,14 +10,18 @@
 Authors: PanXu
 Date:    2021/10/23 11:45:00
 """
+import logging
 from typing import List
 import torch
+import traceback
 
 from transformers import BertTokenizer
 
 from easytext.data import Instance
 
 from mrc.data import MRCModelInputs
+
+from easytext.utils.json_util import json2str
 
 from easytext.component.register import ComponentRegister
 
@@ -94,6 +98,11 @@ class BertModelCollate:
                 # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
                 end_positions = [end_pos + 1 for end_pos in end_positions]
 
+                # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
+                end_positions = [end_pos + 1 for end_pos in end_positions]
+                instance["end_positions"] = end_positions
+
+
                 # 因为 query 和 context 拼接在一起了，所以 start_position 和 end_position 的位置要重新映射
                 origin_offset2token_idx_start = {}
                 origin_offset2token_idx_end = {}
@@ -126,9 +135,9 @@ class BertModelCollate:
 
                 # 将原始数据中的  start_positions 映射到 拼接 query context 之后的位置
                 new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions
-                                       if start <= last_token_start]
+                                    if start <= last_token_start]
                 new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions
-                                     if end <= last_token_end]
+                                    if end <= last_token_end]
 
                 metadata["positions"] = zip(start_positions, end_positions)
 
@@ -158,6 +167,7 @@ class BertModelCollate:
                         match_positions[start_position, end_position] = 1
 
                 batch_match_positions.append(match_positions)
+ 
 
         batch_start_position_labels = torch.stack(batch_start_position_labels)
         batch_end_position_labels = torch.stack(batch_end_position_labels)
