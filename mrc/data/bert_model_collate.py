@@ -55,15 +55,6 @@ class BertModelCollate:
 
         batch_token_ids = batch_inputs["input_ids"]
 
-        batch_tokens = list()
-        for batch_token_id in batch_token_ids.tolist():
-            tmp_tokens = list()
-            batch_tokens.append(tmp_tokens)
-            for token_id in batch_token_id:
-                token = self._tokenizer.decode(token_id)
-                tmp_tokens.append(token)
-
-
         batch_token_type_ids = batch_inputs["token_type_ids"]
         batch_max_len = max(batch_inputs["length"])
 
