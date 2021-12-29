@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "data/dataset/mrc_msra_ner/sample.json"
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.train"
   },
 
   "validation_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "data/dataset/mrc_msra_ner/sample.json"
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.dev"
   },
 
   "model_collate": {
@@ -28,7 +28,7 @@
     "__type__": "MRCNer",
     "__name_space__": "mrc_ner",
     "bert_dir": "data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch",
-    "dropout": 0.0
+    "dropout": 0.1
   },
 
   "loss": {
@@ -77,8 +77,8 @@
     "find_unused_parameters": false
   },
 
-  "num_epoch": 100,
-  "patient": 100,
+  "num_epoch": 15,
+  "patient": 3,
   "num_check_point_keep": 1,
 
   "devices": ["cuda:1"],

@@ -42,10 +42,10 @@ class MRCBCELoss:
 
         start_loss = self.loss(model_outputs.start_logits.view(-1), golden_label["start_position_labels"].float().view(-1))
         # 计算得到 mean
-        start_loss = (start_loss * mask).sum() / mask.sum()
+        start_loss = (start_loss * mask.view(-1).float()).sum() / mask.sum()
 
         end_loss = self.loss(model_outputs.end_logits.view(-1), golden_label["end_position_labels"].float().view(-1))
-        end_loss = (end_loss * mask).sum() / mask.sum()
+        end_loss = (end_loss * mask.view(-1).float()).sum() / mask.sum()
 
         match_loss = self.loss(model_outputs.match_logits.view(batch_size, -1),
                                golden_label["match_position_labels"].float().view(batch_size, -1))
