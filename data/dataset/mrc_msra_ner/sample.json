@@ -1,0 +1,19 @@
+[
+
+  {
+    "context": "各 方 力 量 的 共 同 努 力 ， 使 瑞 金 １ ８ ０ 多 处 不 可 移 动 文 物 绝 大 部 分 得 到 应 有 的 保 护 ， 为 合 理 利 用 革 命 文 物 打 下 了 基 础 。",
+    "end_position": [
+      12
+    ],
+    "entity_label": "NS",
+    "impossible": false,
+    "qas_id": "36875.1",
+    "query": "按照地理位置划分的国家,城市,乡镇,大洲",
+    "span_position": [
+      "11;12"
+    ],
+    "start_position": [
+      11
+    ]
+  }
+]

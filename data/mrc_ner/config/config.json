@@ -1,0 +1,88 @@
+{
+  "training_dataset": {
+    "__type__": "MSRAFlatNerDataset",
+    "__name_space__": "mrc_ner",
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.train"
+  },
+
+  "validation_dataset": {
+    "__type__": "MSRAFlatNerDataset",
+    "__name_space__": "mrc_ner",
+    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.dev"
+  },
+
+  "model_collate": {
+    "__type__": "BertModelCollate",
+    "__name_space__": "mrc_ner",
+    "tokenizer": {
+      "__type__": "BertTokenizer",
+      "__name_space__": "__easytext__",
+      "bert_dir": "data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch"
+    },
+
+    "max_length": 128
+  },
+
+
+  "model": {
+    "__type__": "MRCNer",
+    "__name_space__": "mrc_ner",
+    "bert_dir": "data/pretrained/bert/chinese_roberta_wwm_large_ext_pytorch",
+    "dropout": 0.1
+  },
+
+  "loss": {
+    "__type__": "MRCBCELoss",
+    "__name_space__": "mrc_ner",
+    "start_weight": 1.0,
+    "end_weight": 1.0,
+    "match_weight": 1.0
+  },
+
+  "metric": {
+    "__type__": "MrcModelMetricAdapter",
+    "__name_space__": "mrc_ner"
+  },
+
+  "optimizer": {
+    "__type__": "MRCOptimizer",
+    "__name_space__": "mrc_ner",
+    "lr": 0.00002,
+    "eps": 0.00000001,
+    "weight_decay": 0.01
+  },
+
+  "#lr_scheduler": {
+    "__type__": "MRCLrScheduler",
+    "__name_space__": "mrc_ner",
+    "max_lr": 0.00002,
+    "final_div_factor": 10000,
+    "total_steps": null
+  },
+
+  "lr_scheduler": null,
+  "grad_rescaled": null,
+
+  "process_group_parameter": {
+    "__type__": "ProcessGroupParameter",
+    "__name_space__": "__easytext__",
+    "host": "127.0.0.1",
+    "port": "2345",
+    "backend": "nccl"
+  },
+
+  "distributed_data_parallel_parameter": {
+    "__type__": "DistributedDataParallelParameter",
+    "__name_space__": "__easytext__",
+    "find_unused_parameters": false
+  },
+
+  "num_epoch": 100,
+  "patient": 10,
+  "num_check_point_keep": 1,
+
+  "devices": ["cuda:0"],
+  "serialize_dir": "data/mrc_ner/serialize",
+  "train_batch_size": 4,
+  "test_batch_size": 24
+}

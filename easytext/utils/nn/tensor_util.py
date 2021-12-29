@@ -26,8 +26,8 @@ def is_tensor_equal(tensor1: torch.Tensor, tensor2: torch.Tensor, epsilon: float
     assert tensor1.size() == tensor2.size(), f"tensor1 size: {tensor1.size()} 与 tensor2 size: {tensor2.size()} 不匹配"
 
     if tensor1.dtype == torch.long and tensor2.dtype == torch.long:
-        # 都是整数的时候，需要将 epsilon 设置为 0
-        epsilon = 0
+        # 都是整数的时候，直接使用 equal
+        return torch.equal(tensor1, tensor2)
 
     delta = tensor1 - tensor2
 
