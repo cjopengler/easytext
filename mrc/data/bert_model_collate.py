@@ -98,11 +98,6 @@ class BertModelCollate:
                 # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
                 end_positions = [end_pos + 1 for end_pos in end_positions]
 
-                # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
-                end_positions = [end_pos + 1 for end_pos in end_positions]
-                instance["end_positions"] = end_positions
-
-
                 # 因为 query 和 context 拼接在一起了，所以 start_position 和 end_position 的位置要重新映射
                 origin_offset2token_idx_start = {}
                 origin_offset2token_idx_end = {}

@@ -70,3 +70,14 @@ class MRCF1Metric(F1Metric):
         return self._metric(true_positives=true_positives,
                             false_positives=false_positives,
                             false_negatives=false_negatives)
+
+
+    def reset(self):
+        """
+        将所有的状态reset, f1 重新计算。
+        """
+        self._true_positives[MRCF1Metric.All] = 0
+        self._false_positives[MRCF1Metric.All] = 0
+        self._false_negatives[MRCF1Metric.All] = 0
+        
+        return self
