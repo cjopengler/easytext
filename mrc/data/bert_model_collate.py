@@ -85,83 +85,88 @@ class BertModelCollate:
                                                                        batch_token_type_ids,
                                                                        batch_offset_mapping):
 
-            start_positions = instance.get("start_positions", None)
-            end_positions = instance.get("end_positions", None)
+            try:
+                start_positions = instance.get("start_positions", None)
+                end_positions = instance.get("end_positions", None)
 
-            metadata = {"query": instance["query"],
-                        "context": instance["context"]}
+                metadata = {"query": instance["query"],
+                            "context": instance["context"]}
 
-            batch_metadata.append(metadata)
+                batch_metadata.append(metadata)
 
-            if start_positions is not None and end_positions is not None:
+                if start_positions is not None and end_positions is not None:
 
-                # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
-                end_positions = [end_pos + 1 for end_pos in end_positions]
+                    # 是因为在 offset 中, 对于 index 的设置，就是 [start, end)
+                    end_positions = [end_pos + 1 for end_pos in end_positions]
 
-                # 因为 query 和 context 拼接在一起了，所以 start_position 和 end_position 的位置要重新映射
-                origin_offset2token_idx_start = {}
-                origin_offset2token_idx_end = {}
+                    # 因为 query 和 context 拼接在一起了，所以 start_position 和 end_position 的位置要重新映射
+                    origin_offset2token_idx_start = {}
+                    origin_offset2token_idx_end = {}
 
-                last_token_start = 0
-                last_token_end = 0
+                    last_token_start = 0
+                    last_token_end = 0
 
-                for token_idx in range(len(token_ids)):
-                    # query 的需要过滤
-                    if token_type_ids[token_idx] == 0:
-                        continue
+                    for token_idx in range(len(token_ids)):
+                        # query 的需要过滤
+                        if token_type_ids[token_idx] == 0:
+                            continue
 
-                    # 获取每一个 token_start 和 end
-                    token_start, token_end = offset_mapping[token_idx]
-                    token_start = token_start.item()
-                    token_end = token_end.item()
+                        # 获取每一个 token_start 和 end
+                        token_start, token_end = offset_mapping[token_idx]
+                        token_start = token_start.item()
+                        token_end = token_end.item()
 
-                    # skip [CLS] or [SEP], offset 中 (0, 0) 表示的就是 CLS 或者 SEP
-                    if token_start == token_end == 0:
-                        continue
+                        # skip [CLS] or [SEP], offset 中 (0, 0) 表示的就是 CLS 或者 SEP
+                        if token_start == token_end == 0:
+                            continue
 
-                    # 保存下最后的 start 和 end
-                    last_token_start = token_start
-                    last_token_end = token_end
+                        # 保存下最后的 start 和 end
+                        last_token_start = token_start
+                        last_token_end = token_end
 
-                    # token_start 对应的就是 context 中的实际位置，与 start_position 与 end_position 是对应的
-                    # token_idx 是 query 和 context 拼接在一起后的 index，所以 这就是 start_position 映射后的位置
-                    origin_offset2token_idx_start[token_start] = token_idx
-                    origin_offset2token_idx_end[token_end] = token_idx
+                        # token_start 对应的就是 context 中的实际位置，与 start_position 与 end_position 是对应的
+                        # token_idx 是 query 和 context 拼接在一起后的 index，所以 这就是 start_position 映射后的位置
+                        origin_offset2token_idx_start[token_start] = token_idx
+                        origin_offset2token_idx_end[token_end] = token_idx
 
-                # 将原始数据中的  start_positions 映射到 拼接 query context 之后的位置
-                new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions
-                                    if start <= last_token_start]
-                new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions
-                                    if end <= last_token_end]
+                    # 将原始数据中的  start_positions 映射到 拼接 query context 之后的位置
+                    new_start_positions = [origin_offset2token_idx_start[start] for start in start_positions
+                                        if start <= last_token_start]
+                    new_end_positions = [origin_offset2token_idx_end[end] for end in end_positions
+                                        if end <= last_token_end]
 
-                metadata["positions"] = zip(start_positions, end_positions)
+                    metadata["positions"] = zip(start_positions, end_positions)
 
-                start_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
+                    start_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
 
-                for start_position in new_start_positions:
-                    if start_position < batch_max_len - 1:
-                        start_position_labels[start_position] = 1
+                    for start_position in new_start_positions:
+                        if start_position < batch_max_len - 1:
+                            start_position_labels[start_position] = 1
 
-                batch_start_position_labels.append(start_position_labels)
+                    batch_start_position_labels.append(start_position_labels)
 
-                end_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
+                    end_position_labels = torch.zeros(batch_max_len, dtype=torch.long)
 
-                for end_position in new_end_positions:
+                    for end_position in new_end_positions:
 
-                    if end_position < batch_max_len - 1:
-                        end_position_labels[end_position] = 1
+                        if end_position < batch_max_len - 1:
+                            end_position_labels[end_position] = 1
 
-                batch_end_position_labels.append(end_position_labels)
+                    batch_end_position_labels.append(end_position_labels)
 
-                # match position
-                match_positions = torch.zeros(size=(batch_max_len, batch_max_len), dtype=torch.long)
+                    # match position
+                    match_positions = torch.zeros(size=(batch_max_len, batch_max_len), dtype=torch.long)
 
-                for start_position, end_position in zip(new_start_positions, new_end_positions):
+                    for start_position, end_position in zip(new_start_positions, new_end_positions):
 
-                    if start_position < batch_max_len - 1 and end_position < batch_max_len - 1:
-                        match_positions[start_position, end_position] = 1
+                        if start_position < batch_max_len - 1 and end_position < batch_max_len - 1:
+                            match_positions[start_position, end_position] = 1
 
-                batch_match_positions.append(match_positions)
+                    batch_match_positions.append(match_positions)
+            except Exception as e:
+                logging.info(f"{json2str(instance)}")
+                logging.warning(f"{e}\n{traceback.format_exc()}")
+                raise RuntimeError(f"stop for exception")
  
 
         batch_start_position_labels = torch.stack(batch_start_position_labels)

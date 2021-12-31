@@ -80,8 +80,7 @@ class MRCBCELoss:
         match_loss = match_loss * match_label_mask.view(batch_size, -1).float()
         match_loss = match_loss.sum() / (match_label_mask.sum() + 1e-10)
 
-        total_loss = start_loss * self.start_weight + end_loss * self.end_weight + match_loss * self.match_weight
-        mean_loss = total_loss / batch_size
+        mean_loss = start_loss * self.start_weight + end_loss * self.end_weight + match_loss * self.match_weight
 
         return mean_loss
 

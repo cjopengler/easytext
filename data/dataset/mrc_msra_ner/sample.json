@@ -15,5 +15,37 @@
     "start_position": [
       11
     ]
+  },
+  {
+    "context": "本 报 讯 记 者 卢 新 宁 报 道 ： 一 个 健 康 有 序 的 文 化 市 场 可 以 成 为 一 个 地 区 文 化 品 位 的 标 志 。",
+    "end_position": [
+      7
+    ],
+    "entity_label": "NR",
+    "impossible": false,
+    "qas_id": "36824.2",
+    "query": "人名和虚构的人物形象",
+    "span_position": [
+      "5;7"
+    ],
+    "start_position": [
+      5
+    ]
+  },
+  {
+    "context": "省 委 书 记 、 副 省 长 和 大 家 在 地 头 过 秤 。",
+    "end_position": [
+      1
+    ],
+    "entity_label": "NT",
+    "impossible": false,
+    "qas_id": "36825.3",
+    "query": "组织包括公司,政府党派,学校,政府,新闻机构",
+    "span_position": [
+      "0;1"
+    ],
+    "start_position": [
+      0
+    ]
   }
 ]

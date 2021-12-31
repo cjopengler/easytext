@@ -2,13 +2,13 @@
   "training_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.train"
+    "dataset_file_path": "data/dataset/mrc_msra_ner/sample.json"
   },
 
   "validation_dataset": {
     "__type__": "MSRAFlatNerDataset",
     "__name_space__": "mrc_ner",
-    "dataset_file_path": "data/global_dataset/mrc_ner/zh_msra/mrc-ner.dev"
+    "dataset_file_path": "data/dataset/mrc_msra_ner/sample.json"
   },
 
   "model_collate": {
@@ -47,8 +47,8 @@
   "optimizer": {
     "__type__": "MRCOptimizer",
     "__name_space__": "mrc_ner",
-    "lr": 0.00002,
-    "eps": 0.00000001,
+    "lr": 8e-6,
+    "eps": 1e-8,
     "weight_decay": 0.01
   },
 
@@ -77,8 +77,8 @@
     "find_unused_parameters": false
   },
 
-  "num_epoch": 15,
-  "patient": 3,
+  "num_epoch": 30,
+  "patient": 5,
   "num_check_point_keep": 1,
 
   "devices": ["cuda:1"],

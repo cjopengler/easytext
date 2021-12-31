@@ -11,7 +11,7 @@ Authors: PanXu
 Date:    2020/12/21 22:09:00
 """
 from typing import Optional, Union, List
-
+from tqdm import tqdm
 import torch
 import os
 import logging
@@ -109,7 +109,7 @@ class MrcNerLauncher(Launcher):
             num_workers=0,
             collate_fn=self.config.model_collate,
             sampler=train_sampler
-        )
+        )    
 
         validation_sampler = None
 
