@@ -85,7 +85,7 @@ $$
 给定一个 Bert 的输出 E, 模型首先预测每一个 token 是 start，使用如下公式:
 
 $$
-P_{start} = softmax_{eatch row}(E \cdot T_{start}) \in \mathbb{R}^{n \times 2}
+P_{start} = softmax_{each row}(E \cdot T_{start}) \in \mathbb{R}^{n \times 2}
 $$
 
 $T_{start} \in R^{d \times 2}$ 是学习的权重。$P_{start}$ 表示了一个实体在给定 query 在每一个 token index 上的 start 位置的概率分布。
